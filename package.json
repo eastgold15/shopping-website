@@ -1,0 +1,31 @@
+{
+  "name": "@shopping/monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.4.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "install:all": "pnpm install && cd apps/backend && bun install",
+    "lint": "biome check .",
+    "lint:fix": "biome check --apply .",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "format": "biome format .",
+    "format:fix": "biome format --write .",
+    "type-check": "turbo run type-check",
+    "release": "changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.6",
+    "biome": "^1.9.4",
+    "pkgroll": "^2.15.4",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}

@@ -1,0 +1,63 @@
+services:
+  app:
+    image: registry.cn-chengdu.aliyuncs.com/docker-tzd/mechanicendworld:${IMAGE_TAG:-latest}
+    container_name: MechanicEndWorld-end
+    pull_policy: always # 强制每次启动时拉取最新镜像\
+    expose:
+      # 改为 expose 仅内部暴露端口
+      - "${APP_PORT}"
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    env_file:
+      - .env.production
+      - ../../.env
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:${APP_PORT} || exit 1" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+    command: [ "./dist.exe" ] # 启动编译后的 dist.exe 文件
+
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+
+  # Caddy 反向代理服务
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "9010:9010"
+      - "9011:9011"
+      - "9012:9012"
+    volumes:
+      - ../../front:/1/MechanicEndWorld2/front
+      - ../../remote:/1/MechanicEndWorld2/remote
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data # 证书持久化
+      - caddy_config:/config
+    environment:
+      - APP_PORT=${APP_PORT} # 传递相同的端口变量
+    depends_on:
+      app:
+        condition: service_healthy # 等待应用健康状态
+    networks:
+      - 1panel-network
+volumes:
+  caddy_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /1/MechanicEndWorld2/caddy_data
+  caddy_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /1/MechanicEndWorld2/caddy_config
+networks:
+  1panel-network:
+    driver: bridge

@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+*.lock
+*.lockb
+
+# Build outputs
+dist/
+build/
+.next/
+.svelte-kit/
+.output/
+.turbo/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Debug logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package manager specific files
+# Root level lock files (managed by pnpm)
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Allow app-specific lock files
+!apps/backend/bun.lockb
+!apps/frontend/pnpm-lock.yaml
+
+# Temporary files
+*.tmp
+*.temp
+
+# Deployment
+.vercel
+
+# Biome
+.biome/
+
+# Changesets
+.changeset/
+
+
+apps/backend/src/docker

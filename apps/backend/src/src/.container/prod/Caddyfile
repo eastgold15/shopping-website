@@ -1,0 +1,61 @@
+# 替换为您的域名
+wx.cykycyky.top {
+    # 反向代理到应用服务
+    reverse_proxy app:{env.APP_PORT} {
+        # 健康检查路径（需与应用的/health接口匹配）
+        health_uri /
+        health_interval 30s
+    }
+
+    # 安全头（可选）
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+}
+
+
+# 静态网站服务 (端口 9010)
+:9010 {
+
+    # 设置根目录
+    root * /1/MechanicEndWorld2/front
+     # 静态资源缓存优化
+    header /assets/* {
+        Cache-Control "public, max-age=31536000, immutable"
+    }
+     # Brotli优先（需预生成.br文件）
+    encode {
+			gzip 
+			zstd
+		}
+    # 启用静态文件服务
+    file_server 
+    # SPA 路由回退
+    try_files {path} /index.html
+}
+ 
+ # 静态网站服务 (端口 9010)
+assets.cykycyky.top {
+
+    # 设置根目录
+    root * /1/MechanicEndWorld2/remote
+     # 静态资源缓存优化
+    header /remote/* {
+        Cache-Control "public, max-age=31536000, immutable"
+    }
+     # Brotli优先（需预生成.br文件）
+    encode {
+			gzip
+			zstd
+		}
+    # 启用静态文件服务
+    file_server browse
+}
+ 
+# 本地开发环境
+localhost {
+    encode gzip
+    templates
+    file_server browse
+}

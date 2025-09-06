@@ -1,0 +1,23 @@
+{
+  "name": "@shopping/types",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "pkgroll",
+    "dev": "pkgroll --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "pkgroll": "^2.15.4",
+    "typescript": "^5.9.2"
+  }
+}

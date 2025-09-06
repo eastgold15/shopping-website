@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(bun init:*)",
+      "Bash(bun add:*)",
+      "Bash(pnpm create:*)",
+      "Bash(npm create:*)",
+      "Bash(pnpm install:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(pnpm dlx create-turbo:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
