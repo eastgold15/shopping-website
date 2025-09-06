@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git config:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Read(//d/Users/boer/Desktop/shopping-website/apps/frontend/**)",
+      "Read(//d/Users/boer/Desktop/shopping-website/**)"
     ],
     "deny": [],
     "ask": []

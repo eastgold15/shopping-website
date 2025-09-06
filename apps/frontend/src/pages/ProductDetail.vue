@@ -15,7 +15,7 @@
                 您的浏览器不支持视频播放。
               </video>
               <!-- 图片显示 -->
-              <img v-else :src="currentImage" :alt="product?.title"
+              <img v-else :src="currentImage" :alt="product?.name"
                 class="w-full h-full object-cover cursor-zoom-in transition-all duration-300 ease-in-out"
                 @click="openImageModal" />
             </div>
@@ -25,29 +25,29 @@
           <div class="media-thumbnails">
             <div class="grid grid-cols-5 gap-2">
               <!-- 商品图片缩略图 -->
-              <div v-for="(image, index) in product?.images" :key="image.id"
+              <div v-for="(url) in product?.images" :key="url"
                 class="aspect-square bg-white rounded-lg overflow-hidden cursor-pointer border-2 transition-all" :class="{
-                  'border-blue-500': currentImage === image.url,
-                  'border-gray-200 hover:border-gray-300': currentImage !== image.url
-                }" @click="setCurrentImage(image.url)">
-                <img :src="image.url" :alt="image.alt" class="w-full h-full object-cover" />
+                  'border-blue-500': currentImage === url,
+                  'border-gray-200 hover:border-gray-300': currentImage !== url
+                }" @click="setCurrentImage(url)">
+                <img :src="url" class="w-full h-full object-cover" />
               </div>
 
               <!-- 视频缩略图 -->
-              <div v-for="video in product?.videos" :key="video.id"
+              <!-- <div v-for="video in product?.videos" :key="video"
                 class="aspect-square bg-white rounded-lg overflow-hidden cursor-pointer border-2 transition-all relative"
                 :class="{
                   'border-blue-500': isVideoMode && currentVideo === video.url,
-                  'border-gray-200 hover:border-gray-300': !(isVideoMode && currentVideo === video.url)
+                  'border-gray-200 hover:border-gray-300': !isVideoMode! && !currentVideo !=== !video.url
                 }" @click="setCurrentVideo(video.url, video.thumbnail)">
                 <img :src="video.thumbnail" :alt="video.title" class="w-full h-full object-cover" />
-                <!-- 播放图标 -->
+           
                 <div class="absolute inset-0 flex items-center justify-center">
                   <div class="w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
                     <i class="i-ic:baseline-play-arrow text-white text-lg"></i>
                   </div>
                 </div>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
@@ -56,33 +56,29 @@
         <div class="product-info">
           <!-- 商品标题 -->
           <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
-            {{ product?.title }}
+            {{ product?.name }}
           </h1>
 
           <!-- 价格信息 -->
           <div class="price-section mb-6">
             <div class="flex items-center gap-4 mb-2">
               <span class="text-3xl font-bold text-gray-900">
-                ${{ product?.price.currentPrice }}
+                ${{ product?.price }}
               </span>
-              <span v-if="product?.price.originalPrice && product?.price.originalPrice > product?.price.currentPrice"
+              <span v-if="product?.comparePrice && product?.comparePrice > product?.price"
                 class="text-xl text-gray-500 line-through">
-                ${{ product?.price.originalPrice }}
+                ${{ product?.comparePrice }}
               </span>
             </div>
 
-            <!-- 分期付款信息 -->
-            <div v-if="product?.price.installmentPrice" class="text-sm text-gray-600">
-              or {{ product?.price.installmentCount }} payments of ${{ product?.price.installmentPrice }} by
-              <span class="text-blue-600 underline cursor-pointer">Learn more</span>
-            </div>
+
           </div>
 
           <!-- 颜色选择 -->
           <div v-if="product?.colors?.length" class="color-selection mb-6">
             <h3 class="text-lg font-semibold mb-3">Color: {{ selectedColor?.name || 'Select a color' }}</h3>
             <div class="flex gap-3">
-              <div v-for="color in product.colors" :key="color.id"
+              <div v-for="color in product.colors" :key="color"
                 class="w-12 h-12 rounded-full border-2 cursor-pointer transition-all" :class="{
                   'border-gray-900 ring-2 ring-gray-300': selectedColor?.id === color.id,
                   'border-gray-300 hover:border-gray-400': selectedColor?.id !== color.id
@@ -272,25 +268,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import BannerAds from '../components/BannerAds.vue'
 import { client } from '@frontend/utils/useTreaty'
-import type { Product} from '@frontend/types/product'
+import BannerAds from '../components/BannerAds.vue'
+import type { Products } from '../types/product'
+import { handleApiRes } from '../utils/handleApi'
+
 
 // 路由相关
 const route = useRoute()
 const router = useRouter()
 
 // 响应式数据
-const product = ref<Product | null>(null)
-const relatedProducts = ref<Product[]>([])
+const product = ref<Products | null>(null)
+const relatedProducts = ref<Products[]>([])
 const loading = ref(true)
-const error = ref<string | null>(null)
+
 
 // 商品选择状态
-const selectedColor = ref<ProductColor | null>(null)
-const selectedSize = ref<ProductSize | null>(null)
+const selectedColor = ref<string | null>(null)
+const selectedSize = ref<string | null>(null)
 const currentImage = ref<string>('')
 const currentVideo = ref<string>('')
 const isVideoMode = ref(false)
@@ -318,7 +316,7 @@ const canAddToCart = computed(() => {
 // 方法
 const setCurrentImage = (imageUrl: string) => {
   currentImage.value = imageUrl
-  currentVideo.value = ''
+  // currentVideo.value = ''
   isVideoMode.value = false
 }
 
@@ -327,33 +325,32 @@ const setCurrentVideo = (videoUrl: string, thumbnailUrl: string) => {
   currentImage.value = thumbnailUrl
   isVideoMode.value = true
 }
+// const selectColor = (color: string) => {
+//   selectedColor.value = color
+//   // 如果该颜色有对应的图片，切换到该图片
+//   if (color.imageUrl) {
+//     setCurrentImage(color.imageUrl)
+//   }
+// }
 
-const selectColor = (color: ProductColor) => {
-  selectedColor.value = color
-  // 如果该颜色有对应的图片，切换到该图片
-  if (color.imageUrl) {
-    setCurrentImage(color.imageUrl)
-  }
-}
+// const selectSize = (size: string) => {
+//   if (size.isAvailable) {
+//     selectedSize.value = size
+//   }
+// }
 
-const selectSize = (size: ProductSize) => {
-  if (size.isAvailable) {
-    selectedSize.value = size
-  }
-}
-
-const getSizeByType = (size: ProductSize, type: string) => {
-  switch (type) {
-    case 'uk':
-      return size.ukSize || size.name
-    case 'eu':
-      return size.euSize || size.name
-    case 'us':
-      return size.usSize || size.name
-    default:
-      return size.name
-  }
-}
+// const getSizeByType = (size: string, type: string) => {
+//   switch (type) {
+//     case 'uk':
+//       return size.ukSize || size.name
+//     case 'eu':
+//       return size.euSize || size.name
+//     case 'us':
+//       return size.usSize || size.name
+//     default:
+//       return size.name
+//   }
+// }
 
 const addToCart = () => {
   if (!canAddToCart.value) return
@@ -407,169 +404,35 @@ const navigateToProduct = (productId: string) => {
 const fetchProduct = async (productId: string) => {
   try {
     loading.value = true
-    error.value = null
-
     // 使用Eden Treaty调用API
-    const { data, error: apiError } = await client.api.products({ id: productId }).get()
+    const res = await handleApiRes(client.api.products({ id: productId }).get())
+    if (!res) {
+      return
+    }
 
-    if (data) {
-      product.value = data
+    if (res.code == 200) {
+      product.value = res.data as any
+
+      // 设置默认图片
+      //@ts-ignore
+      if (product.value?.images.length > 0) {
+        currentImage.value = product?.value?.images[0] as any
+        isVideoMode.value = false
+        currentVideo.value = ''
+      }
+
     } else {
       // 如果API调用失败，使用模拟数据作为后备
-      console.warn('API调用失败，使用模拟数据:', apiError)
-      // 模拟数据
-      product.value = {
-        id: productId,
-        title: 'JACK & JONES Blupaulin Knit Mens Polo Shirt',
-        shortDescription: 'Jack & Jones Blupaulin Knit Polo Shirt. Knit fabrication. Collared neckline. Slim fit. Short sleeves. Rib hem.',
-        fullDescription: 'This premium polo shirt features a sophisticated knit fabrication with a classic collared neckline. The slim fit design provides a modern silhouette while maintaining comfort. Made with high-quality materials for durability and style. Perfect for both casual and semi-formal occasions.',
-        brand: 'JACK & JONES',
-        model: 'Blupaulin Knit',
-        sku: 'JJ-BK-001',
-        price: {
-          originalPrice: 69.99,
-          currentPrice: 54.99,
-          currency: 'USD',
-          discount: 21,
-          installmentPrice: 13.75,
-          installmentCount: 4
-        },
-        categoryId: 'mens-polo',
-        categoryPath: ['Men', 'Clothing', 'Polo Shirts'],
-        tags: ['polo', 'knit', 'casual', 'mens'],
-        images: [
-          {
-            id: '1',
-            url: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800',
-            alt: 'Black polo shirt front view',
-            isMain: true,
-            sortOrder: 1
-          },
-          {
-            id: '2',
-            url: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800',
-            alt: 'Black polo shirt back view',
-            isMain: false,
-            sortOrder: 2
-          }
-        ],
-        videos: [
-          {
-            id: '1',
-            url: 'https://example.com/video.mp4',
-            thumbnail: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800',
-            title: 'Product showcase video',
-            duration: 30
-          }
-        ],
-        colors: [
-          {
-            id: 'black',
-            name: 'BLACK',
-            hexCode: '#000000',
-            imageUrl: 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800'
-          },
-          {
-            id: 'navy',
-            name: 'NAVY',
-            hexCode: '#1e3a8a'
-          }
-        ],
-        sizes: [
-          {
-            id: 's',
-            name: 'S',
-            ukSize: 'S',
-            euSize: '46',
-            usSize: 'S',
-            stock: 10,
-            isAvailable: true
-          },
-          {
-            id: 'm',
-            name: 'M',
-            ukSize: 'M',
-            euSize: '48',
-            usSize: 'M',
-            stock: 15,
-            isAvailable: true
-          },
-          {
-            id: 'l',
-            name: 'L',
-            ukSize: 'L',
-            euSize: '50',
-            usSize: 'L',
-            stock: 8,
-            isAvailable: true
-          },
-          {
-            id: 'xl',
-            name: 'XL',
-            ukSize: 'XL',
-            euSize: '52',
-            usSize: 'XL',
-            stock: 0,
-            isAvailable: false
-          }
-        ],
-        stock: {
-          totalStock: 33,
-          availableStock: 33,
-          reservedStock: 0,
-          lowStockThreshold: 5
-        },
-        specifications: [
-          { name: 'Material', value: '62% Cotton 38% Polyester' },
-          { name: 'Fit', value: 'Slim Fit' },
-          { name: 'Sleeve Length', value: 'Short Sleeves' },
-          { name: 'Care', value: 'Machine wash' },
-          { name: 'Origin', value: 'Imported' }
-        ],
-        features: ['Knit fabrication', 'Collared neckline', 'Slim fit', 'Short sleeves', 'Rib hem'],
-        materials: ['62% Cotton', '38% Polyester'],
-        careInstructions: ['Machine wash cold', 'Do not bleach', 'Tumble dry low', 'Iron on low heat'],
-        reviews: [],
-        averageRating: 5,
-        totalReviews: 0,
-        isActive: true,
-        isFeatured: true,
-        isNew: false,
-        isOnSale: true,
-        seo: {
-          metaTitle: 'JACK & JONES Blupaulin Knit Mens Polo Shirt',
-          metaDescription: 'Premium knit polo shirt with slim fit design',
-          keywords: ['polo shirt', 'mens clothing', 'jack and jones'],
-          slug: 'jack-jones-blupaulin-knit-polo-shirt'
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        publishedAt: new Date(),
-        salesCount: 127,
-        viewCount: 1543,
-        weight: 200,
-        dimensions: {
-          length: 30,
-          width: 25,
-          height: 2
-        },
-        relatedProductIds: ['2', '3', '4', '5'],
-        rewardPoints: 55
-      }
+      console.warn('API调用失败，使用模拟数据:')
     }
 
-    // 设置默认图片
-    if (product.value.images.length > 0) {
-      currentImage.value = product.value.images[0].url
-      isVideoMode.value = false
-      currentVideo.value = ''
-    }
+
 
     // 获取相关商品
-    await fetchRelatedProducts()
+    // await fetchRelatedProducts()
 
   } catch (err) {
-    error.value = 'Failed to load product'
+
     console.error('Error fetching product:', err)
   } finally {
     loading.value = false

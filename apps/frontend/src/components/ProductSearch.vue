@@ -3,18 +3,8 @@
     <!-- 搜索框 -->
     <div class="search-box">
       <div class="p-inputgroup">
-        <InputText
-          v-model="searchQuery"
-          placeholder="搜索商品..."
-          @keyup.enter="handleSearch"
-          class="search-input"
-        />
-        <Button
-          icon="pi pi-search"
-          @click="handleSearch"
-          :loading="loading"
-          class="search-button"
-        />
+        <InputText v-model="searchQuery" placeholder="搜索商品..." @keyup.enter="handleSearch" class="search-input" />
+        <Button icon="pi pi-search" @click="handleSearch" :loading="loading" class="search-button" />
       </div>
     </div>
 
@@ -24,93 +14,48 @@
         <!-- 分类筛选 -->
         <div class="filter-item">
           <label>分类</label>
-          <Dropdown
-            v-model="filters.categoryId"
-            :options="categories"
-            option-label="name"
-            option-value="id"
-            placeholder="选择分类"
-            show-clear
-            @change="handleFilterChange"
-          />
+          <Dropdown v-model="filters.categoryId" :options="categories" option-label="name" option-value="id"
+            placeholder="选择分类" show-clear @change="handleFilterChange" />
         </div>
 
         <!-- 价格范围 -->
         <div class="filter-item">
           <label>价格范围</label>
           <div class="price-range">
-            <InputNumber
-              v-model="filters.minPrice"
-              placeholder="最低价"
-              mode="currency"
-              currency="USD"
-              locale="en-US"
-              @input="handleFilterChange"
-            />
+            <InputNumber v-model="filters.minPrice" placeholder="最低价" mode="currency" currency="USD" locale="en-US"
+              @input="handleFilterChange" />
             <span class="price-separator">-</span>
-            <InputNumber
-              v-model="filters.maxPrice"
-              placeholder="最高价"
-              mode="currency"
-              currency="USD"
-              locale="en-US"
-              @input="handleFilterChange"
-            />
+            <InputNumber v-model="filters.maxPrice" placeholder="最高价" mode="currency" currency="USD" locale="en-US"
+              @input="handleFilterChange" />
           </div>
         </div>
 
         <!-- 颜色筛选 -->
         <div class="filter-item">
           <label>颜色</label>
-          <MultiSelect
-            v-model="filters.colors"
-            :options="filterOptions.colors"
-            placeholder="选择颜色"
-            display="chip"
-            @change="handleFilterChange"
-          />
+          <MultiSelect v-model="filters.colors" :options="filterOptions.colors" placeholder="选择颜色" display="chip"
+            @change="handleFilterChange" />
         </div>
 
         <!-- 尺寸筛选 -->
         <div class="filter-item">
           <label>尺寸</label>
-          <MultiSelect
-            v-model="filters.sizes"
-            :options="filterOptions.sizes"
-            placeholder="选择尺寸"
-            display="chip"
-            @change="handleFilterChange"
-          />
+          <MultiSelect v-model="filters.sizes" :options="filterOptions.sizes" placeholder="选择尺寸" display="chip"
+            @change="handleFilterChange" />
         </div>
 
         <!-- 排序 -->
         <div class="filter-item">
           <label>排序</label>
-          <Dropdown
-            v-model="sortOption"
-            :options="sortOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="选择排序"
-            @change="handleSortChange"
-          />
+          <Dropdown v-model="sortOption" :options="sortOptions" option-label="label" option-value="value"
+            placeholder="选择排序" @change="handleSortChange" />
         </div>
       </div>
 
       <!-- 筛选操作 -->
       <div class="filter-actions">
-        <Button
-          label="清除筛选"
-          icon="pi pi-times"
-          severity="secondary"
-          outlined
-          @click="clearFilters"
-        />
-        <Button
-          label="应用筛选"
-          icon="pi pi-check"
-          @click="applyFilters"
-        />
+        <Button label="清除筛选" icon="pi pi-times" severity="secondary" outlined @click="clearFilters" />
+        <Button label="应用筛选" icon="pi pi-check" @click="applyFilters" />
       </div>
     </div>
 
@@ -126,23 +71,14 @@
             关键词: "{{ searchResults.query }}"
           </span>
         </div>
-        <Button
-          :icon="showFilters ? 'pi pi-filter-slash' : 'pi pi-filter'"
-          :label="showFilters ? '隐藏筛选' : '显示筛选'"
-          severity="secondary"
-          outlined
-          @click="toggleFilters"
-        />
+        <Button :icon="showFilters ? 'pi pi-filter-slash' : 'pi pi-filter'" :label="showFilters ? '隐藏筛选' : '显示筛选'"
+          severity="secondary" outlined @click="toggleFilters" />
       </div>
 
       <!-- 商品列表 -->
       <div v-if="searchResults?.products.length" class="products-grid">
-        <ProductCard
-          v-for="product in searchResults.products"
-          :key="product.id"
-          :product="product"
-          @click="goToProduct(product)"
-        />
+        <ProductCard v-for="product in searchResults.products" :key="product.id" :product="product"
+          @click="goToProduct(product)" />
       </div>
 
       <!-- 空状态 -->
@@ -150,20 +86,13 @@
         <i class="pi pi-search" style="font-size: 3rem; color: var(--text-color-secondary);"></i>
         <h3>未找到相关商品</h3>
         <p>请尝试调整搜索关键词或筛选条件</p>
-        <Button
-          label="查看所有商品"
-          @click="viewAllProducts"
-        />
+        <Button label="查看所有商品" @click="viewAllProducts" />
       </div>
 
       <!-- 分页 -->
       <div v-if="searchResults && searchResults.total > searchResults.limit" class="pagination">
-        <Paginator
-          :rows="searchResults.limit"
-          :total-records="searchResults.total"
-          :first="(searchResults.page - 1) * searchResults.limit"
-          @page="handlePageChange"
-        />
+        <Paginator :rows="searchResults.limit" :total-records="searchResults.total"
+          :first="(searchResults.page - 1) * searchResults.limit" @page="handlePageChange" />
       </div>
     </div>
 
@@ -171,30 +100,25 @@
     <div v-if="!searchResults && popularTerms.length" class="popular-searches">
       <h4>热门搜索</h4>
       <div class="popular-tags">
-        <Tag
-          v-for="term in popularTerms"
-          :key="term"
-          :value="term"
-          @click="searchByTerm(term)"
-          class="popular-tag"
-        />
+        <Tag v-for="term in popularTerms" :key="term" :value="term" @click="searchByTerm(term)" class="popular-tag" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { client } from '@frontend/utils/useTreaty';
-import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
-import MultiSelect from 'primevue/multiselect';
 import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import MultiSelect from 'primevue/multiselect';
 import Paginator from 'primevue/paginator';
 import Tag from 'primevue/tag';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { client } from '@frontend/utils/useTreaty';
 import ProductCard from './ProductCard.vue';
+import { handleApiRes } from '../utils/handleApi';
 
 interface Product {
   id: string;
@@ -210,11 +134,15 @@ interface Product {
   isFeatured: boolean;
 }
 
+const meta = reactive({
+  page: 0,
+  pageSize: 10,
+  total: 0,
+  pageTotal: 0
+})
+
 interface SearchResult {
   products: Product[];
-  total: number;
-  page: number;
-  limit: number;
   query?: string;
   filters: any;
   sort: any;
@@ -273,7 +201,7 @@ const sortOption = ref('createdAt-desc');
 // 方法
 const handleSearch = async () => {
   if (!searchQuery.value.trim()) return;
-  
+
   loading.value = true;
   try {
     const [sortBy, sortOrder] = sortOption.value.split('-');
@@ -293,11 +221,9 @@ const handleSearch = async () => {
     if (filters.sizes.length) params.append('sizes', filters.sizes.join(','));
     if (filters.tags.length) params.append('tags', filters.tags.join(','));
 
-    const { data, error } = await client.api.products.search.get({ query: Object.fromEntries(params) });
+    const data = await handleApiRes(client.api.products.search.get({ query: Object.fromEntries(params) }));
     if (data) {
       searchResults.value = data;
-    } else {
-      console.error('搜索失败:', error);
     }
   } catch (error) {
     console.error('搜索失败:', error);
@@ -346,9 +272,14 @@ const searchWithPage = async (page: number) => {
     if (filters.sizes.length) params.append('sizes', filters.sizes.join(','));
     if (filters.tags.length) params.append('tags', filters.tags.join(','));
 
-    const { data, error } = await client.api.products.search.get({ query: Object.fromEntries(params) });
-    if (data) {
-      searchResults.value = data;
+    const res = await handleApiRes(client.api.products.search.get({ query: Object.fromEntries(params) }));
+    if (!res) {
+      return
+    }
+
+
+    if (res.code === 200) {  // 成功
+      searchResults.value = res.data.items;
     } else {
       console.error('搜索失败:', error);
     }
@@ -371,7 +302,7 @@ const clearFilters = () => {
   filters.sizes = [];
   filters.tags = [];
   sortOption.value = 'createdAt-desc';
-  
+
   if (searchQuery.value.trim()) {
     handleSearch();
   }
@@ -400,19 +331,19 @@ const viewAllProducts = () => {
 const loadInitialData = async () => {
   try {
     // 加载热门搜索关键词
-    const { data: termsData } = await client.api.products.search['popular-terms'].get();
+    const termsData = await handleApiRes(client.api.products.search['popular-terms'].get());
     if (termsData) {
       popularTerms.value = termsData;
     }
 
     // 加载分类列表
-    const { data: categoriesData } = await client.api.categories.get();
+    const categoriesData = await handleApiRes(client.api.categories.get());
     if (categoriesData) {
       categories.value = categoriesData;
     }
 
     // 加载筛选选项
-    const { data: optionsData } = await client.api.products['filter-options'].get();
+    const optionsData = await handleApiRes(client.api.products['filter-options'].get());
     if (optionsData) {
       filterOptions.value = optionsData;
     }
@@ -561,17 +492,17 @@ onMounted(() => {
   .filters-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .results-header {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .filter-actions {
     justify-content: stretch;
   }
-  
+
   .filter-actions .p-button {
     flex: 1;
   }

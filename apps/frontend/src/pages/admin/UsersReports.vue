@@ -29,7 +29,7 @@
 					<!-- 时间范围 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">时间范围</label>
-						<Dropdown 
+						<Select 
 							v-model="filters.timeRange" 
 							:options="timeRangeOptions" 
 							optionLabel="label" 
@@ -43,7 +43,7 @@
 					<!-- 用户类型 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">用户类型</label>
-						<Dropdown 
+						<Select 
 							v-model="filters.userType" 
 							:options="userTypeOptions" 
 							optionLabel="label" 
@@ -73,7 +73,7 @@
 					<!-- 注册来源 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">注册来源</label>
-						<Dropdown 
+						<Select 
 							v-model="filters.source" 
 							:options="sourceOptions" 
 							optionLabel="label" 
@@ -255,7 +255,7 @@
 						<h3 class="text-lg font-semibold">用户行为分析</h3>
 						<p class="text-sm text-gray-500 mt-1">用户购买行为和偏好统计</p>
 					</div>
-					<Dropdown 
+					<Select 
 						v-model="behaviorType" 
 						:options="behaviorOptions" 
 						optionLabel="label" 
@@ -343,19 +343,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import Avatar from 'primevue/avatar'
+import Badge from 'primevue/badge'
 
 // PrimeVue 组件
 import Button from 'primevue/button'
 import Card from 'primevue/card'
+import Chart from 'primevue/chart'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
 import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Badge from 'primevue/badge'
-import Avatar from 'primevue/avatar'
-import Chart from 'primevue/chart'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 // 类型定义
 interface KPIData {

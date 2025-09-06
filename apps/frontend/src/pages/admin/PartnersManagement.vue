@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { client } from '@frontend/utils/useTreaty'
-
 // PrimeVue 组件
 import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
-import ToggleSwitch from 'primevue/toggleswitch'
 import Checkbox from 'primevue/checkbox'
-import Tag from 'primevue/tag'
+import Column from 'primevue/column'
 import ConfirmDialog from 'primevue/confirmdialog'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, ref } from 'vue'
+import { client } from '@frontend/utils/useTreaty'
+import ImageSelector from '@/app/components/ImageSelector.vue'
 
 // 类型定义
 interface Partner {
@@ -54,6 +54,7 @@ const searchKeyword = ref('')
 const filterStatus = ref('all')
 const showCreateDialog = ref(false)
 const editingPartner = ref<Partner | null>(null)
+const showImageSelector = ref(false)
 
 // 表单数据
 const partnerForm = ref<PartnerForm>({
@@ -82,6 +83,22 @@ const isFormValid = computed(() => {
         partnerForm.value.description.trim() &&
         partnerForm.value.image.trim()
 })
+
+// 图片选择相关方法
+const openImageSelector = () => {
+    showImageSelector.value = true
+}
+
+const onImageSelected = (imageUrl: string, imageData: any) => {
+    partnerForm.value.image = imageUrl
+    showImageSelector.value = false
+    toast.add({
+        severity: 'success',
+        summary: '图片选择成功',
+        detail: `已选择图片: ${imageData.fileName}`,
+        life: 2000
+    })
+}
 
 // 方法
 const loadPartners = async () => {
@@ -113,7 +130,7 @@ const loadPartners = async () => {
                     console.error('API返回的数据格式不正确:', responseData)
                     partners.value = []
                     total.value = 0
-                    toast.add({ severity: 'error', summary: '错误', detail: '数据格式错误' })
+                    toast.add({ severity: 'error', summary: '错误', detail: '数据格式错误', life: 1000 })
                 }
             } else {
                 partners.value = []
@@ -123,13 +140,13 @@ const loadPartners = async () => {
             console.error('API返回的数据格式错误:', response.data)
             partners.value = []
             total.value = 0
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '加载合作伙伴失败' })
+            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '加载合作伙伴失败', life: 1000 })
         }
     } catch (error) {
         console.error('加载合作伙伴失败:', error)
         partners.value = []
         total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载合作伙伴失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载合作伙伴失败', life: 1000 })
     } finally {
         loading.value = false
     }
@@ -192,7 +209,7 @@ const closeDialog = () => {
 // 保存合作伙伴
 const savePartner = async () => {
     if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段' })
+        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
         return
     }
 
@@ -203,26 +220,26 @@ const savePartner = async () => {
             // 更新
             const response = await client.api.partners[editingPartner.value.id.toString()].put(partnerForm.value)
             if (response.data && response.data.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '更新合作伙伴成功' })
+                toast.add({ severity: 'success', summary: '成功', detail: '更新合作伙伴成功', life: 1000 })
                 closeDialog()
                 loadPartners()
             } else {
-                toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '更新合作伙伴失败' })
+                toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '更新合作伙伴失败', life: 1000 })
             }
         } else {
             // 创建
             const response = await client.api.partners.post(partnerForm.value)
             if (response.data && response.data.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '创建合作伙伴成功' })
+                toast.add({ severity: 'success', summary: '成功', detail: '创建合作伙伴成功', life: 1000 })
                 closeDialog()
                 loadPartners()
             } else {
-                toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '创建合作伙伴失败' })
+                toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '创建合作伙伴失败', life: 1000 })
             }
         }
     } catch (error) {
         console.error('保存合作伙伴失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '保存合作伙伴失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '保存合作伙伴失败', life: 1000 })
     } finally {
         saving.value = false
     }
@@ -244,14 +261,14 @@ const deletePartner = async (id: number) => {
     try {
         const response = await client.api.partners[id.toString()].delete()
         if (response.data && response.data.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: '删除合作伙伴成功' })
+            toast.add({ severity: 'success', summary: '成功', detail: '删除合作伙伴成功', life: 1000 })
             loadPartners()
         } else {
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '删除合作伙伴失败' })
+            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '删除合作伙伴失败', life: 1000 })
         }
     } catch (error) {
         console.error('删除合作伙伴失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '删除合作伙伴失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '删除合作伙伴失败', life: 1000 })
     }
 }
 
@@ -269,13 +286,13 @@ const toggleActive = async (partner: Partner) => {
         } else {
             // 回滚状态
             partner.isActive = !partner.isActive
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '切换状态失败' })
+            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '切换状态失败', life: 1000 })
         }
     } catch (error) {
         // 回滚状态
         partner.isActive = !partner.isActive
         console.error('切换状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '切换状态失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '切换状态失败', life: 1000 })
     }
 }
 
@@ -286,15 +303,15 @@ const updateSort = async (partner: Partner) => {
             sortOrder: partner.sortOrder
         })
         if (response.data && response.data.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: '更新排序成功' })
+            toast.add({ severity: 'success', summary: '成功', detail: '更新排序成功', life: 1000 })
             loadPartners()
         } else {
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '更新排序失败' })
+            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '更新排序失败', life: 1000 })
             loadPartners() // 重新加载以恢复原始值
         }
     } catch (error) {
         console.error('更新排序失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '更新排序失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '更新排序失败', life: 1000 })
         loadPartners() // 重新加载以恢复原始值
     }
 }
@@ -302,7 +319,7 @@ const updateSort = async (partner: Partner) => {
 // 批量切换状态
 const batchToggleActive = async (isActive: boolean) => {
     if (!selectedPartners.value.length) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请先选择要操作的合作伙伴' })
+        toast.add({ severity: 'warn', summary: '警告', detail: '请先选择要操作的合作伙伴', life: 1000 })
         return
     }
 
@@ -326,7 +343,7 @@ const batchToggleActive = async (isActive: boolean) => {
                 loadPartners()
             } catch (error) {
                 console.error('批量操作失败:', error)
-                toast.add({ severity: 'error', summary: '错误', detail: '批量操作失败' })
+                toast.add({ severity: 'error', summary: '错误', detail: '批量操作失败', life: 1000 })
             }
         }
     })
@@ -387,7 +404,7 @@ onMounted(() => {
                 </div>
                 <div class="flex gap-3">
                     <InputText v-model="searchKeyword" placeholder="搜索合作伙伴名称..." class="w-64" @input="handleSearch" />
-                    <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
                 </div>
             </div>
@@ -513,8 +530,17 @@ onMounted(() => {
 
                 <div>
                     <label class="block text-sm font-medium mb-2">合作伙伴图片 *</label>
-                    <InputText v-model="partnerForm.image" placeholder="请输入图片URL" class="w-full"
-                        :class="{ 'p-invalid': !partnerForm.image }" />
+                    <div class="flex gap-2">
+                        <InputText v-model="partnerForm.image" placeholder="请输入图片URL" class="flex-1"
+                            :class="{ 'p-invalid': !partnerForm.image }" />
+                        <Button 
+                            icon="pi pi-images" 
+                            label="选择图片" 
+                            @click="openImageSelector" 
+                            class="p-button-outlined"
+                            v-tooltip="'从图片库选择'"
+                        />
+                    </div>
                     <div v-if="partnerForm.image" class="mt-2">
                         <img :src="partnerForm.image" :alt="partnerForm.name"
                             class="w-24 h-24 object-cover rounded-lg border border-gray-200" />
@@ -552,6 +578,13 @@ onMounted(() => {
 
         <!-- 删除确认对话框 -->
         <ConfirmDialog />
+
+        <!-- 图片选择器 -->
+        <ImageSelector 
+            v-model:visible="showImageSelector"
+            category="category"
+            @select="onImageSelected"
+        />
     </div>
 </template>
 

@@ -15,7 +15,7 @@
     <!-- 配置分类标签 -->
     <TabView v-model:activeIndex="activeTab" class="config-tabs">
       <!-- 基本设置 -->
-      <TabPanel header="基本设置">
+      <TabPanel header="基本设置" value="1">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-4">
             <div class="field">
@@ -40,35 +40,19 @@
               <label for="currency" class="block text-sm font-medium text-gray-700 mb-2">
                 货币单位
               </label>
-              <Dropdown id="currency" v-model="configs.currency" :options="currencyOptions" optionLabel="label"
+              <Select id="currency" v-model="configs.currency" :options="currencyOptions" optionLabel="label"
                 optionValue="value" placeholder="选择货币单位" class="w-full" />
             </div>
           </div>
 
           <div class="space-y-4">
-            <div class="field">
-              <label for="header_notice" class="block text-sm font-medium text-gray-700 mb-2">
-                顶部通知
-              </label>
-              <Textarea id="header_notice" v-model="configs.header_notice"
-                placeholder="FREE SHIPPING on orders over $59* details" rows="3" class="w-full" />
-              <small class="text-gray-500">显示在网站顶部的通知信息</small>
-            </div>
-
-            <div class="field">
-              <label for="free_shipping_threshold" class="block text-sm font-medium text-gray-700 mb-2">
-                免费配送门槛
-              </label>
-              <InputNumber id="free_shipping_threshold" v-model="configs.free_shipping_threshold" placeholder="59"
-                :min="0" :max="9999" class="w-full" />
-              <small class="text-gray-500">订单金额超过此数值免费配送</small>
-            </div>
           </div>
+
         </div>
       </TabPanel>
 
       <!-- SEO设置 -->
-      <TabPanel header="SEO设置">
+      <TabPanel header="SEO设置" value="2">
         <div class="space-y-6">
           <div class="field">
             <label for="site_keywords" class="block text-sm font-medium text-gray-700 mb-2">
@@ -89,42 +73,9 @@
         </div>
       </TabPanel>
 
-      <!-- 联系信息 -->
-      <TabPanel header="联系信息">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-4">
-            <div class="field">
-              <label for="contact_email" class="block text-sm font-medium text-gray-700 mb-2">
-                联系邮箱
-              </label>
-              <InputText id="contact_email" v-model="configs.contact_email" placeholder="contact@example.com"
-                type="email" class="w-full" :class="{ 'p-invalid': errors.contact_email }" />
-              <small v-if="errors.contact_email" class="p-error">{{ errors.contact_email }}</small>
-            </div>
-
-            <div class="field">
-              <label for="contact_phone" class="block text-sm font-medium text-gray-700 mb-2">
-                联系电话
-              </label>
-              <InputText id="contact_phone" v-model="configs.contact_phone" placeholder="+86 400-123-4567"
-                class="w-full" />
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div class="field">
-              <label for="contact_address" class="block text-sm font-medium text-gray-700 mb-2">
-                联系地址
-              </label>
-              <Textarea id="contact_address" v-model="configs.contact_address" placeholder="请输入公司地址" rows="3"
-                class="w-full" />
-            </div>
-          </div>
-        </div>
-      </TabPanel>
 
       <!-- 导航页配置 -->
-      <TabPanel header="导航页配置">
+      <TabPanel header="导航页配置" value="4">
         <div class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
@@ -170,7 +121,7 @@
       </TabPanel>
 
       <!-- 网站顶部配置 -->
-      <TabPanel header="网站顶部配置">
+      <TabPanel header="网站顶部配置" value="5">
         <div class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
@@ -181,6 +132,16 @@
                 <InputText id="header_banner_text" v-model="configs.header_banner_text"
                   placeholder="FREE SHIPPING on orders over $59* details" class="w-full" />
                 <small class="text-gray-500">显示在网站顶部的横幅信息</small>
+              </div>
+
+
+              <div class="field">
+                <label for="free_shipping_threshold" class="block text-sm font-medium text-gray-700 mb-2">
+                  免费配送门槛
+                </label>
+                <InputNumber id="free_shipping_threshold" v-model="configs.free_shipping_threshold" placeholder="59"
+                  :min="0" :max="9999" class="w-full" />
+                <small class="text-gray-500">订单金额超过此数值免费配送</small>
               </div>
 
               <div class="field">
@@ -196,16 +157,16 @@
                 <label for="header_track_order_text" class="block text-sm font-medium text-gray-700 mb-2">
                   追踪订单文本
                 </label>
-                <InputText id="header_track_order_text" v-model="configs.header_track_order_text" placeholder="Track Order"
-                  class="w-full" />
+                <InputText id="header_track_order_text" v-model="configs.header_track_order_text"
+                  placeholder="Track Order" class="w-full" />
               </div>
 
               <div class="field">
                 <label for="header_track_order_link" class="block text-sm font-medium text-gray-700 mb-2">
                   追踪订单链接
                 </label>
-                <InputText id="header_track_order_link" v-model="configs.header_track_order_link" placeholder="/track-order"
-                  class="w-full" />
+                <InputText id="header_track_order_link" v-model="configs.header_track_order_link"
+                  placeholder="/track-order" class="w-full" />
               </div>
             </div>
 
@@ -251,10 +212,20 @@
       </TabPanel>
 
       <!-- 底部配置 -->
-      <TabPanel header="底部配置">
+      <TabPanel header="底部配置" value="6">
         <div class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
+
+              <div class="field">
+                <label for="icp_number" class="block text-sm font-medium text-gray-700 mb-2">
+                  ICP备案号
+                </label>
+                <InputText id="icp_number" v-model="configs.icp_number" placeholder="京ICP备12345678号" class="w-full" />
+              </div>
+
+
+
               <div class="field">
                 <label for="footer_copyright" class="block text-sm font-medium text-gray-700 mb-2">
                   版权信息
@@ -268,21 +239,11 @@
                 <label for="footer_back_to_top_text" class="block text-sm font-medium text-gray-700 mb-2">
                   返回顶部文本
                 </label>
-                <InputText id="footer_back_to_top_text" v-model="configs.footer_back_to_top_text" placeholder="Back to top"
-                  class="w-full" />
+                <InputText id="footer_back_to_top_text" v-model="configs.footer_back_to_top_text"
+                  placeholder="Back to top" class="w-full" />
               </div>
 
-              <div class="field">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  社交媒体链接
-                </label>
-                <div class="space-y-2">
-                  <InputText v-model="configs.footer_social_facebook" placeholder="Facebook链接" class="w-full" />
-                  <InputText v-model="configs.footer_social_twitter" placeholder="Twitter链接" class="w-full" />
-                  <InputText v-model="configs.footer_social_instagram" placeholder="Instagram链接" class="w-full" />
-                  <InputText v-model="configs.footer_social_youtube" placeholder="YouTube链接" class="w-full" />
-                </div>
-              </div>
+
             </div>
 
             <div class="space-y-4">
@@ -327,43 +288,22 @@
           </div>
         </div>
       </TabPanel>
-
-      <!-- 法律信息 -->
-      <TabPanel header="法律信息">
-        <div class="space-y-6">
-          <div class="field">
-            <label for="icp_number" class="block text-sm font-medium text-gray-700 mb-2">
-              ICP备案号
-            </label>
-            <InputText id="icp_number" v-model="configs.icp_number" placeholder="京ICP备12345678号" class="w-full" />
-          </div>
-
-          <div class="field">
-            <label for="copyright" class="block text-sm font-medium text-gray-700 mb-2">
-              版权信息
-            </label>
-            <Textarea id="copyright" v-model="configs.copyright" placeholder="© 2024 公司名称 All Rights Reserved" rows="3"
-              class="w-full" />
-            <small class="text-gray-500">显示在网站底部的版权信息</small>
-          </div>
-        </div>
-      </TabPanel>
     </TabView>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { client } from '@frontend/utils/useTreaty'
-import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
 import Checkbox from 'primevue/checkbox'
-import TabView from 'primevue/tabview'
+import Dropdown from 'primevue/dropdown'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import TabPanel from 'primevue/tabpanel'
+import TabView from 'primevue/tabview'
+import Textarea from 'primevue/textarea'
+import { useToast } from 'primevue/usetoast'
+import { onMounted, reactive, ref } from 'vue'
+import { client } from '@frontend/utils/useTreaty'
 
 // 组合式API
 const toast = useToast()
@@ -380,22 +320,21 @@ const configs = reactive({
   site_logo: '',
   site_keywords: '',
   site_description: '',
-  contact_email: '',
-  contact_phone: '',
-  contact_address: '',
+
+
   icp_number: '',
   copyright: '',
   header_notice: '',
   free_shipping_threshold: 59,
   currency: 'USD',
-  
+
   // 导航页配置
   nav_home_enabled: true,
   nav_products_enabled: true,
   nav_categories_enabled: true,
   nav_about_enabled: true,
   nav_contact_enabled: true,
-  
+
   // 网站顶部配置
   header_banner_text: '',
   header_banner_link: '',
@@ -405,7 +344,7 @@ const configs = reactive({
   header_search_enabled: true,
   header_cart_enabled: true,
   header_user_menu_enabled: true,
-  
+
   // 底部配置
   footer_copyright: '',
   footer_back_to_top_text: '',
@@ -415,10 +354,6 @@ const configs = reactive({
       links: [{ text: 'Favorites', url: '/favorites' }]
     }
   ],
-  footer_social_facebook: '',
-  footer_social_twitter: '',
-  footer_social_instagram: '',
-  footer_social_youtube: ''
 })
 
 // 原始配置数据（用于重置）
@@ -427,7 +362,7 @@ const originalConfigs = reactive({ ...configs })
 // 表单验证错误
 const errors = reactive({
   site_name: '',
-  contact_email: ''
+
 })
 
 // 货币选项
@@ -483,7 +418,7 @@ const loadConfigs = async () => {
   try {
     loading.value = true
 
-    const response = await client.api['site-configs'].get()
+    const response = await client.api.siteConfigs.get()
     if (response.data && response.data.code === 200 && Array.isArray(response.data.data)) {
       // 将配置数组转换为对象
       response.data.data.forEach((config: any) => {
@@ -518,7 +453,7 @@ const loadConfigs = async () => {
         severity: 'error',
         summary: '错误',
         detail: '配置数据格式错误',
-        life: 3000
+        life: 1000
       })
     }
   } catch (error) {
@@ -527,7 +462,7 @@ const loadConfigs = async () => {
       severity: 'error',
       summary: '错误',
       detail: '加载配置失败',
-      life: 3000
+      life: 1000
     })
   } finally {
     loading.value = false
@@ -540,7 +475,7 @@ const validateForm = () => {
 
   // 清空错误
   errors.site_name = ''
-  errors.contact_email = ''
+
 
   // 验证网站名称
   if (!configs.site_name.trim()) {
@@ -548,11 +483,7 @@ const validateForm = () => {
     isValid = false
   }
 
-  // 验证邮箱格式
-  if (configs.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(configs.contact_email)) {
-    errors.contact_email = '请输入有效的邮箱地址'
-    isValid = false
-  }
+
 
   return isValid
 }
@@ -564,7 +495,7 @@ const saveConfigs = async () => {
       severity: 'warn',
       summary: '验证失败',
       detail: '请检查表单中的错误',
-      life: 3000
+      life: 1000
     })
     return
   }
@@ -575,34 +506,34 @@ const saveConfigs = async () => {
     // 准备批量更新数据
     const updateData = Object.entries(configs).map(([key, value]) => {
       let stringValue = String(value)
-      
+
       // 处理特殊类型
       if (key === 'header_help_links' || key === 'footer_sections') {
         stringValue = JSON.stringify(value)
       } else if (typeof value === 'boolean') {
         stringValue = value ? 'true' : 'false'
       }
-      
+
       return {
         key,
         value: stringValue
       }
     })
 
-    const { data, error } = await client.api['site-configs'].batch.patch(updateData)
+    const response = await client.api.siteConfigs.batch.patch(updateData)
 
-    if (data) {
+    if (response.data && response.data.code === 200) {
       toast.add({
         severity: 'success',
         summary: '成功',
         detail: '配置保存成功',
-        life: 3000
+        life: 1000
       })
 
       // 更新原始数据
       Object.assign(originalConfigs, configs)
     } else {
-      throw new Error(error || '保存失败')
+      throw new Error(response.data?.message || '保存失败')
     }
   } catch (error) {
     console.error('保存配置失败:', error)
@@ -610,7 +541,7 @@ const saveConfigs = async () => {
       severity: 'error',
       summary: '错误',
       detail: '保存配置失败',
-      life: 3000
+      life: 1000
     })
   } finally {
     saving.value = false
@@ -623,43 +554,43 @@ const resetConfigs = () => {
 
   // 清空错误
   errors.site_name = ''
-  errors.contact_email = ''
+
 
   toast.add({
     severity: 'info',
     summary: '提示',
     detail: '配置已重置',
-    life: 3000
+    life: 1000
   })
 }
 
-// 初始化默认配置
-const initializeConfigs = async () => {
-  try {
-    const { data, error } = await client.api['site-configs'].initialize.post()
+// // 初始化默认配置
+// const initializeConfigs = async () => {
+//   try {
+//     const response = await client.api['site-configs'].initialize.post()
 
-    if (data) {
-      await loadConfigs()
-      toast.add({
-        severity: 'success',
-        summary: '成功',
-        detail: '默认配置初始化成功',
-        life: 3000
-      })
-    }
-  } catch (error) {
-    console.error('初始化配置失败:', error)
-  }
-}
+//     if (response.data && response.data.code === 200) {
+//       await loadConfigs()
+//       toast.add({
+//         severity: 'success',
+//         summary: '成功',
+//         detail: '默认配置初始化成功',
+//         life: 1000
+//       })
+//     }
+//   } catch (error) {
+//     console.error('初始化配置失败:', error)
+//   }
+// }
 
 // 组件挂载时加载数据
 onMounted(async () => {
   await loadConfigs()
 
-  // 如果没有配置数据，初始化默认配置
-  if (!configs.site_name) {
-    await initializeConfigs()
-  }
+  // // 如果没有配置数据，初始化默认配置
+  // if (!configs.site_name) {
+  //   await initializeConfigs()
+  // }
 })
 </script>
 

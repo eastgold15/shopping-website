@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useToast } from 'primevue/usetoast'
-import { client } from '@frontend/utils/useTreaty'
-
 // PrimeVue 组件
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Chart from 'primevue/chart'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
+
 import ProgressBar from 'primevue/progressbar'
 import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
 
 // 类型定义
 interface DashboardStats {
@@ -79,10 +77,10 @@ const todayGrowthRate = computed(() => {
 const loadDashboardData = async () => {
     try {
         loading.value = true
-        
+
         // 模拟API调用 - 实际项目中应该调用真实API
         await new Promise(resolve => setTimeout(resolve, 1000))
-        
+
         // 模拟统计数据
         stats.value = {
             totalProducts: 156,
@@ -94,7 +92,7 @@ const loadDashboardData = async () => {
             completedOrders: 1089,
             cancelledOrders: 100
         }
-        
+
         // 模拟最近订单
         recentOrders.value = [
             {
@@ -122,7 +120,7 @@ const loadDashboardData = async () => {
                 createdAt: new Date(Date.now() - 7200000)
             }
         ]
-        
+
         // 模拟销售图表数据
         salesData.value = {
             labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
@@ -137,7 +135,7 @@ const loadDashboardData = async () => {
                 }
             ]
         }
-        
+
         chartOptions.value = {
             responsive: true,
             maintainAspectRatio: false,
@@ -150,17 +148,15 @@ const loadDashboardData = async () => {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value: any) {
-                            return '¥' + value.toLocaleString()
-                        }
+                        callback: (value: any) => '¥' + value.toLocaleString()
                     }
                 }
             }
         }
-        
+
     } catch (error) {
         console.error('加载仪表盘数据失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '加载仪表盘数据失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载仪表盘数据失败', life: 1000 })
     } finally {
         loading.value = false
     }
@@ -237,8 +233,8 @@ onMounted(() => {
                     <h1 class="text-3xl font-bold text-gray-900">仪表盘</h1>
                     <p class="text-gray-600 mt-1">欢迎回来，这里是您的业务概览</p>
                 </div>
-                <Button label="刷新数据" icon="pi pi-refresh" @click="loadDashboardData" 
-                    class="p-button-outlined" :loading="loading" />
+                <Button label="刷新数据" icon="pi pi-refresh" @click="loadDashboardData" class="p-button-outlined"
+                    :loading="loading" />
             </div>
         </div>
 
@@ -363,7 +359,7 @@ onMounted(() => {
                                 <p class="text-sm text-gray-600 mt-1">已取消</p>
                             </div>
                         </div>
-                        
+
                         <!-- 完成率进度条 -->
                         <div class="mt-6">
                             <div class="flex justify-between items-center mb-2">
@@ -385,15 +381,9 @@ onMounted(() => {
                     </template>
                     <template #content>
                         <div class="space-y-3">
-                            <Button 
-                                v-for="action in quickActions" 
-                                :key="action.label"
-                                :label="action.label" 
-                                :icon="action.icon" 
-                                @click="action.action"
-                                :class="`p-button-${action.color} w-full`"
-                                class="justify-start"
-                            />
+                            <Button v-for="action in quickActions" :key="action.label" :label="action.label"
+                                :icon="action.icon" @click="action.action" :class="`p-button-${action.color} w-full`"
+                                class="justify-start" />
                         </div>
                     </template>
                 </Card>
@@ -403,7 +393,7 @@ onMounted(() => {
                     <template #title>
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-semibold">最近订单</h3>
-                            <Button label="查看全部" @click="router.push('/admin/orders')" 
+                            <Button label="查看全部" @click="router.push('/admin/orders')"
                                 class="p-button-text p-button-sm" />
                         </div>
                     </template>
@@ -412,12 +402,9 @@ onMounted(() => {
                             <Skeleton v-for="i in 3" :key="i" width="100%" height="3rem" />
                         </div>
                         <div v-else class="space-y-3">
-                            <div 
-                                v-for="order in recentOrders" 
-                                :key="order.id"
+                            <div v-for="order in recentOrders" :key="order.id"
                                 class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                                @click="router.push(`/admin/orders/${order.id}`)"
-                            >
+                                @click="router.push(`/admin/orders/${order.id}`)">
                                 <div class="flex-1">
                                     <p class="font-medium text-sm">{{ order.orderNumber }}</p>
                                     <p class="text-xs text-gray-600">{{ order.customerName }}</p>
@@ -425,11 +412,8 @@ onMounted(() => {
                                 </div>
                                 <div class="text-right">
                                     <p class="font-medium text-sm">{{ formatCurrency(order.amount) }}</p>
-                                    <Tag 
-                                        :value="getOrderStatusTag(order.status).label" 
-                                        :severity="getOrderStatusTag(order.status).severity" 
-                                        class="text-xs mt-1"
-                                    />
+                                    <Tag :value="getOrderStatusTag(order.status).label"
+                                        :severity="getOrderStatusTag(order.status).severity" class="text-xs mt-1" />
                                 </div>
                             </div>
                         </div>
@@ -462,7 +446,7 @@ onMounted(() => {
     .header-section {
         @apply mb-4;
     }
-    
+
     .stats-section {
         @apply mb-4;
     }

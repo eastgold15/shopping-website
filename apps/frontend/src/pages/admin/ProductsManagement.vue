@@ -1,29 +1,28 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
-
 // PrimeVue 组件
 import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
-import ToggleSwitch from 'primevue/toggleswitch'
 import Checkbox from 'primevue/checkbox'
-import Tag from 'primevue/tag'
+import Column from 'primevue/column'
 import ConfirmDialog from 'primevue/confirmdialog'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
 import Image from 'primevue/image'
-import FileUpload from 'primevue/fileupload'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
-import type { Product, ProductForm } from '@/app/types/product'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { Category } from '@/app/types/category'
-
+import type { Product, ProductForm } from '@/app/types/product'
+import { client } from '@frontend/utils/useTreaty'
+import ImageSelector from '@/app/components/ImageSelector.vue'
+import { handleApiRes } from '@/app/utils/handleApi'
 
 
 // 响应式数据
@@ -46,6 +45,7 @@ const filterCategory = ref<number | null>(null)
 const filterStatus = ref('all')
 const showCreateDialog = ref(false)
 const editingProduct = ref<Product | null>(null)
+const showImageSelector = ref(false)
 
 // 表单数据
 const productForm = ref<ProductForm>({
@@ -151,7 +151,7 @@ const loadProducts = async () => {
         console.error('加载商品失败:', error)
         products.value = []
         initMeta.value.total = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载商品失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载商品失败', life: 1000 })
     } finally {
         loading.value = false
     }
@@ -168,7 +168,7 @@ const loadCategories = async () => {
         }
     } catch (error) {
         console.error('加载分类失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '加载分类失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载分类失败', life: 1000 })
     }
 }
 
@@ -288,7 +288,7 @@ const closeDialog = () => {
 // 保存商品
 const saveProduct = async () => {
     if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段' })
+        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
         return
     }
 
@@ -311,7 +311,7 @@ const saveProduct = async () => {
             const { data: response } = await client.api.products({ id: editingProduct.value.id }).put(submitData)
 
             if (response.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '更新商品成功' })
+                toast.add({ severity: 'success', summary: '成功', detail: '更新商品成功', life: 1000 })
             } else {
                 throw new Error(response.message || '更新商品失败')
             }
@@ -320,7 +320,7 @@ const saveProduct = async () => {
             const { data: response } = await client.api.products.post(submitData)
 
             if (response.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '创建商品成功' })
+                toast.add({ severity: 'success', summary: '成功', detail: '创建商品成功', life: 1000 })
             } else {
                 throw new Error(response.message || '创建商品失败')
             }
@@ -330,7 +330,7 @@ const saveProduct = async () => {
         loadProducts()
     } catch (error) {
         console.error('保存商品失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '保存商品失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: error.message || '保存商品失败', life: 1000 })
     } finally {
         saving.value = false
     }
@@ -350,17 +350,17 @@ const confirmDelete = (product: Product) => {
 // 删除商品
 const deleteProduct = async (id: number) => {
     try {
-        const { data: response } = await client.api.products({ id }).delete()
+        const response = await handleApiRes(client.api.products({ id }).delete())
 
         if (response.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: '删除商品成功' })
+            toast.add({ severity: 'success', summary: '成功', detail: response.message, life: 1000 })
             loadProducts()
         } else {
             throw new Error(response.message || '删除商品失败')
         }
     } catch (error) {
         console.error('删除商品失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '删除商品失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: error.message || '删除商品失败', life: 1000 })
     }
 }
 
@@ -386,7 +386,7 @@ const toggleActive = async (product: Product) => {
     } catch (error) {
         product.isActive = originalStatus
         console.error('切换状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '切换状态失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: error.message || '切换状态失败', life: 1000 })
     }
 }
 
@@ -412,7 +412,7 @@ const toggleFeatured = async (product: Product) => {
     } catch (error) {
         product.isFeatured = originalStatus
         console.error('切换推荐状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '切换推荐状态失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: error.message || '切换推荐状态失败', life: 1000 })
     }
 }
 
@@ -433,30 +433,26 @@ const formatDate = (date: Date | string) => {
     })
 }
 
-// 图片上传处理
-const onImageUpload = (event: any) => {
-    const files = event.files
-    if (files && files.length > 0) {
-
-        // 暂时将图片URL添加到productForm.images数组中
-        files.forEach((file: File) => {
-            const reader = new FileReader()
-            reader.onload = (e) => {
-                if (e.target?.result) {
-                    productForm.value.images.push(e.target.result as string)
-                }
-            }
-            reader.readAsDataURL(file)
-        })
-
-        toast.add({ severity: 'success', summary: '成功', detail: '图片上传成功' })
-    }
+// 打开图片选择器
+const openImageSelector = () => {
+    showImageSelector.value = true
 }
 
-// 图片移除处理
-const onImageRemove = (event: any) => {
-    // 处理图片移除逻辑
-    toast.add({ severity: 'info', summary: '提示', detail: '图片已移除' })
+// 处理图片选择
+const onImageSelected = (imageUrl: string) => {
+    if (!productForm.value.images.includes(imageUrl)) {
+        productForm.value.images.push(imageUrl)
+        toast.add({ severity: 'success', summary: '成功', detail: '图片添加成功', life: 1000 })
+    } else {
+        toast.add({ severity: 'warn', summary: '提示', detail: '图片已存在', life: 1000 })
+    }
+    showImageSelector.value = false
+}
+
+// 移除图片
+const removeImage = (index: number) => {
+    productForm.value.images.splice(index, 1)
+    toast.add({ severity: 'info', summary: '提示', detail: '图片已移除', life: 1000 })
 }
 
 // 跳转到添加商品页面
@@ -495,9 +491,9 @@ const goToAddProduct = () => {
                 <div class="flex gap-3">
                     <InputText v-model="searchKeyword" placeholder="搜索商品名称或SKU..." class="w-64"
                         @update:modelValue="handleSearch" />
-                    <Dropdown v-model="filterCategory" :options="categoryOptions" optionLabel="label"
-                        optionValue="value" placeholder="筛选分类" class="w-32" @change="handleFilter" showClear />
-                    <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+                    <Select v-model="filterCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
+                        placeholder="筛选分类" class="w-32" @change="handleFilter" showClear />
+                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
                 </div>
             </div>
@@ -606,147 +602,171 @@ const goToAddProduct = () => {
 
         <!-- 创建/编辑商品对话框 -->
         <Dialog v-model:visible="showCreateDialog" :header="editingProduct ? '编辑商品' : '新增商品'" :modal="true"
-            :closable="true" class="w-[800px]">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">商品名称 *</label>
-                        <InputText v-model="productForm.name" placeholder="请输入商品名称" class="w-full"
-                            :class="{ 'p-invalid': !productForm.name }" />
-                    </div>
+            :closable="true" class="w-[1000px] max-h-[90vh]">
+            <div class="space-y-6">
+                <!-- 必填信息区域 -->
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
+                        <i class="pi pi-exclamation-circle mr-2"></i>
+                        必填信息
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 左列 -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-red-700">商品名称 *</label>
+                                <InputText v-model="productForm.name" placeholder="请输入商品名称" class="w-full"
+                                    :class="{ 'p-invalid': !productForm.name }" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">URL别名 *</label>
-                        <InputText v-model="productForm.slug" placeholder="请输入URL别名" class="w-full"
-                            :class="{ 'p-invalid': !productForm.slug }" />
-                    </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-red-700">URL别名 *</label>
+                                <InputText v-model="productForm.slug" placeholder="请输入URL别名" class="w-full"
+                                    :class="{ 'p-invalid': !productForm.slug }" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">商品SKU *</label>
-                        <InputText v-model="productForm.sku" placeholder="请输入商品SKU" class="w-full"
-                            :class="{ 'p-invalid': !productForm.sku }" />
-                    </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-red-700">商品SKU *</label>
+                                <InputText v-model="productForm.sku" placeholder="请输入商品SKU" class="w-full"
+                                    :class="{ 'p-invalid': !productForm.sku }" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">商品分类 *</label>
-                        <Dropdown v-model="productForm.categoryId" :options="categoryOptions" optionLabel="label"
-                            optionValue="value" placeholder="请选择分类" class="w-full"
-                            :class="{ 'p-invalid': !productForm.categoryId }" />
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">销售价格 *</label>
-                            <InputNumber v-model="productForm.price" :min="0" :maxFractionDigits="2" placeholder="0.00"
-                                class="w-full" :class="{ 'p-invalid': productForm.price <= 0 }" />
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-red-700">商品分类 *</label>
+                                <Select v-model="productForm.categoryId" :options="categoryOptions" optionLabel="label"
+                                    optionValue="value" placeholder="请选择分类" class="w-full"
+                                    :class="{ 'p-invalid': !productForm.categoryId }" />
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">对比价格</label>
-                            <InputNumber v-model="productForm.comparePrice" :min="0" :maxFractionDigits="2"
-                                placeholder="0.00" class="w-full" />
-                        </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">库存数量 *</label>
-                        <InputNumber v-model="productForm.stock" :min="0" placeholder="0" class="w-full"
-                            :class="{ 'p-invalid': productForm.stock < 0 }" />
+                        <!-- 右列 -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-red-700">商品描述 *</label>
+                                <Textarea v-model="productForm.description" placeholder="请输入商品描述" rows="3"
+                                    class="w-full" :class="{ 'p-invalid': !productForm.description }" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-red-700">简短描述 *</label>
+                                <Textarea v-model="productForm.shortDescription" placeholder="请输入简短描述" rows="2"
+                                    class="w-full" :class="{ 'p-invalid': !productForm.shortDescription }" />
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2 text-red-700">销售价格 *</label>
+                                    <InputNumber v-model="productForm.price" :min="0" :maxFractionDigits="2"
+                                        placeholder="0.00" class="w-full"
+                                        :class="{ 'p-invalid': productForm.price <= 0 }" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2 text-red-700">库存数量 *</label>
+                                    <InputNumber v-model="productForm.stock" :min="0" placeholder="0" class="w-full"
+                                        :class="{ 'p-invalid': productForm.stock < 0 }" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">商品描述 *</label>
-                        <Textarea v-model="productForm.description" placeholder="请输入商品描述" rows="4" class="w-full"
-                            :class="{ 'p-invalid': !productForm.description }" />
-                    </div>
+                <!-- 选填信息区域 -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                        <i class="pi pi-info-circle mr-2"></i>
+                        选填信息
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 左列 -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">对比价格</label>
+                                <InputNumber v-model="productForm.comparePrice" :min="0" :maxFractionDigits="2"
+                                    placeholder="0.00" class="w-full" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">简短描述 *</label>
-                        <Textarea v-model="productForm.shortDescription" placeholder="请输入简短描述" rows="2" class="w-full"
-                            :class="{ 'p-invalid': !productForm.shortDescription }" />
-                    </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">成本价</label>
+                                <InputNumber v-model="productForm.cost" :min="0" :maxFractionDigits="2"
+                                    placeholder="0.00" class="w-full" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">最低库存</label>
-                        <InputNumber v-model="productForm.minStock" :min="0" placeholder="0" class="w-full" />
-                    </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">最低库存</label>
+                                <InputNumber v-model="productForm.minStock" :min="0" placeholder="0" class="w-full" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">重量(kg)</label>
-                        <InputNumber v-model="productForm.weight" :min="0" :maxFractionDigits="3" placeholder="0.000"
-                            class="w-full" />
-                    </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">重量(kg)</label>
+                                <InputNumber v-model="productForm.weight" :min="0" :maxFractionDigits="3"
+                                    placeholder="0.000" class="w-full" />
+                            </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">尺寸</label>
-                        <InputText v-model="productForm.dimensions" placeholder="长x宽x高(cm)" class="w-full" />
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">条形码</label>
-                        <InputText v-model="productForm.barcode" placeholder="请输入条形码" class="w-full" />
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">成本价</label>
-                        <InputNumber v-model="productForm.cost" :min="0" :maxFractionDigits="2" placeholder="0.00"
-                            class="w-full" />
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">材质</label>
-                        <MultiSelect v-model="productForm.materials" :options="tagOptions" optionLabel="label"
-                            optionValue="value" placeholder="选择材质" class="w-full" display="chip" />
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">护理说明</label>
-                        <Textarea v-model="productForm.careInstructions" placeholder="请输入护理说明" rows="2"
-                            class="w-full" />
-                    </div>
-
-                    <!-- 商品图片 -->
-                    <div class="field col-span-2">
-                        <label class="block text-sm font-medium mb-2">商品图片</label>
-                        <FileUpload mode="advanced" name="images" accept="image/*" :maxFileSize="5000000"
-                            :multiple="true" :fileLimit="5" chooseLabel="选择图片" uploadLabel="上传" cancelLabel="取消"
-                            @upload="onImageUpload" @remove="onImageRemove" class="w-full">
-                            <template
-                                #content="{ files, uploadedFiles, removeUploadedFileCallback, removeFileCallback }">
-                                <div v-if="files.length > 0 || uploadedFiles.length > 0">
-                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                                        <!-- 已上传的图片 -->
-                                        <div v-for="(file, index) in uploadedFiles" :key="'uploaded-' + index"
-                                            class="relative">
-                                            <img :src="file.objectURL || file.url" :alt="file.name"
-                                                class="w-full h-24 object-cover rounded border" />
-                                            <Button icon="pi pi-times"
-                                                class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2"
-                                                @click="removeUploadedFileCallback(index)" />
-                                        </div>
-                                        <!-- 待上传的图片 -->
-                                        <div v-for="(file, index) in files" :key="'pending-' + index" class="relative">
-                                            <img :src="file.objectURL" :alt="file.name"
-                                                class="w-full h-24 object-cover rounded border" />
-                                            <Button icon="pi pi-times"
-                                                class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2"
-                                                @click="removeFileCallback(index)" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </FileUpload>
-                    </div>
-
-                    <div class="flex gap-6">
-                        <div class="flex items-center gap-2">
-                            <ToggleSwitch v-model="productForm.isActive" />
-                            <label class="text-sm">立即上架</label>
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">尺寸</label>
+                                <InputText v-model="productForm.dimensions" placeholder="长x宽x高(cm)" class="w-full" />
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <Checkbox v-model="productForm.isFeatured" binary />
-                            <label class="text-sm">设为推荐</label>
+
+                        <!-- 右列 -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">条形码</label>
+                                <InputText v-model="productForm.barcode" placeholder="请输入条形码" class="w-full" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">材质</label>
+                                <MultiSelect v-model="productForm.materials" :options="tagOptions" optionLabel="label"
+                                    optionValue="value" placeholder="选择材质" class="w-full" display="chip" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-2 text-blue-700">护理说明</label>
+                                <Textarea v-model="productForm.careInstructions" placeholder="请输入护理说明" rows="3"
+                                    class="w-full" />
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <ToggleSwitch v-model="productForm.isActive" />
+                                    <label class="text-sm text-blue-700">立即上架</label>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <Checkbox v-model="productForm.isFeatured" binary />
+                                    <label class="text-sm text-blue-700">设为推荐</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 商品图片区域 -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                        <i class="pi pi-image mr-2"></i>
+                        商品图片
+                    </h3>
+                    <div class="space-y-4">
+                        <!-- 添加图片按钮 -->
+                        <Button label="选择图片" icon="pi pi-plus" @click="openImageSelector"
+                            class="p-button-outlined w-full" v-tooltip="'从图片库中选择图片'" />
+
+                        <!-- 已选择的图片展示 -->
+                        <div v-if="productForm.images.length > 0" class="grid grid-cols-2 md:grid-cols-6 gap-4">
+                            <div v-for="(imageUrl, index) in productForm.images" :key="index" class="relative">
+                                <img :src="imageUrl" :alt="`商品图片 ${index + 1}`"
+                                    class="w-full h-24 object-cover rounded border" />
+                                <Button icon="pi pi-times"
+                                    class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2"
+                                    @click="removeImage(index)" v-tooltip="'移除图片'" />
+                            </div>
+                        </div>
+
+                        <!-- 空状态提示 -->
+                        <div v-else class="text-center py-8 text-gray-500">
+                            <i class="pi pi-image text-4xl mb-2"></i>
+                            <p>暂无图片，点击上方按钮选择图片</p>
                         </div>
                     </div>
                 </div>
@@ -763,6 +783,9 @@ const goToAddProduct = () => {
 
         <!-- 确认对话框 -->
         <ConfirmDialog />
+
+        <!-- 图片选择器 -->
+        <ImageSelector v-model:visible="showImageSelector" category="products" @select="onImageSelected" />
     </div>
 </template>
 

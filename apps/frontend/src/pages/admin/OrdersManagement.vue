@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
-
+import Badge from 'primevue/badge'
 // PrimeVue 组件
 import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
-import Tag from 'primevue/tag'
-import ConfirmDialog from 'primevue/confirmdialog'
-import Badge from 'primevue/badge'
-import Timeline from 'primevue/timeline'
 import Card from 'primevue/card'
+import Column from 'primevue/column'
+import ConfirmDialog from 'primevue/confirmdialog'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import Timeline from 'primevue/timeline'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { client } from '@frontend/utils/useTreaty'
 
 // 类型定义
 interface Order {
@@ -256,7 +255,7 @@ const loadOrders = async () => {
         console.error('加载订单失败:', error)
         orders.value = []
         total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载订单失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载订单失败', life: 1000 })
     } finally {
         loading.value = false
     }
@@ -313,12 +312,12 @@ const updateOrderStatus = async () => {
         selectedOrder.value.status = newStatus.value
         selectedOrder.value.updatedAt = new Date()
         
-        toast.add({ severity: 'success', summary: '成功', detail: '订单状态更新成功' })
+        toast.add({ severity: 'success', summary: '成功', detail: '订单状态更新成功', life: 1000 })
         showStatusDialog.value = false
         loadOrders()
     } catch (error) {
         console.error('更新订单状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '更新订单状态失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '更新订单状态失败', life: 1000 })
     }
 }
 
@@ -336,11 +335,11 @@ const confirmDeleteOrder = (order: Order) => {
 // 删除订单
 const deleteOrder = async (id: number) => {
     try {
-        toast.add({ severity: 'success', summary: '成功', detail: '删除订单成功' })
+        toast.add({ severity: 'success', summary: '成功', detail: '删除订单成功', life: 1000 })
         loadOrders()
     } catch (error) {
         console.error('删除订单失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '删除订单失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '删除订单失败', life: 1000 })
     }
 }
 
@@ -409,7 +408,7 @@ const formatDate = (date: Date | string) => {
 
 // 导出订单
 const exportOrders = () => {
-    toast.add({ severity: 'info', summary: '提示', detail: '导出功能开发中...' })
+    toast.add({ severity: 'info', summary: '提示', detail: '导出功能开发中...', life: 1000 })
 }
 
 // 组件挂载时加载数据
@@ -482,9 +481,9 @@ onMounted(() => {
                 </div>
                 <div class="flex gap-3">
                     <InputText v-model="searchKeyword" placeholder="搜索订单号或用户..." class="w-64" @input="handleSearch" />
-                    <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                    <Dropdown v-model="filterPaymentStatus" :options="paymentStatusOptions" optionLabel="label" optionValue="value"
+                    <Select v-model="filterPaymentStatus" :options="paymentStatusOptions" optionLabel="label" optionValue="value"
                         placeholder="支付状态" class="w-32" @change="handleFilter" />
                     <Calendar v-model="filterDateRange" selectionMode="range" placeholder="选择日期范围" 
                         class="w-48" @date-select="handleFilter" showIcon />
@@ -740,7 +739,7 @@ onMounted(() => {
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-2">订单状态</label>
-                    <Dropdown v-model="newStatus" :options="orderStatusOptions" optionLabel="label" 
+                    <Select v-model="newStatus" :options="orderStatusOptions" optionLabel="label" 
                         optionValue="value" placeholder="选择状态" class="w-full" />
                 </div>
                 <div>

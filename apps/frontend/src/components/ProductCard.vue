@@ -155,9 +155,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import Button from 'primevue/button';
 import Rating from 'primevue/rating';
+import { computed, ref } from 'vue';
 
 interface Product {
   id: string;
