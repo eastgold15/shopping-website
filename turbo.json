@@ -9,6 +9,7 @@
         "dist/**"
       ]
     },
+    "clean": {},
     "check-types": {
       "dependsOn": [
         "^check-types"

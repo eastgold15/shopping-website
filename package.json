@@ -8,8 +8,8 @@
     "apps/*"
   ],
   "scripts": {
-    "clean": "rm -rf node_modules packages/a/node_modules packages/b/node_modules bun.lockb packages/a/bun.lockb packages/b/bun.lockb",
-    "dev": "turbo run dev"
+    "dev": "turbo run dev",
+    "clean": "rimraf node_modules bun.lock "
   },
   "dependencies": {
     "turbo": "^2.5.6",

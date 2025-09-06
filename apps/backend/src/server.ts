@@ -15,11 +15,14 @@ import { uploadRoute } from './routes/upload';
 import { usersRoute } from './routes/users';
 import { err_handler } from "./utils/err.global";
 
+import path from 'path';
 console.log("111", import.meta.dir)
 // 构建时版本号 - 避免运行时依赖package.json
 const APP_VERSION = "1.0.71"; // 构建时手动更新或通过构建脚本注入
 
-import path from 'path';
+
+
+
 export const app = new Elysia({ prefix: '/api' })
   .get('/', redirect('/api/openapi'), {
     detail: {
