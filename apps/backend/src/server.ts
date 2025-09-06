@@ -1,5 +1,4 @@
-import { redirect } from "elysia";
-import Elysia from 'elysia';
+import { Elysia } from "elysia";
 import { categoriesRoute } from './routes/categories';
 import { productsRoute } from './routes/products';
 import { siteConfigsRoute } from './routes/siteConfigs';
@@ -24,7 +23,6 @@ const api = new Elysia({ prefix: '/api' })
   .use(categoriesRoute)
   .use(productsRoute)
   .use(siteConfigsRoute)
-
   .use(advertisementsRoute)
   .use(uploadRoute)
   .use(imagesRoute)
