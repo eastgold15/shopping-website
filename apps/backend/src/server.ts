@@ -16,28 +16,10 @@ import { usersRoute } from './routes/users';
 import { err_handler } from "./utils/err.global";
 
 import path from 'path';
-console.log("111", import.meta.dir)
-// 构建时版本号 - 避免运行时依赖package.json
-const APP_VERSION = "1.0.71"; // 构建时手动更新或通过构建脚本注入
 
 
 
-
-export const app = new Elysia({ prefix: '/api' })
-  .get('/', redirect('/api/openapi'), {
-    detail: {
-      hide: true
-    }
-  })
-  .use(
-    openapi({
-      references: fromTypes('src/server.ts', {
-        projectRoot: path.join(import.meta.dir)
-      })
-    })
-  )
-  .use(logPlugin)
-  // 使用模块化路由
+const api = new Elysia({ prefix: '/api' })
   .use(categoriesRoute)
   .use(productsRoute)
   .use(siteConfigsRoute)
@@ -49,10 +31,35 @@ export const app = new Elysia({ prefix: '/api' })
   .use(usersRoute)
   .use(statisticsRoute)
   .use(partnersRoute)
+
+
+export const app = new Elysia()
+  .use(
+    openapi({
+      references: fromTypes('src/server.ts', {
+        projectRoot: path.join(import.meta.dir)
+      })
+    })
+  )
+  .use(logPlugin)
+  // 使用模块化路由
+  .use(api)
+
   //全局错误
   .use(err_handler)
-
   .listen(Number(process.env.APP_PORT || "3000"));
+
+
+export type EndApp = typeof app
+
+
+
+
+
+
+
+// 构建时版本号 - 避免运行时依赖package.json
+const APP_VERSION = "1.0.71"; // 构建时手动更新或通过构建脚本注入
 
 (() => {
   console.log(
@@ -73,7 +80,4 @@ export const app = new Elysia({ prefix: '/api' })
 
 
 })()
-
-export type EndApp = typeof app
-
 

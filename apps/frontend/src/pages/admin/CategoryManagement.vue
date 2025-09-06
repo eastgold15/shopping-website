@@ -22,7 +22,8 @@ import { z } from 'zod'
 // PrimeVue 组件
 
 
-import { handleApiRes } from '@/app/utils/handleApi'
+import { client } from '@frontend/utils/useTreaty'
+import { handleApiRes } from '../utils/handleApi'
 
 
 
@@ -125,19 +126,19 @@ onMounted(() => {
 const loadCategories = async () => {
   try {
     loading.value = true
-    const response = await client.api.categories.get()
+    const response = await handleApiRes(client.api.categories.get(), false)
 
     // 修复API响应处理逻辑
-    if (response.data?.code === 200 && Array.isArray(response.data.data)) {
-      categories.value = buildCategoryTree(response.data.data)
+    if (response?.code === 200 && Array.isArray(response.data)) {
+      categories.value = buildCategoryTree(response.data)
       console.log('加载分类成功:', categories.value)
     } else {
-      console.error('API返回的数据格式错误:', response.data)
+      console.error('API返回的数据格式错误:', response)
       categories.value = []
       toast.add({
         severity: 'error',
         summary: '错误',
-        detail: response.data?.message || '加载分类失败'
+        detail: response?.message || '加载分类失败'
       })
     }
   } catch (error) {
@@ -345,11 +346,10 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
     let result
     if (editingCategory.value) {
       // 更新分类
-      result = await client.api.categories({ id: editingCategory.value.id }).put(requestData)
+      result = await handleApiRes(client.api.categories({ id: editingCategory.value.id }).put(requestData), false)
     } else {
       // 创建分类
-      result = await client.api.categories.post(requestData)
-
+      result = await handleApiRes(client.api.categories.post(requestData), false)
     }
     console.log("xxx", result)
     if (result.status == 200 && result.data.code === 200) {
@@ -384,7 +384,7 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 const toggleVisibility = async (categoryId: string) => {
   try {
     loading.value = true // 添加加载状态
-    const response = await client.api.categories({ id: categoryId })['toggle'].patch()
+    const response = await handleApiRes(client.api.categories({ id: categoryId })['toggle'].patch(), false)
 
     if (response.status === 200 && response.data.code == 200) {
       toast?.add({ severity: 'success', summary: '成功', detail: '显示状态更新成功' })

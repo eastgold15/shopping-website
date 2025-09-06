@@ -1,7 +1,8 @@
 /**
  * 通用 API 调用包装器，自动处理错误提示
  * @param apiPromise API 调用的 Promise
- * @returns 如果成功返回 response.data，失败返回 null 并显示错误消息
+ * @param showToast 是否显示错误提示（默认为 true）
+ * @returns 如果成功返回 response.data，失败抛出错误并显示错误消息
  */
 export async function handleApiRes<T>(
 	apiPromise: Promise<{
@@ -10,16 +11,43 @@ export async function handleApiRes<T>(
 		data?: T;
 		[key: string]: any;
 	}>,
-): Promise<T | null> {
+	showToast: boolean = true,
+): Promise<T> {
 	try {
 		const response = await apiPromise;
 		console.log("response", response);
+		
 		if (response.status !== 200) {
-			throw new Error(response.message || "请求失败");
+			const errorMessage = response.message || "请求失败";
+			if (showToast) {
+				showErrorToast(errorMessage);
+			}
+			throw new Error(errorMessage);
 		}
 
-		return response.data ?? null;
+		return response.data;
 	} catch (error) {
+		if (showToast && error instanceof Error) {
+			showErrorToast(error.message);
+		}
 		throw error;
 	}
+}
+
+/**
+ * 显示错误提示的辅助函数
+ */
+function showErrorToast(message: string) {
+	// 动态导入 toast 以避免循环依赖
+	import('primevue/usetoast').then(({ useToast }) => {
+		const toast = useToast();
+		toast.add({
+			severity: 'error',
+			summary: '错误',
+			detail: message,
+			life: 3000
+		});
+	}).catch(() => {
+		console.error('Toast 通知失败:', message);
+	});
 }

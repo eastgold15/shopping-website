@@ -5,6 +5,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Advertisement } from '../types/advertisement';
 import type { Products } from '../types/product';
+import { client } from '@frontend/utils/useTreaty';
 import { handleApiRes } from '../utils/handleApi';
 import { useToast } from 'primevue/usetoast';
 

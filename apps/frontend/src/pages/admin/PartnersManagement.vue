@@ -15,7 +15,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
-import { client } from '@/share/useTreaty'
+import { client } from '@frontend/utils/useTreaty'
 import ImageSelector from '@/app/components/ImageSelector.vue'
 
 // 类型定义

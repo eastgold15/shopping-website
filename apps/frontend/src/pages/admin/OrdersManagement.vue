@@ -18,7 +18,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { client } from '@/share/useTreaty'
+import { client } from '@frontend/utils/useTreaty'
 
 // 类型定义
 interface Order {

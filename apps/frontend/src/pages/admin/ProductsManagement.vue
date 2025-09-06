@@ -20,7 +20,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Category } from '@/app/types/category'
 import type { Product, ProductForm } from '@/app/types/product'
-import { client } from '@/share/useTreaty'
+import { client } from '@frontend/utils/useTreaty'
 import ImageSelector from '@/app/components/ImageSelector.vue'
 import { handleApiRes } from '@/app/utils/handleApi'
 

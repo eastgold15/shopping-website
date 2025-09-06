@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { client } from '@/share/useTreaty';
+import { client } from '@frontend/utils/useTreaty';
 import { onMounted, ref } from 'vue';
 import type { CategoryTree } from '../types/layout';
 import { handleApiRes } from '../utils/handleApi';

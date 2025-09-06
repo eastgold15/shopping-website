@@ -5,7 +5,7 @@ import Menu from 'primevue/menu';
 import { onMounted, ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import CategoryNav from '../components/CategoryNav.vue';
-import { client } from '@/share/useTreaty';
+import { client } from '@frontend/utils/useTreaty';
 import { handleApiRes } from '../utils/handleApi';
 import type { FooterConfig, FooterSection } from '../types/layout';
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // PrimeVue 组件
 import ImageSelector from '@/app/components/ImageSelector.vue'
-import { client } from '@/share/useTreaty'
+import { client } from '@frontend/utils/useTreaty'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
@@ -169,7 +169,7 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 			saving.value = true
 
 			// 调用API创建商品
-			const { data, error } = await client.api.products.post(values)
+			const data = await handleApiRes(client.api.products.post(values))
 
 			if (data) {
 				toast.add({
@@ -218,7 +218,7 @@ const saveDraft = async ({ valid, values }: { valid: boolean; values: any }) => 
 		}
 
 		// 调用API创建商品
-		const { data, error } = await client.api.products.post(productData)
+		const data = await handleApiRes(client.api.products.post(productData))
 
 		if (data) {
 			toast.add({
@@ -263,7 +263,7 @@ const publishProduct = async ({ valid, values }: { valid: boolean; values: any }
 		}
 
 		// 调用API创建商品
-		const { data, error } = await client.api.products.post(productData)
+		const data = await handleApiRes(client.api.products.post(productData))
 
 		if (data) {
 			toast.add({
@@ -374,11 +374,10 @@ const removeImage = (index: number) => {
 // 加载商品分类
 const loadCategories = async () => {
 	try {
-		const { data, error } = await client.api.categories.tree.get()
+		const data = await handleApiRes(client.api.categories.tree.get())
 		if (data && data.code === 200) {
 			categories.value = data.data || []
 		} else {
-			console.error('获取分类失败:', error)
 			categories.value = []
 		}
 	} catch (error) {

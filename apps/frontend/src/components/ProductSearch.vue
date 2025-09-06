@@ -116,7 +116,7 @@ import Paginator from 'primevue/paginator';
 import Tag from 'primevue/tag';
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { client } from '@/share/useTreaty';
+import { client } from '@frontend/utils/useTreaty';
 import ProductCard from './ProductCard.vue';
 import { handleApiRes } from '../utils/handleApi';
 
@@ -221,11 +221,9 @@ const handleSearch = async () => {
     if (filters.sizes.length) params.append('sizes', filters.sizes.join(','));
     if (filters.tags.length) params.append('tags', filters.tags.join(','));
 
-    const { data, error } = await client.api.products.search.get({ query: Object.fromEntries(params) });
+    const data = await handleApiRes(client.api.products.search.get({ query: Object.fromEntries(params) }));
     if (data) {
       searchResults.value = data;
-    } else {
-      console.error('搜索失败:', error);
     }
   } catch (error) {
     console.error('搜索失败:', error);
@@ -333,19 +331,19 @@ const viewAllProducts = () => {
 const loadInitialData = async () => {
   try {
     // 加载热门搜索关键词
-    const { data: termsData } = await client.api.products.search['popular-terms'].get();
+    const termsData = await handleApiRes(client.api.products.search['popular-terms'].get());
     if (termsData) {
       popularTerms.value = termsData;
     }
 
     // 加载分类列表
-    const { data: categoriesData } = await client.api.categories.get();
+    const categoriesData = await handleApiRes(client.api.categories.get());
     if (categoriesData) {
       categories.value = categoriesData;
     }
 
     // 加载筛选选项
-    const { data: optionsData } = await client.api.products['filter-options'].get();
+    const optionsData = await handleApiRes(client.api.products['filter-options'].get());
     if (optionsData) {
       filterOptions.value = optionsData;
     }

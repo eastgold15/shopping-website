@@ -303,7 +303,7 @@ import TabView from 'primevue/tabview'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, reactive, ref } from 'vue'
-import { client } from '@/share/useTreaty'
+import { client } from '@frontend/utils/useTreaty'
 
 // 组合式API
 const toast = useToast()

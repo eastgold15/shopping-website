@@ -143,11 +143,10 @@ const visibleCategories = computed(() => {
 const loadCategories = async () => {
 	loading.value = true;
 	try {
-		const { data, error } = await client.api.categories.tree.get();
+		const data = await handleApiRes(client.api.categories.tree.get());
 		if (data && Array.isArray(data)) {
 			categories.value = data.filter((cat: Category) => cat.isVisible);
 		} else {
-			console.error('获取分类失败:', error);
 			categories.value = [];
 		}
 	} catch (error) {

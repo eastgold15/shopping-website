@@ -20,7 +20,7 @@ import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
 import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
-import { client } from '@/share/useTreaty';
+import { client } from '@frontend/utils/useTreaty';
 import type { ImageListQueryDto, UpdateImageDto, BatchDeleteImageDto } from '@/server/src/routes/images.model';
 import { formatSize,formatFileSize, formatDate, generateId, getImageUrl, copyToClipboard, openInNewTab } from '@/share/utils/formatUtils';
 

@@ -8,7 +8,7 @@ import InputGroupAddon from 'primevue/inputgroupaddon';
 import Paginator from 'primevue/paginator';
 import ProgressSpinner from 'primevue/progressspinner';
 import { computed, onMounted, ref, watch } from 'vue';
-import { client } from '@/share/useTreaty';
+import { client } from '@frontend/utils/useTreaty';
 import { formatSize, formatDate, getImageUrl } from '@/share/utils/formatUtils';
 import { useToast } from 'primevue/usetoast';
 import { handleApiRes } from '../utils/handleApi';

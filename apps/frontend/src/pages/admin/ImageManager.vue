@@ -15,7 +15,7 @@ import { computed, onMounted, ref } from 'vue';
 import FileUpload from 'primevue/fileupload';
 import ProgressBar from 'primevue/progressbar';
 import Badge from 'primevue/badge';
-import { client } from '@/share/useTreaty';
+import { client } from '@frontend/utils/useTreaty';
 import type { ImageListQueryDto, UpdateImageDto, BatchDeleteImageDto } from '@/server/src/routes/images.model';
 import { formatSize, formatDate, generateId, getImageUrl, copyToClipboard, openInNewTab } from '@/share/utils/formatUtils';
 
