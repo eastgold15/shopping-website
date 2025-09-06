@@ -1,0 +1,92 @@
+# 1Panel 管理 - 统一部署配置
+# 单容器包含前端、后端和反向代理的完整解决方案
+
+version: '3.8'
+
+services:
+  shopping-website:
+    # 使用统一构建的镜像
+    image: shopping-website:latest
+    container_name: shopping-website
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "80:80"      # HTTP 端口
+      - "443:443"    # HTTPS 端口
+      - "2019:2019"  # Caddy 管理端口
+    
+    # 环境变量配置
+    environment:
+      # 应用配置
+      - NODE_ENV=production
+      - APP_PORT=3001
+      
+      # 域名配置（修改为你的实际域名）
+      - DOMAIN=${DOMAIN:-localhost}
+      
+      # 数据库配置
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      
+      # JWT 配置
+      - JWT_SECRET=${JWT_SECRET}
+      
+      # 文件上传配置
+      - UPLOAD_DIR=/var/www/uploads
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      
+      # CORS 配置
+      - CORS_ORIGIN=https://${DOMAIN:-localhost}
+    
+    # 数据卷挂载（可选）
+    volumes:
+      # 持久化上传文件
+      - uploads_data:/var/www/uploads
+      # 持久化 Caddy 数据（SSL 证书等）
+      - caddy_data:/data
+      - caddy_config:/config
+      # 持久化日志
+      - logs_data:/var/log/caddy
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # 网络配置
+    networks:
+      - shopping-network
+    
+    # 资源限制（可选）
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+# 数据卷定义
+volumes:
+  uploads_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+  logs_data:
+    driver: local
+
+# 网络定义
+networks:
+  shopping-network:
+    driver: bridge

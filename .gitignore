@@ -75,3 +75,9 @@ package-lock.json
 
 
 apps/backend/src/docker
+apps/backend/docker
+apps/backend/server.exe
+deploy
+
+apps/backend/.env.production
+**.env.*

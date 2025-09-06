@@ -1,122 +1,76 @@
-import { cors } from "@elysiajs/cors";
-import { html } from "@elysiajs/html";
-import { staticPlugin } from "@elysiajs/static";
-import { swagger } from "@elysiajs/swagger";
-import { elysiaAuthDrizzlePlugin } from "@pori15/elysia-auth-drizzle";
-import { Elysia } from "elysia";
+import { Elysia, redirect } from "elysia";
+import { categoriesRoute } from './routes/categories';
+import { productsRoute } from './routes/products';
+import { siteConfigsRoute } from './routes/siteConfigs';
 
-import { autoload } from "elysia-autoload";
-import { envConfig } from "./config/env.ts";
-import { db } from "./db/connection.ts";
-import { tokenSchema, userSchema } from "./db/schema/auth.ts";
-import { logPlugin } from "./plugins/logger.ts";
-import { err_handler } from "./utils/err.global.ts";
+import { openapi } from '@elysiajs/openapi';
+import { fromTypes } from '@elysiajs/openapi/gen';
+import { logPlugin } from "./plugins/logger";
+import { advertisementsRoute } from './routes/advertisements';
+import { imagesRoute } from './routes/images';
+import { ordersRoute } from './routes/orders';
+import { partnersRoute } from './routes/partners';
+import { statisticsRoute } from './routes/statistics';
+import { uploadRoute } from './routes/upload';
+import { usersRoute } from './routes/users';
+import { err_handler } from "./utils/err.global";
 
-// 创建 Elysia 应用
-export const app = new Elysia()
-	// // 日志
-	.use(logPlugin)
-	// 静态文件服务
-	.use(staticPlugin())
-	.use(cors())
-	// 认证插件
-	.use(
-		elysiaAuthDrizzlePlugin({
-			jwtSecret: envConfig.get("JWT_SECRET") || "your-jwt-secret-key",
-			cookieSecret: envConfig.get("COOKIE_SECRET") || "your-cookie-secret-key",
-			drizzle: {
-				db,
-				usersSchema: userSchema,
-				tokensSchema: tokenSchema,
-			},
-			getTokenFrom: {
-				from: "header", // 从请求头获取token
-				headerName: "authorization",
-			},
-			PublicUrlConfig: [
-				{ url: "/", method: "*" },
-				{ url: "/register", method: "*" },
-				{ url: "/login", method: "*" },
-				{ url: "**", method: "*" },
-			],
-		}),
-	)
+console.log("111", import.meta.dir)
+// 构建时版本号 - 避免运行时依赖package.json
+const APP_VERSION = "1.0.71"; // 构建时手动更新或通过构建脚本注入
 
-	// // swagger 文档
-	.use(
-		swagger({
-			path: "/swagger",
-			documentation: {
-				info: {
-					title: "末世机械师 API",
-					version: "1.0.0",
-					description: "末世机械师游戏后端API文档",
-				},
-				tags: [
-					{ name: "System", description: "系统相关接口" },
-					{ name: "Auth", description: "用户认证相关接口" },
-					{ name: "User", description: "用户管理相关接口" },
-					{ name: "Weapon", description: "武器管理相关接口" },
-					{ name: "Stage", description: "关卡管理相关接口" },
-					{ name: "Monster", description: "怪物管理相关接口" },
-				],
-			},
-		}),
-	)
-	// 自动加载路由 - 配合swagger使用
-	.use(
-		// @ts-ignore
-		await autoload({
-			dir: "routes",
-			pattern: "**/*.{ts,tsx}",
-			// 在可执行文件中禁用类型生成，避免权限问题
-			// types: {
-			//   output: "types/routes.ts",
-			//   typeName: "Route",
-			// },
-			ignore: ["**/*.model.ts"],
-			tsconfigPath: "./tsconfig.json",
-			// @ts-ignore
-			schema: ({ path, url, detail }) => {
-				// 从URL中提取模块名作为标签
-				const segments = url.split("/").filter(Boolean);
-				const moduleName = segments[0] || "system";
-				const defaultTag =
-					moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+import path from 'path';
+export const app = new Elysia({ prefix: '/api' })
+  .get('/', redirect('/api/openapi'), {
+    detail: {
+      hide: true
+    }
+  })
+  .use(
+    openapi({
+      references: fromTypes('src/server.ts', {
+        projectRoot: path.join(import.meta.dir)
+      })
+    })
+  )
+  .use(logPlugin)
+  // 使用模块化路由
+  .use(categoriesRoute)
+  .use(productsRoute)
+  .use(siteConfigsRoute)
 
-				// 合并路由文件中的detail配置
-				return {
-					detail: {
-						...detail,
-						tags: detail?.tags || [defaultTag],
-						description:
-							detail?.description || `${defaultTag} 模块 - 自动加载自 ${path}`,
-						// operationId:
-						// 	detail?.operationId ||
-						// 	`${moduleName}_${path.split("/").pop()?.replace(".ts", "")}`,
-					},
-				};
-			},
-		}),
-	)
-	// // test
-	.use(html())
+  .use(advertisementsRoute)
+  .use(uploadRoute)
+  .use(imagesRoute)
+  .use(ordersRoute)
+  .use(usersRoute)
+  .use(statisticsRoute)
+  .use(partnersRoute)
+  //全局错误
+  .use(err_handler)
 
-	.get("/", () => {
-		return `	
-<html lang='en'>
-              <head>
-                  <title>末世机械师</title>
-              </head>
-              <body>
-                  <h1>Hello 末世机械师</h1>
-									<a href='/swagger'>查看文档</a>
-              </body>
-          </html>
-`;
-	})
+  .listen(Number(process.env.APP_PORT || "3000"));
 
-	// 全局错误处理中间件
-	.use(err_handler);
+(() => {
+  console.log(
+    `🦊 Elysia is running at ${process.env.APP_NAME}:: ${process.env.APP_HOST}:${process.env.APP_PORT}`,
+  );
 
-export type ElysiaApp = typeof app;
+  import.meta.env.NODE_ENV === "production" ?
+    (() => {
+      console.log("当前环境：生产环境: https://wx.cykycyky.top");
+      // 使用构建时硬编码的版本号，避免依赖package.json文件
+      console.log("版本号:", APP_VERSION);
+    })()
+    :
+    (() => {
+      console.log("当前环境：开发环境");
+      console.log("版本号:", APP_VERSION);
+    })();
+
+
+})()
+
+export type EndApp = typeof app
+
+

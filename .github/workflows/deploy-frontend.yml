@@ -1,0 +1,165 @@
+name: Deploy Frontend
+
+# 触发条件：推送到main分支且前端代码有变化
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/frontend/**'
+      - 'packages/**'
+      - '.github/workflows/deploy-frontend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'apps/frontend/**'
+      - 'packages/**'
+
+# 环境变量
+env:
+  FRONTEND_PATH: apps/frontend
+  NODE_VERSION: '18'
+  PNPM_VERSION: '10.4.0'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 检出代码
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 设置Node.js环境
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    # 设置pnpm
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+
+    # 获取pnpm store目录
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+    # 缓存pnpm依赖
+    - name: Setup pnpm cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    # 安装依赖
+    - name: Install dependencies
+      run: |
+        cd ${{ env.FRONTEND_PATH }}
+        pnpm install --frozen-lockfile
+
+    # 类型检查
+    - name: Type check
+      run: |
+        cd ${{ env.FRONTEND_PATH }}
+        pnpm run type-check
+
+    # 代码检查
+    - name: Lint check
+      run: |
+        cd ${{ env.FRONTEND_PATH }}
+        pnpm run lint
+
+    # 构建应用
+    - name: Build application
+      run: |
+        cd ${{ env.FRONTEND_PATH }}
+        pnpm run build
+      env:
+        # 生产环境变量
+        VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+
+    # 压缩构建产物
+    - name: Compress build artifacts
+      run: |
+        cd ${{ env.FRONTEND_PATH }}
+        tar -czf frontend-dist.tar.gz -C dist .
+
+    # 上传构建产物到服务器
+    - name: Upload build to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT || 22 }}
+        source: "${{ env.FRONTEND_PATH }}/frontend-dist.tar.gz"
+        target: "/tmp/"
+
+    # 部署到服务器
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT || 22 }}
+        script: |
+          # 设置部署目录
+          DEPLOY_DIR="/var/www/shopping-frontend"
+          BACKUP_DIR="/var/www/shopping-frontend-backup-$(date +%Y%m%d-%H%M%S)"
+          
+          # 创建部署目录
+          sudo mkdir -p $DEPLOY_DIR
+          
+          # 备份当前版本
+          if [ -d "$DEPLOY_DIR" ] && [ "$(ls -A $DEPLOY_DIR)" ]; then
+            sudo cp -r $DEPLOY_DIR $BACKUP_DIR
+            echo "✅ 已备份当前版本到: $BACKUP_DIR"
+          fi
+          
+          # 清空部署目录
+          sudo rm -rf $DEPLOY_DIR/*
+          
+          # 解压新版本
+          cd $DEPLOY_DIR
+          sudo tar -xzf /tmp/${{ env.FRONTEND_PATH }}/frontend-dist.tar.gz
+          
+          # 设置权限
+          sudo chown -R www-data:www-data $DEPLOY_DIR
+          sudo chmod -R 755 $DEPLOY_DIR
+          
+          # 清理临时文件
+          rm -f /tmp/${{ env.FRONTEND_PATH }}/frontend-dist.tar.gz
+          
+          # 重启Nginx（如果使用Nginx）
+          sudo systemctl reload nginx || echo "Nginx reload failed, but continuing..."
+          
+          # 清理旧备份（保留最近5个）
+          cd /var/www
+          sudo ls -t shopping-frontend-backup-* 2>/dev/null | tail -n +6 | sudo xargs rm -rf
+          
+          echo "✅ 前端部署完成！"
+
+    # 健康检查
+    - name: Health check
+      run: |
+        sleep 10
+        curl -f ${{ secrets.FRONTEND_URL }} || exit 1
+      continue-on-error: true
+
+    # 通知部署结果
+    - name: Notify deployment result
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ 前端部署成功！"
+          echo "🌐 访问地址: ${{ secrets.FRONTEND_URL }}"
+        else
+          echo "❌ 前端部署失败！"
+        fi

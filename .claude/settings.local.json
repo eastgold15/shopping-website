@@ -9,7 +9,8 @@
       "Bash(pnpm install:*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
-      "Bash(pnpm dlx create-turbo:*)"
+      "Bash(pnpm dlx create-turbo:*)",
+      "Read(//c/Users/boer/**)"
     ],
     "deny": [],
     "ask": []

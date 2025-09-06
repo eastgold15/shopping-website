@@ -1,39 +1,21 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    "**/.env.*local"
-  ],
-  "globalEnv": [
-    "NODE_ENV",
-    "PORT"
-  ],
+  "$schema": "https://turborepo.com/schema.json",
   "tasks": {
-    "install": {
+    "i": {
       "cache": false
     },
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
       "outputs": [
-        "dist/**",
-        ".output/**"
+        "dist/**"
+      ]
+    },
+    "check-types": {
+      "dependsOn": [
+        "^check-types"
       ]
     },
     "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {
-      "outputs": []
-    },
-    "type-check": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": []
-    },
-    "clean": {
+      "persistent": true,
       "cache": false
     }
   }
