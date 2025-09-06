@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ImageSelector from "@/app/components/ImageSelector.vue";
-import { handleApiRes } from '@/app/utils/handleApi';
+import ImageSelector from "@frontend/components/ImageSelector.vue";
+import { handleApiRes } from '@frontend/utils/handleApi';
 import { client } from "@frontend/utils/useTreaty";
 import { Form, FormField } from '@primevue/forms';
 import { zodResolver } from '@primevue/forms/resolvers/zod';

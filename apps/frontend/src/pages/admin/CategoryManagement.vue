@@ -23,7 +23,7 @@ import { z } from 'zod'
 
 
 import { client } from '@frontend/utils/useTreaty'
-import { handleApiRes } from '../utils/handleApi'
+import { handleApiRes } from '../utils/handleApiRes'
 
 
 

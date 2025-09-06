@@ -1,4 +1,5 @@
-import { Elysia, redirect } from "elysia";
+import { redirect } from "elysia";
+import Elysia from 'elysia';
 import { categoriesRoute } from './routes/categories';
 import { productsRoute } from './routes/products';
 import { siteConfigsRoute } from './routes/siteConfigs';

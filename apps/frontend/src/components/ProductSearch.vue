@@ -77,8 +77,24 @@
 
       <!-- 商品列表 -->
       <div v-if="searchResults?.products.length" class="products-grid">
-        <ProductCard v-for="product in searchResults.products" :key="product.id" :product="product"
-          @click="goToProduct(product)" />
+        <div v-for="product in searchResults.products" :key="product.id" class="product-card"
+          @click="goToProduct(product)">
+          <div class="product-image">
+            <img :src="product.images?.[0] || '/placeholder-product.png'" :alt="product.name" />
+          </div>
+          <div class="product-info">
+            <h3 class="product-name">{{ product.name }}</h3>
+            <div class="product-price">
+              <span class="current-price">${{ product.price }}</span>
+              <span v-if="product.comparePrice && product.comparePrice > product.price" class="original-price">
+                ${{ product.comparePrice }}
+              </span>
+            </div>
+            <div v-if="product.categoryName" class="product-category">
+              {{ product.categoryName }}
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 空状态 -->
@@ -90,9 +106,9 @@
       </div>
 
       <!-- 分页 -->
-      <div v-if="searchResults && searchResults.total > searchResults.limit" class="pagination">
-        <Paginator :rows="searchResults.limit" :total-records="searchResults.total"
-          :first="(searchResults.page - 1) * searchResults.limit" @page="handlePageChange" />
+      <div v-if="searchResults && searchResults.total > searchResults.pageSize" class="pagination">
+        <Paginator :rows="searchResults.pageSize" :total-records="searchResults.total"
+          :first="(searchResults.page - 1) * searchResults.pageSize" @page="handlePageChange" />
       </div>
     </div>
 
@@ -117,35 +133,42 @@ import Tag from 'primevue/tag';
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { client } from '@frontend/utils/useTreaty';
-import ProductCard from './ProductCard.vue';
-import { handleApiRes } from '../utils/handleApi';
+import { handleApiRes } from '../utils/handleApiRes';
 
 interface Product {
   id: string;
   name: string;
   slug: string;
+  description: string;
+  shortDescription: string;
   price: number;
-  salePrice?: number;
+  comparePrice?: number;
+  sku: string;
+  stock: number;
   images: string[];
   colors: string[];
   sizes: string[];
+  features: string[];
   categoryId?: string;
+  categoryName?: string;
   isActive: boolean;
   isFeatured: boolean;
+  weight: string;
+  dimensions: string;
+  materials: string[];
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  createdAt: string;
+  updatedAt: string;
 }
-
-const meta = reactive({
-  page: 0,
-  pageSize: 10,
-  total: 0,
-  pageTotal: 0
-})
 
 interface SearchResult {
   products: Product[];
-  query?: string;
-  filters: any;
-  sort: any;
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
 }
 
 interface FilterOptions {
@@ -205,23 +228,23 @@ const handleSearch = async () => {
   loading.value = true;
   try {
     const [sortBy, sortOrder] = sortOption.value.split('-');
-    const params = new URLSearchParams({
+    const params = {
       q: searchQuery.value,
       sortBy,
       sortOrder,
-      page: '1',
-      limit: '20'
-    });
+      page: 1,
+      pageSize: 20
+    };
 
     // 添加筛选条件
-    if (filters.categoryId) params.append('categoryId', filters.categoryId);
-    if (filters.minPrice) params.append('minPrice', filters.minPrice.toString());
-    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
-    if (filters.colors.length) params.append('colors', filters.colors.join(','));
-    if (filters.sizes.length) params.append('sizes', filters.sizes.join(','));
-    if (filters.tags.length) params.append('tags', filters.tags.join(','));
+    if (filters.categoryId) params.categoryId = filters.categoryId;
+    if (filters.minPrice) params.minPrice = filters.minPrice;
+    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+    if (filters.colors.length) params.colors = filters.colors;
+    if (filters.sizes.length) params.sizes = filters.sizes;
+    if (filters.tags.length) params.tags = filters.tags;
 
-    const data = await handleApiRes(client.api.products.search.get({ query: Object.fromEntries(params) }));
+    const data = await handleApiRes(client.api.products.search.get({ query: params }));
     if (data) {
       searchResults.value = data;
     }
@@ -256,32 +279,25 @@ const searchWithPage = async (page: number) => {
   loading.value = true;
   try {
     const [sortBy, sortOrder] = sortOption.value.split('-');
-    const params = new URLSearchParams({
+    const params = {
       q: searchQuery.value,
       sortBy,
       sortOrder,
-      page: page.toString(),
-      limit: '20'
-    });
+      page,
+      pageSize: 20
+    };
 
     // 添加筛选条件
-    if (filters.categoryId) params.append('categoryId', filters.categoryId);
-    if (filters.minPrice) params.append('minPrice', filters.minPrice.toString());
-    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
-    if (filters.colors.length) params.append('colors', filters.colors.join(','));
-    if (filters.sizes.length) params.append('sizes', filters.sizes.join(','));
-    if (filters.tags.length) params.append('tags', filters.tags.join(','));
+    if (filters.categoryId) params.categoryId = filters.categoryId;
+    if (filters.minPrice) params.minPrice = filters.minPrice;
+    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+    if (filters.colors.length) params.colors = filters.colors;
+    if (filters.sizes.length) params.sizes = filters.sizes;
+    if (filters.tags.length) params.tags = filters.tags;
 
-    const res = await handleApiRes(client.api.products.search.get({ query: Object.fromEntries(params) }));
-    if (!res) {
-      return
-    }
-
-
-    if (res.code === 200) {  // 成功
-      searchResults.value = res.data.items;
-    } else {
-      console.error('搜索失败:', error);
+    const data = await handleApiRes(client.api.products.search.get({ query: params }));
+    if (data) {
+      searchResults.value = data;
     }
   } catch (error) {
     console.error('搜索失败:', error);
@@ -440,6 +456,43 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+}
+
+.product-card {
+  @apply bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105;
+}
+
+.product-image {
+  @apply relative overflow-hidden;
+  height: 200px;
+}
+
+.product-image img {
+  @apply w-full h-full object-cover;
+}
+
+.product-info {
+  @apply p-4;
+}
+
+.product-name {
+  @apply text-lg font-semibold text-gray-800 mb-2 line-clamp-2;
+}
+
+.product-price {
+  @apply flex items-center gap-2 mb-2;
+}
+
+.current-price {
+  @apply text-xl font-bold text-primary;
+}
+
+.original-price {
+  @apply text-sm text-gray-500 line-through;
+}
+
+.product-category {
+  @apply text-sm text-gray-600;
 }
 
 .empty-state {

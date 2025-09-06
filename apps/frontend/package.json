@@ -3,13 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "pnpm@10.4.0",
+  "packageManager": "bun@1.2.21",
   "scripts": {
-    "i": "pnpm install",
+    "i": "bun install",
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "clean": "rimraf node_modules  pnpm-lock.yaml  dist",
+    "clean": "rimraf node_modules bun.lockb dist",
     "type-check": "vue-tsc --noEmit",
     "lint": "biome check src",
     "lint:fix": "biome check --apply src"
@@ -37,7 +37,7 @@
     "vite": "^7.1.4",
     "vue-tsc": "^3.0.6"
   },
-  "pnpm": {
+  "bun": {
     "ignoredBuiltDependencies": [
       "esbuild"
     ]
