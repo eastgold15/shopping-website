@@ -4,10 +4,10 @@
  * 请勿手动修改此文件
  */
 
-import { t } from 'elysia'
 import { createInsertSchema, createSelectSchema } from 'drizzle-typebox'
+import { t } from 'elysia'
 import { spreads } from '../utils/dizzle.type'
-import { dbSchema, tableNames } from './schema/index'
+import { dbSchema } from './schema/index'
 
 /**
  * 数据库 TypeBox 配置

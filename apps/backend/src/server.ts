@@ -29,19 +29,18 @@ export const app = new Elysia({ prefix: '/api' })
       hide: true
     }
   })
-  .use(
-    openapi({
-      references: fromTypes('src/server.ts', {
-        projectRoot: path.join(import.meta.dir)
-      })
-    })
-  )
+  // .use(
+  //   openapi({
+  //     references: fromTypes('server.ts', {
+  //       projectRoot: path.join(import.meta.dir)
+  //     })
+  //   })
+  // )
   .use(logPlugin)
   // 使用模块化路由
   .use(categoriesRoute)
   .use(productsRoute)
   .use(siteConfigsRoute)
-
   .use(advertisementsRoute)
   .use(uploadRoute)
   .use(imagesRoute)
