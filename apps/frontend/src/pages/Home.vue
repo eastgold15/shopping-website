@@ -112,7 +112,7 @@ import BannerAds from '../components/BannerAds.vue';
 import CategoryNavigation from '@frontend/components/CategoryNavigation.vue';
 import Rating from 'primevue/rating';
 import type { Product } from '../types/product';
-import { client } from '@frontend/utils/useTreaty';
+
 // 路由
 const router = useRouter();
 
@@ -129,18 +129,12 @@ const latestNews = ref<any[]>([]);
 const loadFeaturedProducts = async () => {
   loadingProducts.value = true;
   try {
-    const { data, error } = await client.api.products.get({
-      query: {
-        featured: true,
-        limit: 8
-      }
-    });
-    console.log("response", data)
-
-    if (data) {
-      featuredProducts.value = data.products || [];
+    const response = await api.getFeaturedProducts({ pageSize: 8 });
+    
+    if (response.success && response.data) {
+      featuredProducts.value = response.data;
     } else {
-      console.error('加载热门商品失败:', error);
+      console.error('加载热门商品失败:', response.error);
     }
   } catch (error) {
     console.error('加载热门商品失败:', error);

@@ -6,17 +6,15 @@
   "packageManager": "bun@1.2.21",
   "scripts": {
     "i": "bun install",
-    "dev": "bun run --watch index.ts",
-    "build": "bun build --compile --target bun --outfile server index.ts",
-    "start": "bun run index.ts",
-    "clean": "rm -rf dist server server.exe",
+    "dev": "bun run --watch src/server.ts",
+    "build": "bun build --compile --target bun --outfile server src/server.ts",
+    "clean": "rimraf dist  server.exe",
     "type-check": "bun --bun tsc --noEmit"
   },
   "dependencies": {
     "@elysiajs/openapi": "1.3.10",
     "@aws-sdk/client-s3": "^3.882.0",
     "@aws-sdk/s3-request-presigner": "^3.882.0",
-    "@elysiajs/eden": "^1.3.3",
     "@elysiajs/html": "^1.3.1",
     "@sinclair/typebox": "^0.34.0",
     "dotenv": "^17.2.2",
@@ -36,8 +34,5 @@
     "typescript": "^5.9.2",
     "drizzle-kit": "^0.31.4",
     "ts-morph": "^26.0.0"
-  },
-  "engines": {
-    "bun": ">=1.1.0"
   }
 }
