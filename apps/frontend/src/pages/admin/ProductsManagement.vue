@@ -18,11 +18,11 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Category } from '@/app/types/category'
-import type { Product, ProductForm } from '@/app/types/product'
+import type { Category } from '@frontend/app/types/category'
+import type { Product, ProductForm } from '@frontend/app/types/product'
 import { client } from '@frontend/utils/useTreaty'
-import ImageSelector from '@/app/components/ImageSelector.vue'
-import { handleApiRes } from '@/app/utils/handleApi'
+import ImageSelector from '@frontend/components/ImageSelector.vue'
+import { handleApiRes } from '@frontend/utils/handleApi'
 
 
 // 响应式数据

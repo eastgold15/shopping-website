@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // PrimeVue 组件
-import ImageSelector from '@frontend/components/ImageSelector'
+import ImageSelector from '@frontend/components/ImageSelector.vue'
 import { client } from '@frontend/utils/useTreaty'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'

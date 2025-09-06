@@ -1,5 +1,5 @@
 <script setup>
-import Counter from '@/app/components/count.vue'
+import Counter from '@frontend/components/count.vue'
 import { client } from '@frontend/utils/useTreaty';
 import { ref, onMounted } from 'vue';
 

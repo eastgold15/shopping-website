@@ -21,8 +21,8 @@ import Tab from 'primevue/tab';
 import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import { client } from '@frontend/utils/useTreaty';
-import type { ImageListQueryDto, UpdateImageDto, BatchDeleteImageDto } from '@/server/src/routes/images.model';
-import { formatSize,formatFileSize, formatDate, generateId, getImageUrl, copyToClipboard, openInNewTab } from '@/share/utils/formatUtils';
+import type { ImageListQueryDto, UpdateImageDto, BatchDeleteImageDto } from '@backend/server/src/routes/images.model';
+import { formatSize,formatFileSize, formatDate, generateId, getImageUrl, copyToClipboard, openInNewTab } from '@frontend/share/utils/formatUtils';
 
 // 图片数据类型
 interface ImageData {

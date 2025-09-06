@@ -23,7 +23,8 @@ import { z } from 'zod'
 
 
 import { client } from '@frontend/utils/useTreaty'
-import { handleApiRes } from '../utils/handleApiRes'
+import { handleApiRes } from '../../utils/handleApiRes'
+import type { CategoryTree, } from '@frontend/types/layout'
 
 
 
@@ -35,7 +36,7 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const searchKeyword = ref('')
 const filterStatus = ref('all')
 const showDialog = ref(false)
-const editingCategory = ref<Category | null>(null)
+const editingCategory = ref(null)
 
 
 

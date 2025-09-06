@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import GoogleLoginButton from '@/app/components/GoogleLoginButton.vue'
+import GoogleLoginButton from '@frontend/components/GoogleLoginButton.vue'
 
 // 路由
 const router = useRouter()
