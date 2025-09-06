@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import Drawer from 'primevue/drawer';
-import Button from 'primevue/button';
 import Avatar from 'primevue/avatar';
-import Menu from 'primevue/menu';
 import Badge from 'primevue/badge';
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
+import Menu from 'primevue/menu';
 import PanelMenu from 'primevue/panelmenu';
-import { useRouter, useRoute } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
 const route = useRoute();
@@ -127,6 +127,11 @@ const menuItems = ref([
 				label: '图片管理',
 				icon: 'pi pi-images',
 				command: () => router.push('/admin/images')
+			},
+			{
+				label: '资源管理',
+				icon: 'pi pi-images',
+				command: () => router.push('/admin/media')
 			},
 			{
 				label: '支付设置',

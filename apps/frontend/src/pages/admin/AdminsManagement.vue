@@ -1,27 +1,26 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
-
-// PrimeVue 组件
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
-import Calendar from 'primevue/calendar'
-import ToggleSwitch from 'primevue/toggleswitch'
-import Tag from 'primevue/tag'
-import ConfirmDialog from 'primevue/confirmdialog'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
+// PrimeVue 组件
+import Button from 'primevue/button'
+import Calendar from 'primevue/calendar'
 import Card from 'primevue/card'
-import Password from 'primevue/password'
+import Column from 'primevue/column'
+import ConfirmDialog from 'primevue/confirmdialog'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
+import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
+import Password from 'primevue/password'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
 
 // 类型定义
 interface Admin {
@@ -166,12 +165,12 @@ const adminStatistics = computed(() => {
         operator: 0,
         viewer: 0
     }
-    
+
     admins.value.forEach(admin => {
         stats[admin.status]++
         stats[admin.role]++
     })
-    
+
     return stats
 })
 
@@ -193,7 +192,7 @@ const loadAdmins = async () => {
 
         // 模拟API调用
         await new Promise(resolve => setTimeout(resolve, 500))
-        
+
         // 模拟数据
         const mockAdmins: Admin[] = [
             {
@@ -273,15 +272,15 @@ const loadAdmins = async () => {
                 position: '数据分析师'
             }
         ]
-        
+
         admins.value = mockAdmins
         total.value = mockAdmins.length
-        
+
     } catch (error) {
         console.error('加载管理员失败:', error)
         admins.value = []
         total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载管理员失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载管理员失败', life: 1000 })
     } finally {
         loading.value = false
     }
@@ -354,7 +353,7 @@ const closeDialog = () => {
 // 保存管理员
 const saveAdmin = async () => {
     if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段' })
+        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
         return
     }
 
@@ -363,12 +362,12 @@ const saveAdmin = async () => {
 
         if (editingAdmin.value) {
             // 更新
-            toast.add({ severity: 'success', summary: '成功', detail: '更新管理员成功' })
+            toast.add({ severity: 'success', summary: '成功', detail: '更新管理员成功', life: 1000 })
         } else {
             // 创建
             toast.add({ severity: 'success', summary: '成功', detail: '创建管理员成功' })
         }
-        
+
         closeDialog()
         loadAdmins()
     } catch (error) {
@@ -547,18 +546,22 @@ onMounted(() => {
             <!-- 工具栏 -->
             <div class="flex justify-between items-center mb-4">
                 <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadAdmins" class="p-button-outlined" size="small" />
-                    <Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small" :disabled="!selectedAdmins.length" />
-                    <Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small" :disabled="!selectedAdmins.length" />
+                    <Button label="刷新" icon="pi pi-refresh" @click="loadAdmins" class="p-button-outlined"
+                        size="small" />
+                    <Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small"
+                        :disabled="!selectedAdmins.length" />
+                    <Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small"
+                        :disabled="!selectedAdmins.length" />
                 </div>
                 <div class="flex gap-3">
-                    <InputText v-model="searchKeyword" placeholder="搜索用户名、姓名或邮箱..." class="w-64" @input="handleSearch" />
+                    <InputText v-model="searchKeyword" placeholder="搜索用户名、姓名或邮箱..." class="w-64"
+                        @input="handleSearch" />
                     <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
                     <Dropdown v-model="filterRole" :options="roleOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选角色" class="w-32" @change="handleFilter" />
-                    <Calendar v-model="filterDateRange" selectionMode="range" placeholder="创建日期范围" 
-                        class="w-48" @date-select="handleFilter" showIcon />
+                    <Calendar v-model="filterDateRange" selectionMode="range" placeholder="创建日期范围" class="w-48"
+                        @date-select="handleFilter" showIcon />
                 </div>
             </div>
         </div>
@@ -586,7 +589,7 @@ onMounted(() => {
                     <template #body="{ data }">
                         <div class="flex justify-center">
                             <Avatar v-if="data.avatar" :image="data.avatar" size="large" shape="circle" />
-                            <Avatar v-else :label="data.realName.charAt(0)" size="large" shape="circle" 
+                            <Avatar v-else :label="data.realName.charAt(0)" size="large" shape="circle"
                                 class="bg-blue-500 text-white" />
                         </div>
                     </template>
@@ -618,12 +621,13 @@ onMounted(() => {
                 <Column field="role" header="角色权限" class="w-[15%]">
                     <template #body="{ data }">
                         <div>
-                            <Tag :value="getRoleText(data.role)" :severity="getRoleSeverity(data.role)" class="text-xs mb-2" />
+                            <Tag :value="getRoleText(data.role)" :severity="getRoleSeverity(data.role)"
+                                class="text-xs mb-2" />
                             <div class="flex flex-wrap gap-1">
-                                <Badge v-for="permission in data.permissions.slice(0, 2)" :key="permission" 
+                                <Badge v-for="permission in data.permissions.slice(0, 2)" :key="permission"
                                     :value="permission.split('.')[0]" severity="info" class="text-xs" />
-                                <Badge v-if="data.permissions.length > 2" 
-                                    :value="`+${data.permissions.length - 2}`" severity="secondary" class="text-xs" />
+                                <Badge v-if="data.permissions.length > 2" :value="`+${data.permissions.length - 2}`"
+                                    severity="secondary" class="text-xs" />
                             </div>
                         </div>
                     </template>
@@ -633,11 +637,11 @@ onMounted(() => {
                 <Column field="status" header="状态" class="w-[10%]">
                     <template #body="{ data }">
                         <div class="flex items-center gap-2">
-                            <ToggleSwitch v-model="data.status" 
-                                :true-value="'active'" :false-value="'inactive'"
-                                @change="toggleAdminStatus(data)" class="scale-75" 
+                            <ToggleSwitch v-model="data.status" :true-value="'active'" :false-value="'inactive'"
+                                @change="toggleAdminStatus(data)" class="scale-75"
                                 :disabled="data.role === 'super_admin'" />
-                            <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)" class="text-xs" />
+                            <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)"
+                                class="text-xs" />
                         </div>
                     </template>
                 </Column>
@@ -669,13 +673,12 @@ onMounted(() => {
                             <Button icon="pi pi-eye" @click="router.push(`/admin/admins/${data.id}`)"
                                 class="p-button-info p-button-sm" v-tooltip.top="'查看详情'" />
                             <Button icon="pi pi-pencil" @click="showEditDialog(data)"
-                                class="p-button-warning p-button-sm" v-tooltip.top="'编辑'" 
+                                class="p-button-warning p-button-sm" v-tooltip.top="'编辑'"
                                 :disabled="data.role === 'super_admin' && data.id !== 1" />
-                            <Button icon="pi pi-key" @click="resetPassword(data)"
-                                class="p-button-secondary p-button-sm" v-tooltip.top="'重置密码'" />
-                            <Button icon="pi pi-trash" @click="confirmDelete(data)" 
-                                class="p-button-danger p-button-sm" v-tooltip.top="'删除'" 
-                                :disabled="data.role === 'super_admin'" />
+                            <Button icon="pi pi-key" @click="resetPassword(data)" class="p-button-secondary p-button-sm"
+                                v-tooltip.top="'重置密码'" />
+                            <Button icon="pi pi-trash" @click="confirmDelete(data)" class="p-button-danger p-button-sm"
+                                v-tooltip.top="'删除'" :disabled="data.role === 'super_admin'" />
                         </div>
                     </template>
                 </Column>
@@ -719,7 +722,7 @@ onMounted(() => {
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium mb-2">部门</label>
-                            <Dropdown v-model="adminForm.department" :options="departmentOptions" optionLabel="label" 
+                            <Dropdown v-model="adminForm.department" :options="departmentOptions" optionLabel="label"
                                 optionValue="value" placeholder="选择部门" class="w-full" />
                         </div>
                         <div>
@@ -732,19 +735,19 @@ onMounted(() => {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-2">角色</label>
-                        <Dropdown v-model="adminForm.role" :options="adminRoleOptions" optionLabel="label" 
+                        <Dropdown v-model="adminForm.role" :options="adminRoleOptions" optionLabel="label"
                             optionValue="value" placeholder="选择角色" class="w-full" />
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-2">权限</label>
-                        <MultiSelect v-model="adminForm.permissions" :options="permissionOptions" optionLabel="label" 
+                        <MultiSelect v-model="adminForm.permissions" :options="permissionOptions" optionLabel="label"
                             optionValue="value" placeholder="选择权限" class="w-full" display="chip" />
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-2">状态</label>
-                        <Dropdown v-model="adminForm.status" :options="adminStatusOptions" optionLabel="label" 
+                        <Dropdown v-model="adminForm.status" :options="adminStatusOptions" optionLabel="label"
                             optionValue="value" placeholder="选择状态" class="w-full" />
                     </div>
 
@@ -758,8 +761,8 @@ onMounted(() => {
             <template #footer>
                 <div class="flex justify-end gap-3">
                     <Button label="取消" @click="closeDialog" class="p-button-text" />
-                    <Button :label="editingAdmin ? '更新' : '创建'" @click="saveAdmin" 
-                        :loading="saving" :disabled="!isFormValid" />
+                    <Button :label="editingAdmin ? '更新' : '创建'" @click="saveAdmin" :loading="saving"
+                        :disabled="!isFormValid" />
                 </div>
             </template>
         </Dialog>
@@ -779,7 +782,7 @@ onMounted(() => {
     .header-section {
         @apply mb-4;
     }
-    
+
     .table-section {
         @apply overflow-x-auto;
     }

@@ -80,9 +80,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { $fetch } from 'ofetch'
-import { client } from '@frontend/utils/useTreaty'
+
+import { onMounted, ref } from 'vue'
+
 
 // 合作伙伴数据
 const partners = ref([])

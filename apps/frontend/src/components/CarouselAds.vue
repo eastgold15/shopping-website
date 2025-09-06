@@ -1,42 +1,21 @@
 <template>
 	<div class="carousel-ads" v-if="advertisements.length > 0">
-		<Carousel 
-			:value="advertisements" 
-			:numVisible="1" 
-			:numScroll="1" 
-			:autoplayInterval="autoplayInterval"
-			:showNavigators="showNavigators"
-			:showIndicators="showIndicators"
-			class="custom-carousel"
-		>
+		<Carousel :value="advertisements" :numVisible="1" :numScroll="1" :autoplayInterval="autoplayInterval"
+			:showNavigators="showNavigators" :showIndicators="showIndicators" class="custom-carousel">
 			<template #item="{ data }">
 				<div class="carousel-item">
-					<a 
-						v-if="data.link" 
-						:href="data.link" 
-						class="carousel-link"
+					<a v-if="data.link" :href="data.link" class="carousel-link"
 						:target="isExternalLink(data.link) ? '_blank' : '_self'"
-						:rel="isExternalLink(data.link) ? 'noopener noreferrer' : ''"
-					>
-						<img 
-							:src="data.image" 
-							:alt="data.title"
-							class="carousel-image"
-							@error="handleImageError"
-							@load="handleImageLoad"
-						/>
+						:rel="isExternalLink(data.link) ? 'noopener noreferrer' : ''">
+						<img :src="data.image" :alt="data.title" class="carousel-image" @error="handleImageError"
+							@load="handleImageLoad" />
 						<div v-if="showTitle" class="carousel-overlay">
 							<h3 class="carousel-title">{{ data.title }}</h3>
 						</div>
 					</a>
 					<div v-else class="carousel-item-no-link">
-						<img 
-							:src="data.image" 
-							:alt="data.title"
-							class="carousel-image"
-							@error="handleImageError"
-							@load="handleImageLoad"
-						/>
+						<img :src="data.image" :alt="data.title" class="carousel-image" @error="handleImageError"
+							@load="handleImageLoad" />
 						<div v-if="showTitle" class="carousel-overlay">
 							<h3 class="carousel-title">{{ data.title }}</h3>
 						</div>
@@ -44,14 +23,14 @@
 				</div>
 			</template>
 		</Carousel>
-		
+
 		<!-- 加载状态 -->
 		<div v-if="loading" class="carousel-loading">
 			<ProgressSpinner size="50px" strokeWidth="4" />
 			<p class="loading-text">加载中...</p>
 		</div>
 	</div>
-	
+
 	<!-- 空状态 -->
 	<div v-else-if="!loading" class="carousel-empty">
 		<div class="empty-content">
@@ -62,10 +41,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { client } from '@frontend/utils/useTreaty';
 import Carousel from 'primevue/carousel';
+import { computed, onMounted, ref } from 'vue';
+import { client } from '@/share/useTreaty';
 import type { Advertisement } from '../types/advertisement';
+import { handleApiRes } from '../utils/handleApi';
+import { useToast } from 'primevue/usetoast';
 
 // Props
 interface Props {
@@ -96,7 +77,7 @@ const props = withDefaults(defineProps<Props>(), {
 const loading = ref(false);
 const advertisements = ref<Advertisement[]>([]);
 const imageLoadErrors = ref<Set<string>>(new Set());
-
+const toast = useToast()
 // 计算属性
 const carouselStyle = computed(() => ({
 	height: props.height,
@@ -110,15 +91,25 @@ const carouselStyle = computed(() => ({
 const loadCarouselAds = async () => {
 	loading.value = true;
 	try {
-		const { data, error } = await client.api.advertisements.carousel.get();
-		
-		if (data) {
-			advertisements.value = data;
-		} else {
-			console.error('获取轮播图广告失败:', error);
-			advertisements.value = [];
+		const res = await handleApiRes(client.api.advertisements.carousel.get());
+
+		console.log("aaaa", res)
+
+		if (!res) {
+			throw new Error("加载轮播图广告失敗")
 		}
+
+		if (res.code == 200) {
+			advertisements.value = res.data as any
+		}
+
 	} catch (error) {
+		toast.add({
+			severity: 'error',
+			summary: '加载失败',
+			detail: (error as Error).message,
+			life: 3000
+		})
 		console.error('加载轮播图广告失败:', error);
 		advertisements.value = [];
 	} finally {
@@ -140,7 +131,7 @@ const isExternalLink = (url: string): boolean => {
 const handleImageError = (event: Event) => {
 	const img = event.target as HTMLImageElement;
 	const src = img.src;
-	
+
 	// 避免无限循环
 	if (!imageLoadErrors.value.has(src)) {
 		imageLoadErrors.value.add(src);
@@ -286,17 +277,17 @@ onMounted(() => {
 	.carousel-title {
 		@apply text-lg;
 	}
-	
+
 	.carousel-overlay {
 		@apply p-4;
 	}
-	
+
 	.custom-carousel :deep(.p-carousel-prev),
 	.custom-carousel :deep(.p-carousel-next) {
 		width: 40px;
 		height: 40px;
 	}
-	
+
 	.custom-carousel :deep(.p-carousel-indicators) {
 		@apply bottom-2;
 	}

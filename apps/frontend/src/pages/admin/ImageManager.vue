@@ -1,184 +1,23 @@
-<template>
-  <div class="image-manager">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h1 class="page-title">图片管理</h1>
-      <p class="page-description">管理网站中的所有图片资源，包括轮播图、Banner图、新闻图片等</p>
-    </div>
-
-    <!-- 操作工具栏 -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <!-- 分类筛选 -->
-        <Dropdown v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
-          placeholder="选择分类" class="category-filter" @change="filterByCategory" />
-        
-        <!-- 搜索框 -->
-        <span class="p-input-icon-left search-box">
-          <i class="pi pi-search" />
-          <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" />
-        </span>
-      </div>
-      
-      <div class="toolbar-right">
-        <!-- 批量操作 -->
-        <Button v-if="selectedImages.length > 0" icon="pi pi-trash" label="批量删除" severity="danger"
-          @click="confirmBatchDelete" class="batch-delete-btn" />
-        
-        <!-- 上传按钮 -->
-        <Button icon="pi pi-upload" label="上传图片" @click="showUploadDialog = true" class="upload-btn" />
-      </div>
-    </div>
-
-    <!-- 图片网格 -->
-    <div class="images-container">
-      <div v-if="loading" class="loading-container">
-        <ProgressSpinner />
-        <p>加载中...</p>
-      </div>
-      
-      <div v-else-if="filteredImages.length === 0" class="empty-state">
-        <i class="pi pi-image empty-icon"></i>
-        <h3>暂无图片</h3>
-        <p>点击上传按钮添加图片</p>
-      </div>
-      
-      <div v-else class="images-grid">
-        <div v-for="image in paginatedImages" :key="image.id" class="image-card"
-          :class="{ 'selected': selectedImages.includes(image.id) }">
-          <!-- 选择框 -->
-          <Checkbox v-model="selectedImages" :inputId="`img-${image.id}`" :value="image.id"
-            class="image-checkbox" />
-          
-          <!-- 图片预览 -->
-          <div class="image-preview" @click="previewImage(image)">
-            <img :src="image.url" :alt="image.fileName" class="preview-img" loading="lazy" />
-            <div class="image-overlay">
-              <Button icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-secondary"
-                @click.stop="previewImage(image)" v-tooltip="'预览'" />
-              <Button icon="pi pi-copy" class="p-button-rounded p-button-sm p-button-info"
-                @click.stop="copyImageUrl(image)" v-tooltip="'复制链接'" />
-              <Button icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning"
-                @click.stop="editImage(image)" v-tooltip="'编辑'" />
-              <Button icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger"
-                @click.stop="confirmDelete(image)" v-tooltip="'删除'" />
-            </div>
-          </div>
-          
-          <!-- 图片信息 -->
-          <div class="image-info">
-            <h4 class="image-name" :title="image.fileName">{{ image.fileName }}</h4>
-            <div class="image-meta">
-              <span class="image-category">{{ getCategoryLabel(image.category) }}</span>
-              <span class="image-size">{{ formatFileSize(image.fileSize) }}</span>
-            </div>
-            <div class="image-actions">
-              <small class="image-date">{{ formatDate(image.uploadDate) }}</small>
-              <div class="action-buttons">
-                <Button icon="pi pi-external-link" class="p-button-text p-button-sm"
-                  @click="openImageInNewTab(image)" v-tooltip="'在新标签页打开'" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 分页 -->
-    <div v-if="totalPages > 1" class="pagination-container">
-      <Paginator v-model:first="first" :rows="pageSize" :totalRecords="filteredImages.length"
-        :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
-    </div>
-
-    <!-- 上传对话框 -->
-    <Dialog v-model:visible="showUploadDialog" :modal="true" :closable="true" :draggable="false"
-      class="upload-dialog" header="上传图片">
-      <div class="upload-dialog-content">
-        <!-- 分类选择 -->
-        <div class="form-field">
-          <label for="upload-category">图片分类</label>
-          <Dropdown v-model="uploadCategory" :options="categoryOptions.filter(c => c.value !== 'all')"
-            optionLabel="label" optionValue="value" placeholder="选择分类" inputId="upload-category" />
-        </div>
-        
-        <!-- 图片上传组件 -->
-        <ImageUpload :folder="uploadCategory" :multiple="true" @uploaded="onImagesUploaded" @error="onUploadError" />
-      </div>
-    </Dialog>
-
-    <!-- 图片预览对话框 -->
-    <Dialog v-model:visible="showPreviewDialog" :modal="true" :closable="true" :draggable="false"
-      class="preview-dialog" :header="previewImageData?.fileName">
-      <div class="preview-dialog-content" v-if="previewImageData">
-        <img :src="previewImageData.url" :alt="previewImageData.fileName" class="preview-large-img" />
-        <div class="preview-info">
-          <div class="info-row">
-            <strong>文件名:</strong> {{ previewImageData.fileName }}
-          </div>
-          <div class="info-row">
-            <strong>分类:</strong> {{ getCategoryLabel(previewImageData.category) }}
-          </div>
-          <div class="info-row">
-            <strong>大小:</strong> {{ formatFileSize(previewImageData.fileSize) }}
-          </div>
-          <div class="info-row">
-            <strong>上传时间:</strong> {{ formatDate(previewImageData.uploadDate) }}
-          </div>
-          <div class="info-row">
-            <strong>URL:</strong>
-            <InputText :value="previewImageData.url" readonly class="url-input" />
-            <Button icon="pi pi-copy" class="p-button-sm" @click="copyImageUrl(previewImageData)" />
-          </div>
-        </div>
-      </div>
-    </Dialog>
-
-    <!-- 编辑图片对话框 -->
-    <Dialog v-model:visible="showEditDialog" :modal="true" :closable="true" :draggable="false"
-      class="edit-dialog" header="编辑图片">
-      <div class="edit-dialog-content" v-if="editImageData">
-        <div class="form-field">
-          <label for="edit-filename">文件名</label>
-          <InputText v-model="editImageData.fileName" inputId="edit-filename" />
-        </div>
-        
-        <div class="form-field">
-          <label for="edit-category">分类</label>
-          <Dropdown v-model="editImageData.category" :options="categoryOptions.filter(c => c.value !== 'all')"
-            optionLabel="label" optionValue="value" inputId="edit-category" />
-        </div>
-        
-        <div class="form-field">
-          <label for="edit-alt">Alt文本</label>
-          <InputText v-model="editImageData.altText" inputId="edit-alt" placeholder="图片描述" />
-        </div>
-      </div>
-      
-      <template #footer>
-        <Button label="取消" icon="pi pi-times" @click="showEditDialog = false" class="p-button-text" />
-        <Button label="保存" icon="pi pi-check" @click="saveImageEdit" :loading="saving" />
-      </template>
-    </Dialog>
-
-    <!-- 删除确认对话框 -->
-    <ConfirmDialog />
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
-import Dropdown from 'primevue/dropdown';
-import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
-import Dialog from 'primevue/dialog';
-import ProgressSpinner from 'primevue/progressspinner';
-import Paginator from 'primevue/paginator';
 import ConfirmDialog from 'primevue/confirmdialog';
-import ImageUpload from '../../components/ImageUpload.vue';
-import { $fetch } from 'ofetch';
+import Dialog from 'primevue/dialog';
+import Dropdown from 'primevue/dropdown';
+import InputText from 'primevue/inputtext';
+import InputGroup from 'primevue/inputgroup';
+import InputGroupAddon from 'primevue/inputgroupaddon';
+import Paginator from 'primevue/paginator';
+import ProgressSpinner from 'primevue/progressspinner';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
+import FileUpload from 'primevue/fileupload';
+import ProgressBar from 'primevue/progressbar';
+import Badge from 'primevue/badge';
+import { client } from '@/share/useTreaty';
+import type { ImageListQueryDto, UpdateImageDto, BatchDeleteImageDto } from '@/server/src/routes/images.model';
+import { formatSize, formatDate, generateId, getImageUrl, copyToClipboard, openInNewTab } from '@/share/utils/formatUtils';
 
 // 图片数据类型
 interface ImageData {
@@ -231,21 +70,21 @@ const categoryOptions = [
  */
 const filteredImages = computed(() => {
   let result = images.value;
-  
+
   // 按分类过滤
   if (selectedCategory.value !== 'all') {
     result = result.filter(img => img.category === selectedCategory.value);
   }
-  
+
   // 按搜索关键词过滤
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter(img => 
+    result = result.filter(img =>
       img.fileName.toLowerCase().includes(query) ||
       img.altText?.toLowerCase().includes(query)
     );
   }
-  
+
   return result;
 });
 
@@ -273,14 +112,15 @@ const totalPages = computed(() => {
 const loadImages = async () => {
   loading.value = true;
   try {
-    const response = await $fetch('/api/images');
-    if (response.success) {
-      images.value = response.data;
+    const response = await client.api.images.get();
+
+    console.log('加载图片成功:', response);
+    if (response.status === 200 && response.data.code == 200) {
+      images.value = response.data.data;
     } else {
-      throw new Error(response.error || '加载失败');
+      throw new Error(response.data?.error || '加载失败');
     }
   } catch (error) {
-    console.error('加载图片失败:', error);
     toast.add({
       severity: 'error',
       summary: '加载失败',
@@ -335,25 +175,24 @@ const editImage = (image: ImageData) => {
  */
 const saveImageEdit = async () => {
   if (!editImageData.value) return;
-  
+
   saving.value = true;
   try {
-    const response = await $fetch(`/api/images/${editImageData.value.id}`, {
-      method: 'PUT',
-      body: {
-        fileName: editImageData.value.fileName,
-        category: editImageData.value.category,
-        altText: editImageData.value.altText
-      }
-    });
-    
-    if (response.success) {
+    const updateData: UpdateImageDto = {
+      fileName: editImageData.value.fileName,
+      category: editImageData.value.category,
+      altText: editImageData.value.altText
+    };
+
+    const response = await client.api.images({ id: editImageData.value.id }).put(updateData);
+
+    if (response.status === 200 && response.data?.code == 200) {
       // 更新本地数据
       const index = images.value.findIndex(img => img.id === editImageData.value!.id);
       if (index !== -1) {
         images.value[index] = { ...editImageData.value };
       }
-      
+
       showEditDialog.value = false;
       toast.add({
         severity: 'success',
@@ -362,7 +201,7 @@ const saveImageEdit = async () => {
         life: 3000
       });
     } else {
-      throw new Error(response.error || '保存失败');
+      throw new Error(response.data?.error || '保存失败');
     }
   } catch (error) {
     console.error('保存失败:', error);
@@ -381,16 +220,16 @@ const saveImageEdit = async () => {
  * 复制图片URL
  */
 const copyImageUrl = async (image: ImageData) => {
-  try {
-    await navigator.clipboard.writeText(image.url);
+  const success = await copyToClipboard(getImageUrl(image.url));
+
+  if (success) {
     toast.add({
       severity: 'success',
       summary: '复制成功',
       detail: '图片链接已复制到剪贴板',
       life: 2000
     });
-  } catch (error) {
-    console.error('复制失败:', error);
+  } else {
     toast.add({
       severity: 'error',
       summary: '复制失败',
@@ -404,7 +243,7 @@ const copyImageUrl = async (image: ImageData) => {
  * 在新标签页打开图片
  */
 const openImageInNewTab = (image: ImageData) => {
-  window.open(image.url, '_blank');
+  openInNewTab(getImageUrl(image.url));
 };
 
 /**
@@ -438,17 +277,15 @@ const confirmBatchDelete = () => {
  */
 const deleteImage = async (imageId: string) => {
   try {
-    const response = await $fetch(`/api/images/${imageId}`, {
-      method: 'DELETE'
-    });
-    
-    if (response.success) {
+    const response = await client.api.images({ id: imageId }).delete();
+
+    if (response.status == 200 && response.data?.code == 200) {
       // 从列表中移除
       images.value = images.value.filter(img => img.id !== imageId);
-      
+
       // 从选中列表中移除
       selectedImages.value = selectedImages.value.filter(id => id !== imageId);
-      
+
       toast.add({
         severity: 'success',
         summary: '删除成功',
@@ -456,7 +293,7 @@ const deleteImage = async (imageId: string) => {
         life: 2000
       });
     } else {
-      throw new Error(response.error || '删除失败');
+      throw new Error(response.data?.error || '删除失败');
     }
   } catch (error) {
     console.error('删除失败:', error);
@@ -474,26 +311,25 @@ const deleteImage = async (imageId: string) => {
  */
 const batchDeleteImages = async () => {
   try {
-    const response = await $fetch('/api/images/batch', {
-      method: 'DELETE',
-      body: { imageIds: selectedImages.value }
-    });
-    
-    if (response.success) {
+    const batchDeleteData: BatchDeleteImageDto = {
+      imageIds: selectedImages.value
+    };
+
+    const response = await client.api.images.batch.delete(batchDeleteData);
+
+    if (response.status == 200 && response.data?.code == 200) {
       // 从列表中移除
       images.value = images.value.filter(img => !selectedImages.value.includes(img.id));
-      
       // 清空选中列表
       selectedImages.value = [];
-      
       toast.add({
         severity: 'success',
         summary: '删除成功',
-        detail: `已删除 ${response.data.deletedCount} 张图片`,
+        detail: `已删除 ${response.data.data.deletedCount} 张图片`,
         life: 3000
       });
     } else {
-      throw new Error(response.error || '批量删除失败');
+      throw new Error(response.data?.error || '批量删除失败');
     }
   } catch (error) {
     console.error('批量删除失败:', error);
@@ -506,45 +342,70 @@ const batchDeleteImages = async () => {
   }
 };
 
+// FileUpload 组件相关的响应式数据
+const totalSize = ref(0);
+const totalSizePercent = ref(0);
+const uploadFiles = ref([]);
+
 /**
- * 图片上传成功回调
+ * 获取上传URL
  */
-const onImagesUploaded = (uploadedImages: any[]) => {
-  // 添加到图片列表
-  const newImages: ImageData[] = uploadedImages.map(img => ({
-    id: generateId(),
-    fileName: img.fileName,
-    url: img.url,
-    category: uploadCategory.value,
-    fileSize: 0, // 需要从服务器获取
-    uploadDate: new Date().toISOString(),
-    altText: ''
-  }));
-  
-  images.value.unshift(...newImages);
-  
-  // 关闭上传对话框
-  showUploadDialog.value = false;
-  
-  toast.add({
-    severity: 'success',
-    summary: '上传成功',
-    detail: `成功上传 ${uploadedImages.length} 张图片`,
-    life: 3000
+const getUploadUrl = () => {
+  // 根据分类选择对应的上传接口
+
+  return `/api/upload/general/${uploadCategory.value}`
+};
+
+/**
+ * 文件选择回调
+ */
+const onSelectedFiles = (event: any) => {
+  uploadFiles.value = event.files;
+  uploadFiles.value.forEach((file: any) => {
+    totalSize.value += parseInt(formatSize(file.size));
   });
 };
 
 /**
- * 图片上传错误回调
+ * 移除待上传文件
  */
-const onUploadError = (error: string) => {
+const onRemoveTemplatingFile = (file: any, removeFileCallback: Function, index: number) => {
+  removeFileCallback(index);
+  totalSize.value -= parseInt(formatSize(file.size));
+  totalSizePercent.value = totalSize.value / 10;
+};
+
+/**
+ * 上传事件
+ */
+const uploadEvent = (callback: Function) => {
+  totalSizePercent.value = totalSize.value / 10;
+  callback();
+};
+
+/**
+ * 上传完成回调
+ */
+const onTemplatedUpload = (event: any) => {
   toast.add({
-    severity: 'error',
-    summary: '上传失败',
-    detail: error,
+    severity: 'success',
+    summary: '上传成功',
+    detail: '文件上传完成',
     life: 3000
   });
+
+  // 重新加载图片列表
+  loadImages();
+
+  // 关闭上传对话框
+  showUploadDialog.value = false;
+
+  // 重置上传状态
+  totalSize.value = 0;
+  totalSizePercent.value = 0;
 };
+
+
 
 /**
  * 获取分类标签
@@ -554,45 +415,251 @@ const getCategoryLabel = (category: string): string => {
   return option?.label || category;
 };
 
-/**
- * 格式化文件大小
- */
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
-  
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
 
-/**
- * 格式化日期
- */
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
 
-/**
- * 生成ID
- */
-const generateId = (): string => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-};
+
 
 // 生命周期
 onMounted(() => {
   loadImages();
 });
 </script>
+<template>
+  <div class="image-manager">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1 class="page-title">图片管理</h1>
+      <p class="page-description">管理网站中的所有图片资源，包括轮播图、Banner图、新闻图片等</p>
+    </div>
+
+    <!-- 操作工具栏 -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <!-- 分类筛选 -->
+        <Dropdown v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
+          placeholder="选择分类" class="category-filter" @change="filterByCategory" />
+
+        <!-- 搜索框 -->
+        <span class="p-input-icon-left search-box">
+
+          <InputGroup>
+            <InputGroupAddon>
+              <i class="pi pi-search" />
+            </InputGroupAddon>
+            <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" />
+          </InputGroup>
+
+
+        </span>
+      </div>
+
+      <div class="toolbar-right">
+        <!-- 批量操作 -->
+        <Button v-if="selectedImages.length > 0" icon="pi pi-trash" label="批量删除" severity="danger"
+          @click="confirmBatchDelete" class="batch-delete-btn" />
+
+        <!-- 上传按钮 -->
+        <Button icon="pi pi-upload" label="上传图片" @click="showUploadDialog = true" class="upload-btn" />
+      </div>
+    </div>
+
+    <!-- 图片网格 -->
+    <div class="images-container">
+      <div v-if="loading" class="loading-container">
+        <ProgressSpinner />
+        <p>加载中...</p>
+      </div>
+
+      <div v-else-if="filteredImages.length === 0" class="empty-state">
+        <i class="pi pi-image empty-icon"></i>
+        <h3>暂无图片</h3>
+        <p>点击上传按钮添加图片</p>
+      </div>
+
+      <div v-else class="images-grid">
+        <div v-for="image in paginatedImages" :key="image.id" class="image-card"
+          :class="{ 'selected': selectedImages.includes(image.id) }">
+          <!-- 选择框 -->
+          <Checkbox v-model="selectedImages" :inputId="`img-${image.id}`" :value="image.id" class="image-checkbox" />
+
+          <!-- 图片预览 -->
+          <div class="image-preview" @click="previewImage(image)">
+            <img :src="getImageUrl(image.url)" :alt="image.fileName" class="preview-img" loading="lazy" />
+            <div class="image-overlay">
+              <Button icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-secondary"
+                @click.stop="previewImage(image)" v-tooltip="'预览'" />
+              <Button icon="pi pi-copy" class="p-button-rounded p-button-sm p-button-info"
+                @click.stop="copyImageUrl(image)" v-tooltip="'复制链接'" />
+              <Button icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning"
+                @click.stop="editImage(image)" v-tooltip="'编辑'" />
+              <Button icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger"
+                @click.stop="confirmDelete(image)" v-tooltip="'删除'" />
+            </div>
+          </div>
+
+          <!-- 图片信息 -->
+          <div class="image-info">
+            <h4 class="image-name" :title="image.fileName">{{ image.fileName }}</h4>
+            <div class="image-meta">
+              <span class="image-category">{{ getCategoryLabel(image.category) }}</span>
+              <span class="image-size">{{ formatSize(image.fileSize) }}</span>
+            </div>
+            <div class="image-actions">
+              <small class="image-date">{{ formatDate(image.uploadDate) }}</small>
+              <div class="action-buttons">
+                <Button icon="pi pi-external-link" class="p-button-text p-button-sm" @click="openImageInNewTab(image)"
+                  v-tooltip="'在新标签页打开'" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="totalPages > 1" class="pagination-container">
+      <Paginator v-model:first="first" :rows="pageSize" :totalRecords="filteredImages.length"
+        :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
+    </div>
+
+    <!-- 上传对话框 -->
+    <Dialog v-model:visible="showUploadDialog" :modal="true" :closable="true" :draggable="false" class="upload-dialog"
+      header="上传图片">
+      <div class="upload-dialog-content">
+        <!-- 分类选择 -->
+        <div class="form-field">
+          <label for="upload-category">图片分类</label>
+          <Dropdown v-model="uploadCategory" :options="categoryOptions.filter(c => c.value !== 'all')"
+            optionLabel="label" optionValue="value" placeholder="选择分类" inputId="upload-category" />
+        </div>
+
+        <!-- 图片上传组件 -->
+        <FileUpload name="file" :url="getUploadUrl()" @upload="onTemplatedUpload($event)" :multiple="true"
+          accept="image/*" :maxFileSize="5000000" @select="onSelectedFiles">
+          <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
+            <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
+              <div class="flex gap-2">
+                <Button @click="chooseCallback()" icon="pi pi-images" rounded variant="outlined"
+                  severity="secondary"></Button>
+                <Button @click="uploadEvent(uploadCallback)" icon="pi pi-cloud-upload" rounded variant="outlined"
+                  severity="success" :disabled="!files || files.length === 0"></Button>
+                <Button @click="clearCallback()" icon="pi pi-times" rounded variant="outlined" severity="danger"
+                  :disabled="!files || files.length === 0"></Button>
+              </div>
+              <ProgressBar :value="totalSizePercent" :showValue="false" class="md:w-[20rem] h-1 w-full md:ml-auto">
+                <span class="whitespace-nowrap">{{ totalSize }}B / 5MB</span>
+              </ProgressBar>
+            </div>
+          </template>
+          <template #content="{ files, uploadedFiles, removeUploadedFileCallback, removeFileCallback }">
+            <div class="flex flex-col gap-8 pt-4">
+              <div v-if="files.length > 0">
+                <h5>待上传</h5>
+                <div class="flex flex-wrap gap-4">
+                  <div v-for="(file, index) of files" :key="file.name + file.type + file.size"
+                    class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
+                    <div>
+                      <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                    </div>
+                    <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name
+                      }}</span>
+                    <div>{{ formatSize(file.size) }}</div>
+                    <Badge value="待上传" severity="warn" />
+                    <Button icon="pi pi-times" @click="onRemoveTemplatingFile(file, removeFileCallback, index)"
+                      variant="outlined" rounded severity="danger" />
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="uploadedFiles.length > 0">
+                <h5>已完成</h5>
+                <div class="flex flex-wrap gap-4">
+                  <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size"
+                    class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
+                    <div>
+                      <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                    </div>
+                    <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name
+                      }}</span>
+                    <div>{{ formatSize(file.size) }}</div>
+                    <Badge value="已完成" class="mt-4" severity="success" />
+                    <Button icon="pi pi-times" @click="removeUploadedFileCallback(index)" variant="outlined" rounded
+                      severity="danger" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+          <template #empty>
+            <div class="flex items-center justify-center flex-col">
+              <i class="pi pi-cloud-upload !border-2 !rounded-full !p-8 !text-4xl !text-muted-color" />
+              <p class="mt-6 mb-0">拖拽文件到此处上传</p>
+            </div>
+          </template>
+        </FileUpload>
+      </div>
+    </Dialog>
+
+    <!-- 图片预览对话框 -->
+    <Dialog v-model:visible="showPreviewDialog" :modal="true" :closable="true" :draggable="false" class="preview-dialog"
+      :header="previewImageData?.fileName">
+      <div class="preview-dialog-content" v-if="previewImageData">
+        <img :src="getImageUrl(previewImageData.url)" :alt="previewImageData.fileName" class="preview-large-img" />
+        <div class="preview-info">
+          <div class="info-row">
+            <strong>文件名:</strong> {{ previewImageData.fileName }}
+          </div>
+          <div class="info-row">
+            <strong>分类:</strong> {{ getCategoryLabel(previewImageData.category) }}
+          </div>
+          <div class="info-row">
+            <strong>大小:</strong> {{ formatSize(previewImageData.fileSize) }}
+          </div>
+          <div class="info-row">
+            <strong>上传时间:</strong> {{ formatDate(previewImageData.uploadDate) }}
+          </div>
+          <div class="info-row">
+            <strong>URL:</strong>
+            <InputText :value="previewImageData.url" readonly class="url-input" />
+            <Button icon="pi pi-copy" class="p-button-sm" @click="copyImageUrl(previewImageData)" />
+          </div>
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- 编辑图片对话框 -->
+    <Dialog v-model:visible="showEditDialog" :modal="true" :closable="true" :draggable="false" class="edit-dialog"
+      header="编辑图片">
+      <div class="edit-dialog-content" v-if="editImageData">
+        <div class="form-field">
+          <label for="edit-filename">文件名</label>
+          <InputText v-model="editImageData.fileName" inputId="edit-filename" />
+        </div>
+
+        <div class="form-field">
+          <label for="edit-category">分类</label>
+          <Dropdown v-model="editImageData.category" :options="categoryOptions.filter(c => c.value !== 'all')"
+            optionLabel="label" optionValue="value" inputId="edit-category" />
+        </div>
+
+        <div class="form-field">
+          <label for="edit-alt">Alt文本</label>
+          <InputText v-model="editImageData.altText" inputId="edit-alt" placeholder="图片描述" />
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="取消" icon="pi pi-times" @click="showEditDialog = false" class="p-button-text" />
+        <Button label="保存" icon="pi pi-check" @click="saveImageEdit" :loading="saving" />
+      </template>
+    </Dialog>
+
+    <!-- 删除确认对话框 -->
+    <ConfirmDialog />
+  </div>
+</template>
+
+
 
 <style scoped>
 .image-manager {
@@ -779,21 +846,21 @@ onMounted(() => {
   .toolbar {
     @apply flex-col gap-4;
   }
-  
+
   .toolbar-left,
   .toolbar-right {
     @apply w-full justify-center;
   }
-  
+
   .category-filter,
   .search-box {
     @apply w-full;
   }
-  
+
   .images-grid {
     @apply grid-cols-2;
   }
-  
+
   .image-preview {
     height: 150px;
   }

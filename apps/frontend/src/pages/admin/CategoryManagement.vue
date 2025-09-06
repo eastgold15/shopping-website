@@ -1,14 +1,6 @@
 <script setup lang="ts">
-import { client } from '@frontend/utils/useTreaty'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, reactive, ref } from 'vue'
-import { z } from 'zod'
-
-// PrimeVue 组件
-import type { Category, CategoryTree } from '@frontend/types/category'
 import { Form, FormField } from '@primevue/forms'
+import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
@@ -23,6 +15,14 @@ import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import TreeSelect from 'primevue/treeselect'
 import TreeTable from 'primevue/treetable'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { z } from 'zod'
+// PrimeVue 组件
+
+
+import { handleApiRes } from '@/app/utils/handleApi'
 
 
 
@@ -66,7 +66,6 @@ const formResolver = zodResolver(
 
 // 单独的字段验证器
 const nameResolver = zodResolver(z.string().min(1, { message: '分类名称不能为空' }))
-const slugResolver = zodResolver(z.string().optional())
 const sortOrderResolver = zodResolver(z.number().min(0, { message: '排序值不能小于0' }))
 
 
@@ -81,8 +80,7 @@ const statusOptions = [
 
 // 工具函数
 const confirm = useConfirm()
-const toast = useToast()
-
+const toast = !import.meta.env.SSR ? useToast() : null
 // 计算属性
 const filteredCategories = computed(() => {
   let result = categories.value
@@ -156,59 +154,29 @@ const loadCategories = async () => {
 }
 
 const buildCategoryTree = (categoryList: Category[]): CategoryTree[] => {
-  const categoryMap = new Map<string, CategoryTree>()
-  const rootCategories: CategoryTree[] = []
+  // 使用共享库的buildTree方法构建基础树形结构
+  const treeNodes = buildTree(categoryList, 'id', 'parentId', 'children')
 
-  // 首先创建所有节点的映射
-  categoryList.forEach(category => {
-    categoryMap.set(category.id, {
-      key: category.id,
-      data: {
-        ...category,
-        // 保持数据类型一致
-        id: category.id,
-        parentId: category.parentId,
-        sortOrder: Number(category.sortOrder) || 0,
-        isVisible: Boolean(category.isVisible),
-        level: 0 // 初始化为0，后面会计算
-      },
-      children: []
-    })
-  })
-
-  // 构建树形结构
-  categoryList.forEach(category => {
-    const node = categoryMap.get(category.id)
-    if (!node) return
-
-    if (category.parentId) {
-      const parent = categoryMap.get(category.parentId)
-      if (parent && parent.children) {
-        parent.children.push(node)
-      } else {
-        // 如果找不到父节点，将其作为根节点
-        rootCategories.push(node)
-      }
-    } else {
-      rootCategories.push(node)
-    }
-  })
-
-  // 计算level并按sortOrder排序
-  const calculateLevelAndSort = (nodes: CategoryTree[], level: number = 0): CategoryTree[] => {
+  // 转换为CategoryTree格式并计算level、排序
+  const convertToTreeFormat = (nodes: any[], level: number = 0): CategoryTree[] => {
     return nodes
-      .sort((a, b) => (a.data.sortOrder || 0) - (b.data.sortOrder || 0))
+      .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0))
       .map(node => ({
-        ...node,
+        key: node.id,
         data: {
-          ...node.data,
+          ...node,
+          // 保持数据类型一致
+          id: node.id,
+          parentId: node.parentId,
+          sortOrder: Number(node.sortOrder) || 0,
+          isVisible: Boolean(node.isVisible),
           level: level
         },
-        children: node.children ? calculateLevelAndSort(node.children, level + 1) : []
+        children: node.children ? convertToTreeFormat(node.children, level + 1) : []
       }))
   }
 
-  return calculateLevelAndSort(rootCategories)
+  return convertToTreeFormat(treeNodes)
 }
 
 // 移除不需要的转换函数，直接使用 categories 数据结构
@@ -346,27 +314,27 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 
   console.log("value", values)
   if (!valid) {
-    toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
+    toast?.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
     return
   }
 
   try {
     saving.value = true
     loading.value = true // 添加加载状态
-    
+
     // 处理TreeSelect的parentId格式 - 从对象{key: true}转换为字符串key
-    let parentId = undefined
+    let parentId
     if (values.parentId && typeof values.parentId === 'object') {
       const keys = Object.keys(values.parentId)
       parentId = keys.length > 0 ? keys[0] : undefined
     } else if (typeof values.parentId === 'string') {
       parentId = values.parentId
     }
-    
+
     const requestData = {
       name: values.name?.trim() || '',
       slug: values.slug?.trim() || undefined,
-      parentId: parentId || undefined,
+      parentId: Number(parentId) || undefined,
       description: values.description?.trim() || undefined,
       sortOrder: Number(values.sortOrder) || 0,
       isVisible: Boolean(values.isVisible),
@@ -381,11 +349,11 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
     } else {
       // 创建分类
       result = await client.api.categories.post(requestData)
-    }
 
-    // 修复API响应处理 - 后端直接返回{code, message, data}格式
-    if (result.code === 200) {
-      toast.add({
+    }
+    console.log("xxx", result)
+    if (result.status == 200 && result.data.code === 200) {
+      toast?.add({
         severity: 'success',
         summary: '成功',
         detail: editingCategory.value ? '分类更新成功' : '分类创建成功'
@@ -393,15 +361,16 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
       closeDialog()
       await loadCategories()
     } else {
-      toast.add({
+      console.log(111)
+      toast?.add({
         severity: 'error',
         summary: '错误',
-        detail: result.message || '操作失败'
+        detail: result.data.data || '操作失败'
       })
     }
   } catch (error) {
     console.error('保存分类失败:', error)
-    toast.add({ severity: 'error', summary: '错误', detail: '保存分类失败' })
+    toast?.add({ severity: 'error', summary: '错误', detail: '保存分类失败' })
   } finally {
     saving.value = false
     loading.value = false // 确保加载状态重置
@@ -415,13 +384,13 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 const toggleVisibility = async (categoryId: string) => {
   try {
     loading.value = true // 添加加载状态
-    const response = await client.api.categories({ id: categoryId })['toggle-visibility'].patch()
+    const response = await client.api.categories({ id: categoryId })['toggle'].patch()
 
-    if (response.code === 200) {
-      toast.add({ severity: 'success', summary: '成功', detail: '显示状态更新成功' })
+    if (response.status === 200 && response.data.code == 200) {
+      toast?.add({ severity: 'success', summary: '成功', detail: '显示状态更新成功' })
       await loadCategories() // 重新加载数据
     } else {
-      toast.add({
+      toast?.add({
         severity: 'error',
         summary: '错误',
         detail: response.message || '更新显示状态失败'
@@ -429,8 +398,8 @@ const toggleVisibility = async (categoryId: string) => {
       await loadCategories() // 重新加载数据
     }
   } catch (error) {
-    console.error('更新显示状态失败:', error)
-    toast.add({
+
+    toast?.add({
       severity: 'error',
       summary: '错误',
       detail: error instanceof Error ? error.message : '更新显示状态失败'
@@ -454,24 +423,22 @@ const confirmDelete = (category: Category) => {
 const deleteCategory = async (categoryId: string) => {
   try {
     loading.value = true // 添加加载状态
-    const response = await client.api.categories({ id: categoryId }).delete()
+    const response = await handleApiRes(client.api.categories({ id: categoryId }).delete())
 
-    if (response.code === 200) {
-      toast.add({ severity: 'success', summary: '成功', detail: '分类删除成功' })
+    if (response.code == 200) {
+      toast?.add({ severity: 'success', summary: '成功', detail: '分类删除成功' })
       await loadCategories()
-    } else {
-      toast.add({
-        severity: 'error',
-        summary: '错误',
-        detail: response.message || '删除分类失败'
-      })
     }
+    else {
+      throw new Error(response.data.data || '删除分类失败')
+    }
+
   } catch (error) {
-    console.error('删除分类失败:', error)
-    toast.add({
+    toast?.add({
       severity: 'error',
-      summary: '错误',
-      detail: error instanceof Error ? error.message : '删除分类失败'
+      summary: 'http错误',
+      detail: error.message,
+      life: 1000
     })
   } finally {
     loading.value = false // 确保加载状态重置
@@ -607,7 +574,7 @@ const formatDate = (date: Date | string): string => {
         </FormField>
 
         <!-- URL标识符 -->
-        <FormField v-slot="$field" name="slug" :resolver="slugResolver" class="flex flex-col gap-1">
+        <FormField v-slot="$field" name="slug" class="flex flex-col gap-1">
           <label class="block text-sm font-medium mb-2">URL标识符 *</label>
           <InputText v-model="$field.value" type="text" placeholder="URL友好的标识符" class="w-full" />
           <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
@@ -650,7 +617,7 @@ const formatDate = (date: Date | string): string => {
         <!-- 分类图片 -->
         <FormField v-slot="$field" name="image" class="flex flex-col gap-1">
           <label class="block text-sm font-medium mb-2">分类图片</label>
-          <InputText v-model="$field.value" type="text" placeholder="分类图片URL" class="w-full" />
+          <InputText v-model="$field.value" type="text" placeholder="分类图片URL（不用填）" class="w-full" />
           <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
           </Message>
         </FormField>
@@ -676,6 +643,7 @@ const formatDate = (date: Date | string): string => {
 
     <!-- 删除确认对话框 -->
     <ConfirmDialog :loading="loading" />
+
   </div>
 </template>
 

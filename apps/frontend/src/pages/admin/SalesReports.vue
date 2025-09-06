@@ -333,19 +333,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useToast } from 'primevue/usetoast'
-
+import Badge from 'primevue/badge'
 // PrimeVue 组件
 import Button from 'primevue/button'
+import Calendar from 'primevue/calendar'
 import Card from 'primevue/card'
+import Chart from 'primevue/chart'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
 import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
-import Calendar from 'primevue/calendar'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Badge from 'primevue/badge'
-import Chart from 'primevue/chart'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 // 类型定义
 interface KPIData {

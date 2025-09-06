@@ -1,26 +1,22 @@
 <script setup lang="ts">
-import { reactive, ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useToast } from 'primevue/usetoast'
-import { client } from '@frontend/utils/useTreaty'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { z } from 'zod'
-
 // PrimeVue 组件
+import ImageSelector from '@/app/components/ImageSelector.vue'
+import { client } from '@/share/useTreaty'
 import { Form, FormField } from '@primevue/forms'
+import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
-import TreeSelect from 'primevue/treeselect'
 import Checkbox from 'primevue/checkbox'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import FileUpload from 'primevue/fileupload'
+import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
-import ProgressBar from 'primevue/progressbar'
-import Badge from 'primevue/badge'
+import TreeSelect from 'primevue/treeselect'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { z } from 'zod'
 
 const router = useRouter()
 const toast = useToast()
@@ -102,18 +98,11 @@ const formResolver = zodResolver(
 // 单独的字段验证器
 const nameResolver = zodResolver(z.string().min(1, { message: '商品名称不能为空' }).max(100, { message: '商品名称不能超过100个字符' }))
 const slugResolver = zodResolver(z.string().min(1, { message: 'URL标识符不能为空' }).regex(/^[a-z0-9-]+$/, { message: 'URL标识符只能包含小写字母、数字和连字符' }))
-const skuResolver = zodResolver(z.string().optional())
-const barcodeResolver = zodResolver(z.string().optional())
-const shortDescriptionResolver = zodResolver(z.string().max(200, { message: '简短描述不能超过200个字符' }).optional())
-const descriptionResolver = zodResolver(z.string().optional())
+
 const priceResolver = zodResolver(z.number().min(0.01, { message: '商品价格必须大于0' }))
-const comparePriceResolver = zodResolver(z.number().min(0, { message: '对比价格不能为负数' }).optional())
-const costResolver = zodResolver(z.number().min(0, { message: '成本价格不能为负数' }).optional())
+
 const stockResolver = zodResolver(z.number().min(0, { message: '库存数量不能为负数' }))
-const minStockResolver = zodResolver(z.number().min(0, { message: '最低库存不能为负数' }).optional())
-const metaTitleResolver = zodResolver(z.string().max(60, { message: 'SEO标题不能超过60个字符' }).optional())
-const metaDescriptionResolver = zodResolver(z.string().max(160, { message: 'SEO描述不能超过160个字符' }).optional())
-const metaKeywordsResolver = zodResolver(z.string().optional())
+
 
 // 新增规格
 const newColor = ref('')
@@ -165,7 +154,7 @@ const triggerPublishProduct = () => {
 const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) => {
 	console.log('表单数据:', values)
 	if (!valid) {
-		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
+		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入', life: 1000 })
 		return
 	}
 
@@ -187,7 +176,7 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 					severity: 'success',
 					summary: '成功',
 					detail: '商品保存成功',
-					life: 3000
+					life: 1000
 				})
 
 				// 跳转到商品列表页面
@@ -201,7 +190,7 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 				severity: 'error',
 				summary: '错误',
 				detail: '保存商品失败，请重试',
-				life: 3000
+				life: 1000
 			})
 		} finally {
 			saving.value = false
@@ -215,7 +204,7 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
 // 保存草稿
 const saveDraft = async ({ valid, values }: { valid: boolean; values: any }) => {
 	if (!valid) {
-		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
+		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入', life: 1000 })
 		return
 	}
 
@@ -236,7 +225,7 @@ const saveDraft = async ({ valid, values }: { valid: boolean; values: any }) => 
 				severity: 'success',
 				summary: '成功',
 				detail: '草稿保存成功',
-				life: 3000
+				life: 1000
 			})
 
 			// 跳转到商品列表页面
@@ -250,7 +239,7 @@ const saveDraft = async ({ valid, values }: { valid: boolean; values: any }) => 
 			severity: 'error',
 			summary: '错误',
 			detail: '保存草稿失败，请重试',
-			life: 3000
+			life: 1000
 		})
 	} finally {
 		saving.value = false
@@ -260,7 +249,7 @@ const saveDraft = async ({ valid, values }: { valid: boolean; values: any }) => 
 // 发布商品
 const publishProduct = async ({ valid, values }: { valid: boolean; values: any }) => {
 	if (!valid) {
-		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
+		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入', life: 1000 })
 		return
 	}
 
@@ -281,7 +270,7 @@ const publishProduct = async ({ valid, values }: { valid: boolean; values: any }
 				severity: 'success',
 				summary: '成功',
 				detail: '商品发布成功',
-				life: 3000
+				life: 1000
 			})
 
 			// 跳转到商品列表页面
@@ -295,45 +284,14 @@ const publishProduct = async ({ valid, values }: { valid: boolean; values: any }
 			severity: 'error',
 			summary: '错误',
 			detail: '发布商品失败，请重试',
-			life: 3000
+			life: 1000
 		})
 	} finally {
 		publishing.value = false
 	}
 }
 
-// 图片上传处理
-const uploadMainImage = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0]
-	if (file) {
-		// 模拟图片上传
-		const reader = new FileReader()
-		reader.onload = (e) => {
-			initialValues.mainImage = e.target?.result as string
-		}
-		reader.readAsDataURL(file)
-	}
-}
 
-const uploadDetailImage = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0]
-	if (file && initialValues.images.length < 6) {
-		// 模拟图片上传
-		const reader = new FileReader()
-		reader.onload = (e) => {
-			initialValues.images.push(e.target?.result as string)
-		}
-		reader.readAsDataURL(file)
-	}
-}
-
-const removeMainImage = () => {
-	initialValues.mainImage = ''
-}
-
-const removeDetailImage = (index: number) => {
-	initialValues.images.splice(index, 1)
-}
 
 // 规格管理 - 已移除旧的函数，使用FormField版本
 
@@ -345,88 +303,40 @@ const removeVideo = (index: number) => {
 	initialValues.videos.splice(index, 1)
 }
 
-const uploadImage = (event: Event) => {
-	const file = (event.target as HTMLInputElement).files?.[0]
-	if (file && initialValues.images.length < 10) {
-		// 模拟图片上传
-		const reader = new FileReader()
-		reader.onload = (e) => {
-			initialValues.images.push(e.target?.result as string)
-		}
-		reader.readAsDataURL(file)
-	}
+
+
+// 图片选择器相关
+const showImageSelector = ref(false)
+
+
+
+// 打开图片选择器
+const openImageSelector = () => {
+	showImageSelector.value = true
 }
 
-// 文件上传相关
-const totalSize = ref(0)
-const totalSizePercent = ref(0)
-const uploadedFiles = ref([])
-
-// 格式化文件大小
-const formatSize = (bytes: number) => {
-	const k = 1024
-	const dm = 3
-	const sizes = ['B', 'KB', 'MB', 'GB']
-
-	if (bytes === 0) {
-		return `0 ${sizes[0]}`
-	}
-
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
-	const formattedSize = parseFloat((bytes / Math.pow(k, i)).toFixed(dm))
-
-	return `${formattedSize} ${sizes[i]}`
-}
-
-// 文件选择事件
-const onSelectedFiles = (event: any) => {
-	totalSize.value = 0
-	event.files.forEach((file: any) => {
-		totalSize.value += file.size
-	})
-	totalSizePercent.value = (totalSize.value / (5 * 1024 * 1024)) * 100 // 5MB 限制
-}
-
-// 文件上传成功事件
-const onTemplatedUpload = (event: any) => {
-	const response = JSON.parse(event.xhr.response)
-	if (response.code == 200 && response.data?.urls) {
-		// 处理多个文件上传，将返回的URL数组添加到images中
-		response.data.urls.forEach((url: string) => {
-			initialValues.images.push(url)
-		})
+// 图片选择事件
+const onImageSelected = (imageUrl: string) => {
+	if (!initialValues.images.includes(imageUrl)) {
+		initialValues.images.push(imageUrl)
 		toast.add({
 			severity: 'success',
-			summary: '上传成功',
-			detail: `成功上传 ${response.data.urls.length} 个文件`,
-			life: 3000
+			summary: '成功',
+			detail: '图片添加成功',
+			life: 1000
 		})
 	} else {
 		toast.add({
-			severity: 'error',
-			summary: '上传失败',
-			detail: response.message || '图片上传失败',
-			life: 3000
+			severity: 'warn',
+			summary: '提示',
+			detail: '图片已存在',
+			life: 1000
 		})
 	}
+	showImageSelector.value = false
 }
 
-// 移除待上传文件
-const onRemoveTemplatingFile = (file: any, removeFileCallback: Function, index: number) => {
-	removeFileCallback(index)
-	totalSize.value -= file.size
-	totalSizePercent.value = (totalSize.value / (5 * 1024 * 1024)) * 100
-}
 
-// 上传事件
-const uploadEvent = (callback: Function) => {
-	callback()
-}
-
-// 移除已上传的图片
-const removeUploadedImage = (index: number) => {
-	initialValues.images.splice(index, 1)
-}
 
 // 新的字段处理函数
 const addColor = () => {
@@ -589,75 +499,25 @@ onMounted(() => {
 								<FormField v-slot="$field" name="images" class="flex flex-col gap-1">
 									<label class="block text-sm font-medium text-gray-700 mb-2">商品图片 *</label>
 
-									<!-- 文件上传组件 -->
-									<FileUpload name="file" url="/api/upload/product" multiple accept="image/*"
-										:maxFileSize="5000000" @upload="onTemplatedUpload" @select="onSelectedFiles"
-										:showUploadButton="false" :showCancelButton="false" chooseLabel="选择图片">
-										<template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
-											<div class="flex flex-wrap justify-between items-center flex-1 gap-2">
-												<div class="flex gap-2">
-													<Button @click="chooseCallback()" icon="pi pi-images" rounded
-														outlined></Button>
-													<Button @click="uploadEvent(uploadCallback)"
-														icon="pi pi-cloud-upload" rounded outlined severity="success"
-														:disabled="!files || files.length === 0"></Button>
-													<Button @click="clearCallback()" icon="pi pi-times" rounded outlined
-														severity="danger"
-														:disabled="!files || files.length === 0"></Button>
-												</div>
-												<ProgressBar :value="totalSizePercent" :showValue="false"
-													class="md:w-20rem h-1rem w-full md:ml-auto">
-													<span class="whitespace-nowrap">{{ totalSize }}B / 5MB</span>
-												</ProgressBar>
-											</div>
-										</template>
-										<template
-											#content="{ files, uploadedFiles, removeUploadedFileCallback, removeFileCallback }">
-											<div v-if="files.length > 0">
-												<h5>待上传</h5>
-												<div class="flex flex-wrap p-0 sm:p-5 gap-5">
-													<div v-for="(file, index) of files"
-														:key="file.name + file.type + file.size"
-														class="card m-0 px-6 flex flex-column border-1 surface-border align-items-center gap-3">
-														<div>
-															<img role="presentation" :alt="file.name"
-																:src="file.objectURL" width="100" height="50" />
-														</div>
-														<span class="font-semibold">{{ file.name }}</span>
-														<div>{{ formatSize(file.size) }}</div>
-														<Badge value="待上传" severity="warning" />
-														<Button icon="pi pi-times"
-															@click="onRemoveTemplatingFile(file, removeFileCallback, index)"
-															outlined rounded severity="danger" />
-													</div>
-												</div>
-											</div>
+									<!-- 图片选择器 -->
+									<div class="space-y-4">
+										<!-- 选择图片按钮 -->
+										<Button @click="openImageSelector" icon="pi pi-images" label="选择图片" outlined />
 
-											<!-- 已上传的图片 -->
-											<div v-if="$field.value.length > 0">
-												<h5>已上传图片</h5>
-												<div class="flex flex-wrap p-0 sm:p-5 gap-5">
-													<div v-for="(image, index) in $field.value" :key="index"
-														class="card m-0 px-6 flex flex-column border-1 surface-border align-items-center gap-3">
-														<div>
-															<img role="presentation" :src="image" width="100"
-																height="50" />
-														</div>
-														<Badge value="已上传" severity="success" />
-														<Button icon="pi pi-times" @click="removeUploadedImage(index)"
-															outlined rounded severity="danger" />
-													</div>
-												</div>
+										<!-- 已选择的图片展示 -->
+										<div v-if="$field.value.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+											<div v-for="(image, index) in $field.value" :key="index" class="relative group">
+												<img :src="image" :alt="`商品图片 ${index + 1}`" class="w-full h-32 object-cover rounded-lg border" />
+												<Button @click="removeImage(index)" icon="pi pi-times" size="small" severity="danger" rounded class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" />
 											</div>
-										</template>
-										<template #empty>
-											<div class="flex items-center justify-center flex-col">
-												<i
-													class="pi pi-cloud-upload !border-2 !rounded-full !p-8 !text-4xl !text-muted-color" />
-												<p class="mt-6 mb-0">Drag and drop files to here to upload.</p>
-											</div>
-										</template>
-									</FileUpload>
+										</div>
+
+										<!-- 无图片时的提示 -->
+										<div v-else class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+											<i class="pi pi-image text-4xl text-gray-400 mb-4"></i>
+											<p class="text-gray-500">暂无图片，点击上方按钮选择图片</p>
+										</div>
+									</div>
 
 									<small class="text-gray-500">支持 JPG、PNG 格式，建议尺寸 800x800px，最大5MB，最多10张</small>
 									<Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{
@@ -968,6 +828,9 @@ onMounted(() => {
 			</div>
 		</Form>
 	</div>
+
+	<!-- 图片选择器组件 -->
+	<ImageSelector v-model:visible="showImageSelector" category="products" @select="onImageSelected" />
 </template>
 
 

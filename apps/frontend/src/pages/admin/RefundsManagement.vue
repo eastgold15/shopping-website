@@ -39,7 +39,7 @@
 					<!-- 退款状态筛选 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">退款状态</label>
-						<Dropdown 
+						<Select 
 							v-model="filterStatus" 
 							:options="statusOptions" 
 							optionLabel="label" 
@@ -54,7 +54,7 @@
 					<!-- 退款类型筛选 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">退款类型</label>
-						<Dropdown 
+						<Select 
 							v-model="filterType" 
 							:options="typeOptions" 
 							optionLabel="label" 
@@ -364,21 +364,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-
 // PrimeVue 组件
 import Button from 'primevue/button'
-import Card from 'primevue/card'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Dropdown from 'primevue/dropdown'
 import Calendar from 'primevue/calendar'
+import Card from 'primevue/card'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
+import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 // 类型定义
 interface Refund {
@@ -582,7 +581,7 @@ const loadRefunds = async () => {
 		console.error('加载退款数据失败:', error)
 		refunds.value = []
 		total.value = 0
-		toast.add({ severity: 'error', summary: '错误', detail: '加载退款数据失败' })
+		toast.add({ severity: 'error', summary: '错误', detail: '加载退款数据失败', life: 1000 })
 	} finally {
 		loading.value = false
 	}

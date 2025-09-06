@@ -1,27 +1,26 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
-
-// PrimeVue 组件
-import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Textarea from 'primevue/textarea'
-import Dropdown from 'primevue/dropdown'
-import Calendar from 'primevue/calendar'
-import ToggleSwitch from 'primevue/toggleswitch'
-import Tag from 'primevue/tag'
-import ConfirmDialog from 'primevue/confirmdialog'
 import Avatar from 'primevue/avatar'
 import Badge from 'primevue/badge'
+// PrimeVue 组件
+import Button from 'primevue/button'
+import Calendar from 'primevue/calendar'
 import Card from 'primevue/card'
+import Column from 'primevue/column'
+import ConfirmDialog from 'primevue/confirmdialog'
+import DataTable from 'primevue/datatable'
+import Dialog from 'primevue/dialog'
+import Dropdown from 'primevue/dropdown'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { client } from '@/share/useTreaty'
 
 // 类型定义
 interface User {
@@ -279,7 +278,7 @@ const loadUsers = async () => {
         console.error('加载用户失败:', error)
         users.value = []
         total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载用户失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '加载用户失败', life: 1000 })
     } finally {
         loading.value = false
     }
@@ -356,7 +355,7 @@ const closeDialog = () => {
 // 保存用户
 const saveUser = async () => {
     if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段' })
+        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
         return
     }
 
@@ -365,17 +364,17 @@ const saveUser = async () => {
 
         if (editingUser.value) {
             // 更新
-            toast.add({ severity: 'success', summary: '成功', detail: '更新用户成功' })
+            toast.add({ severity: 'success', summary: '成功', detail: '更新用户成功', life: 1000 })
         } else {
             // 创建
-            toast.add({ severity: 'success', summary: '成功', detail: '创建用户成功' })
+            toast.add({ severity: 'success', summary: '成功', detail: '创建用户成功', life: 1000 })
         }
         
         closeDialog()
         loadUsers()
     } catch (error) {
         console.error('保存用户失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '保存用户失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '保存用户失败', life: 1000 })
     } finally {
         saving.value = false
     }
@@ -395,11 +394,11 @@ const confirmDelete = (user: User) => {
 // 删除用户
 const deleteUser = async (id: number) => {
     try {
-        toast.add({ severity: 'success', summary: '成功', detail: '删除用户成功' })
+        toast.add({ severity: 'success', summary: '成功', detail: '删除用户成功', life: 1000 })
         loadUsers()
     } catch (error) {
         console.error('删除用户失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '删除用户失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '删除用户失败', life: 1000 })
     }
 }
 
@@ -411,12 +410,13 @@ const toggleUserStatus = async (user: User) => {
         toast.add({
             severity: 'success',
             summary: '成功',
-            detail: `${newStatus === 'active' ? '启用' : '禁用'}用户成功`
+            detail: `${newStatus === 'active' ? '启用' : '禁用'}用户成功`,
+            life: 1000
         })
         loadUsers()
     } catch (error) {
         console.error('切换用户状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '切换用户状态失败' })
+        toast.add({ severity: 'error', summary: '错误', detail: '切换用户状态失败', life: 1000 })
     }
 }
 
@@ -430,10 +430,10 @@ const resetPassword = async (user: User) => {
             try {
                 // 模拟API调用
                 await new Promise(resolve => setTimeout(resolve, 500))
-                toast.add({ severity: 'success', summary: '成功', detail: '密码重置成功，新密码已发送到用户邮箱' })
+                toast.add({ severity: 'success', summary: '成功', detail: '密码重置成功，新密码已发送到用户邮箱', life: 1000 })
             } catch (error) {
                 console.error('重置密码失败:', error)
-                toast.add({ severity: 'error', summary: '错误', detail: '重置密码失败' })
+                toast.add({ severity: 'error', summary: '错误', detail: '重置密码失败', life: 1000 })
             }
         }
     })
@@ -512,7 +512,7 @@ const formatDate = (date: Date | string | null) => {
 
 // 导出用户
 const exportUsers = () => {
-    toast.add({ severity: 'info', summary: '提示', detail: '导出功能开发中...' })
+    toast.add({ severity: 'info', summary: '提示', detail: '导出功能开发中...', life: 1000 })
 }
 
 // 组件挂载时加载数据
@@ -579,9 +579,9 @@ onMounted(() => {
                 </div>
                 <div class="flex gap-3">
                     <InputText v-model="searchKeyword" placeholder="搜索用户名、昵称或邮箱..." class="w-64" @input="handleSearch" />
-                    <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                    <Dropdown v-model="filterLevel" :options="levelOptions" optionLabel="label" optionValue="value"
+                    <Select v-model="filterLevel" :options="levelOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选等级" class="w-32" @change="handleFilter" />
                     <Calendar v-model="filterDateRange" selectionMode="range" placeholder="注册日期范围" 
                         class="w-48" @date-select="handleFilter" showIcon />
@@ -749,7 +749,7 @@ onMounted(() => {
 
                     <div>
                         <label class="block text-sm font-medium mb-2">性别</label>
-                        <Dropdown v-model="userForm.gender" :options="genderOptions" optionLabel="label" 
+                        <Select v-model="userForm.gender" :options="genderOptions" optionLabel="label" 
                             optionValue="value" placeholder="选择性别" class="w-full" />
                     </div>
                 </div>
@@ -762,13 +762,13 @@ onMounted(() => {
 
                     <div>
                         <label class="block text-sm font-medium mb-2">用户状态</label>
-                        <Dropdown v-model="userForm.status" :options="userStatusOptions" optionLabel="label" 
+                        <Select v-model="userForm.status" :options="userStatusOptions" optionLabel="label" 
                             optionValue="value" placeholder="选择状态" class="w-full" />
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-2">用户等级</label>
-                        <Dropdown v-model="userForm.level" :options="userLevelOptions" optionLabel="label" 
+                        <Select v-model="userForm.level" :options="userLevelOptions" optionLabel="label" 
                             optionValue="value" placeholder="选择等级" class="w-full" />
                     </div>
 
@@ -786,7 +786,7 @@ onMounted(() => {
 
                     <div>
                         <label class="block text-sm font-medium mb-2">用户标签</label>
-                        <Dropdown v-model="userForm.tags" :options="tagOptions" optionLabel="label" 
+                        <Select v-model="userForm.tags" :options="tagOptions" optionLabel="label" 
                             optionValue="value" placeholder="选择标签" class="w-full" multiple />
                     </div>
 

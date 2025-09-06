@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/Users/boer/Desktop/shopping-website/apps/frontend/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
