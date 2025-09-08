@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, like, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, or, sql, getTableColumns } from 'drizzle-orm';
 import { Elysia } from "elysia";
 import { db } from '../db/connection';
 import { categoriesSchema } from '../db/schema';
@@ -11,7 +11,7 @@ import { categoriesModel } from './categories.model';
 
 
 
-export const categoriesRoute = new Elysia({ prefix: '/categories', tags: ['Categories'] })
+export const categoryController = new Elysia({ prefix: '/categories', tags: ['Categories'] })
     .model(categoriesModel)
 
     .guard({
@@ -37,17 +37,26 @@ export const categoriesRoute = new Elysia({ prefix: '/categories', tags: ['Categ
         .post('', async ({ body }) => {
             console.log(body,"xxxxxx")
             try {
-                const result = await db.insert(categoriesSchema).values({
-                    name: body.name,
-                    slug: body.slug,
-                    description: body.description,
-                    parentId: body.parentId || null,
-                    sortOrder: body.sortOrder || 0,
-                    isVisible: body.isVisible ?? true,
-                    icon: body.icon,
-                    image: body.image,
-                    updatedAt: new Date()
-                }).returning();
+                // 使用 getTableColumns 获取表结构，排除自动生成的字段
+                const { id, createdAt, updatedAt, ...insertableColumns } = getTableColumns(categoriesSchema);
+                
+                // 从 body 中提取对应的字段数据
+                const categoryData: Record<string, any> = {};
+                Object.keys(insertableColumns).forEach(key => {
+                    if (body[key] !== undefined) {
+                        categoryData[key] = body[key];
+                    }
+                });
+                
+                // 设置默认值
+                if (categoryData.parentId === undefined) categoryData.parentId = null;
+                if (categoryData.sortOrder === undefined) categoryData.sortOrder = 0;
+                if (categoryData.isVisible === undefined) categoryData.isVisible = true;
+                
+                // 添加更新时间
+                categoryData.updatedAt = new Date();
+                
+                const result = await db.insert(categoriesSchema).values(categoryData).returning();
                 const newCategory = {
                     ...result[0],
                     id: result[0]?.id.toString(),
@@ -70,11 +79,22 @@ export const categoriesRoute = new Elysia({ prefix: '/categories', tags: ['Categ
         // 更新分类
         .put('/:id', async ({ params: { id }, body }) => {
             try {
+                // 使用 getTableColumns 获取表结构，排除自动生成的字段
+                const { id: idCol, createdAt, ...updatableColumns } = getTableColumns(categoriesSchema);
+                
+                // 从 body 中提取对应的字段数据，只更新提供的字段
+                const updateData: Record<string, any> = {};
+                Object.keys(updatableColumns).forEach(key => {
+                    if (body[key] !== undefined) {
+                        updateData[key] = body[key];
+                    }
+                });
+                
+                // 添加更新时间
+                updateData.updatedAt = new Date();
+                
                 const result = await db.update(categoriesSchema)
-                    .set({
-                        ...body,
-                        updatedAt: new Date()
-                    })
+                    .set(updateData)
                     .where(eq(categoriesSchema.id, parseInt(id)))
                     .returning();
 

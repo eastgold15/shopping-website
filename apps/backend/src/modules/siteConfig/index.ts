@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { commonRes } from '../plugins/Res';
 import { siteConfigsModel } from './siteConfigs.model';
 
-export const siteConfigsRoute = new Elysia({ prefix: 'site-configs' })
+export const siteConfigController = new Elysia({ prefix: 'site-configs' })
     .model(siteConfigsModel)
     // 获取所有配置
     .get('/', async () => {

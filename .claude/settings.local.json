@@ -10,7 +10,10 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Bash(pnpm dlx create-turbo:*)",
-      "Read(//c/Users/boer/**)"
+      "Read(//c/Users/boer/**)",
+      "Bash(bun run build)",
+      "Bash(bun run type-check)",
+      "Bash(bun:*)"
     ],
     "deny": [],
     "ask": []

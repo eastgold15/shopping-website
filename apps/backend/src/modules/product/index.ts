@@ -1,11 +1,11 @@
 import { Elysia } from "elysia";
-import { eq, desc, asc, and, or, sql, ilike, like, count } from 'drizzle-orm';
+import { eq, desc, asc, and, or, sql, ilike, like, count, getTableColumns } from 'drizzle-orm';
 import { db } from '../db/connection';
 import { productsSchema, categoriesSchema } from '../db/schema';
 import { commonRes, pageRes } from '../plugins/Res';
 import { productsModel } from './products.model';
 
-export const productsRoute = new Elysia({ prefix: 'products', tags: ['Products'] })
+export const productController = new Elysia({ prefix: 'products', tags: ['Products'] })
     .model(productsModel)
     .guard({
         transform({ body }) {
@@ -35,35 +35,16 @@ export const productsRoute = new Elysia({ prefix: 'products', tags: ['Products']
         // 创建商品
         .post('/', async ({ body }) => {
             try {
-                const productData = {
-                    name: body.name,
-                    slug: body.slug,
-                    description: body.description,
-                    shortDescription: body.shortDescription,
-                    price: body.price,
-                    comparePrice: body.comparePrice,
-                    cost: body.cost,
-                    sku: body.sku,
-                    barcode: body.barcode,
-                    weight: body.weight,
-                    dimensions: body.dimensions,
-                    images: body.images,
-                    videos: body.videos,
-                    colors: body.colors,
-                    sizes: body.sizes,
-                    materials: body.materials,
-                    careInstructions: body.careInstructions,
-                    features: body.features,
-                    specifications: body.specifications,
-                    categoryId: body.categoryId,
-                    stock: body.stock,
-                    minStock: body.minStock,
-                    isActive: body.isActive,
-                    isFeatured: body.isFeatured,
-                    metaTitle: body.metaTitle,
-                    metaDescription: body.metaDescription,
-                    metaKeywords: body.metaKeywords
-                };
+                // 使用 getTableColumns 获取表结构，排除自动生成的字段
+                const { id, createdAt, updatedAt, ...insertableColumns } = getTableColumns(productsSchema);
+                
+                // 从 body 中提取对应的字段数据
+                const productData: Record<string, any> = {};
+                Object.keys(insertableColumns).forEach(key => {
+                    if (body[key] !== undefined) {
+                        productData[key] = body[key];
+                    }
+                });
 
                 const [newProduct] = await db
                     .insert(productsSchema)
@@ -314,36 +295,16 @@ export const productsRoute = new Elysia({ prefix: 'products', tags: ['Products']
     // 更新商品
     .put('/:id', async ({ params: { id }, body }) => {
         try {
-            const updateData: any = {};
-
-            // 只更新提供的字段
-            if (body.name !== undefined) updateData.name = body.name;
-            if (body.slug !== undefined) updateData.slug = body.slug;
-            if (body.description !== undefined) updateData.description = body.description;
-            if (body.shortDescription !== undefined) updateData.shortDescription = body.shortDescription;
-            if (body.price !== undefined) updateData.price = body.price;
-            if (body.comparePrice !== undefined) updateData.comparePrice = body.comparePrice;
-            if (body.cost !== undefined) updateData.cost = body.cost;
-            if (body.sku !== undefined) updateData.sku = body.sku;
-            if (body.barcode !== undefined) updateData.barcode = body.barcode;
-            if (body.weight !== undefined) updateData.weight = body.weight;
-            if (body.dimensions !== undefined) updateData.dimensions = body.dimensions;
-            if (body.images !== undefined) updateData.images = body.images;
-            if (body.videos !== undefined) updateData.videos = body.videos;
-            if (body.colors !== undefined) updateData.colors = body.colors;
-            if (body.sizes !== undefined) updateData.sizes = body.sizes;
-            if (body.materials !== undefined) updateData.materials = body.materials;
-            if (body.careInstructions !== undefined) updateData.careInstructions = body.careInstructions;
-            if (body.features !== undefined) updateData.features = body.features;
-            if (body.specifications !== undefined) updateData.specifications = body.specifications;
-            if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
-            if (body.stock !== undefined) updateData.stock = body.stock;
-            if (body.minStock !== undefined) updateData.minStock = body.minStock;
-            if (body.isActive !== undefined) updateData.isActive = body.isActive;
-            if (body.isFeatured !== undefined) updateData.isFeatured = body.isFeatured;
-            if (body.metaTitle !== undefined) updateData.metaTitle = body.metaTitle;
-            if (body.metaDescription !== undefined) updateData.metaDescription = body.metaDescription;
-            if (body.metaKeywords !== undefined) updateData.metaKeywords = body.metaKeywords;
+            // 使用 getTableColumns 获取表结构，排除自动生成的字段
+            const { id: idCol, createdAt, ...updatableColumns } = getTableColumns(productsSchema);
+            
+            // 从 body 中提取对应的字段数据，只更新提供的字段
+            const updateData: Record<string, any> = {};
+            Object.keys(updatableColumns).forEach(key => {
+                if (body[key] !== undefined) {
+                    updateData[key] = body[key];
+                }
+            });
 
             // 添加更新时间
             updateData.updatedAt = new Date();

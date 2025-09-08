@@ -13,7 +13,15 @@
       "Bash(bun run dev:*)",
       "Bash(bun install)",
       "mcp__ide__getDiagnostics",
-      "Bash(pnpm build)"
+      "Bash(pnpm build)",
+      "Bash(bun run build)",
+      "Bash(bun run:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(pnpm dev)",
+      "Bash(bun dev:*)"
     ],
     "deny": [],
     "ask": []

@@ -15,7 +15,7 @@ import {
 import { eq, desc, asc, like, and, count, sum, sql, gte, lte } from "drizzle-orm";
 import { commonRes } from '../plugins/Res';
 
-export const statisticsRoute = new Elysia({ prefix: "/statistics" })
+export const statisticsController = new Elysia({ prefix: "/statistics" })
   // 获取仪表板统计数据
   .get("/dashboard", async ({ query }) => {
     try {

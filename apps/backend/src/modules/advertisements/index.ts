@@ -1,11 +1,11 @@
-import { and, asc, count, desc, eq, like, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, like, or, getTableColumns } from "drizzle-orm";
 import { db } from "../db/connection";
 import { advertisementsSchema } from "../db/schema/schema";
 import { commonRes, pageRes } from "../plugins/Res";
 import { advertisementsModel } from "./advertisements.model";
 import { Elysia, t } from "elysia";
 
-export const advertisementsRoute = new Elysia({ prefix: '/advertisements', tags: ['Advertisements'] })
+export const advertisementController = new Elysia({ prefix: '/advertisements', tags: ['Advertisements'] })
     .model(advertisementsModel)
     .get(
         "/",
@@ -186,13 +186,24 @@ export const advertisementsRoute = new Elysia({ prefix: '/advertisements', tags:
     // 创建广告
     .post('/', async ({ body }) => {
         try {
+            // 使用 getTableColumns 获取表结构，排除自动生成的字段
+            const { id, createdAt, updatedAt, ...insertableColumns } = getTableColumns(advertisementsSchema);
+            
+            // 从 body 中提取对应的字段数据
+            const advertisementData: Record<string, any> = {};
+            Object.keys(insertableColumns).forEach(key => {
+                if (body[key] !== undefined) {
+                    advertisementData[key] = body[key];
+                }
+            });
+            
+            // 添加时间戳
+            advertisementData.createdAt = new Date();
+            advertisementData.updatedAt = new Date();
+            
             const [advertisement] = await db
                 .insert(advertisementsSchema)
-                .values({
-                    ...body,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                })
+                .values(advertisementData)
                 .returning();
 
             return commonRes(advertisement, 201, '创建广告成功');
@@ -212,12 +223,23 @@ export const advertisementsRoute = new Elysia({ prefix: '/advertisements', tags:
     // 更新广告
     .put('/:id', async ({ params: { id }, body }) => {
         try {
+            // 使用 getTableColumns 获取表结构，排除自动生成的字段
+            const { id: idCol, createdAt, ...updatableColumns } = getTableColumns(advertisementsSchema);
+            
+            // 从 body 中提取对应的字段数据，只更新提供的字段
+            const updateData: Record<string, any> = {};
+            Object.keys(updatableColumns).forEach(key => {
+                if (body[key] !== undefined) {
+                    updateData[key] = body[key];
+                }
+            });
+            
+            // 添加更新时间
+            updateData.updatedAt = new Date();
+            
             const [advertisement] = await db
                 .update(advertisementsSchema)
-                .set({
-                    ...body,
-                    updatedAt: new Date(),
-                })
+                .set(updateData)
                 .where(eq(advertisementsSchema.id, parseInt(id)))
                 .returning();
 

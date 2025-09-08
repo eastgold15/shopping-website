@@ -3,7 +3,12 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     /* Path Mapping */
-    "baseUrl": "../..",
+    "baseUrl": ".",
+    "paths": {
+      "@frontend/*": ["./src/*"],
+      "@backend/*": ["../backend/src/*"],
+      "@frontend/types/*": ["./src/types/*"]
+    },
     /* Module Resolution */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

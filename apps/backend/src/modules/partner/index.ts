@@ -5,7 +5,7 @@ import { partnersSchema } from '../db/schema';
 import { commonRes, pageRes } from '../plugins/Res';
 import { partnersModel, type Partner } from './partners.model';
 
-export const partnersRoute = new Elysia({ prefix: '/partners', tags: ['Partners'] })
+export const partnerController = new Elysia({ prefix: '/partners', tags: ['Partners'] })
     .model(partnersModel)
     // 获取所有合作伙伴（前台用）
     .get('/list', async () => {

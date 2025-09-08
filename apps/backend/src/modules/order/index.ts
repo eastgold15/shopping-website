@@ -30,7 +30,7 @@ const REFUND_STATUS = {
     PROCESSED: 'processed'
 } as const;
 
-export const ordersRoute = new Elysia({ prefix: 'orders', tags: ['Orders'] })
+export const orderController = new Elysia({ prefix: 'orders', tags: ['Orders'] })
     // 获取订单列表
     .get('/', async ({ query }) => {
         try {
