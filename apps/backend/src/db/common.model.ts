@@ -6,7 +6,7 @@ export const UnoQuery = t.Object({
   page: t.Optional(t.Number()),
   pageSize: t.Optional(t.Number()),
   sortBy: t.Optional(t.String()),
-  sortOrder: t.Optional(t.String()),
+  sortOrder: t.Optional(t.UnionEnum(['asc', 'desc'])),
 });
 
 

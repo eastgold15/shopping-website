@@ -3,7 +3,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/connection';
 
-import { status } from 'elysia';
 import {
   CustomeError,
   DatabaseError,
@@ -105,7 +104,7 @@ export abstract class BaseService<T = any, CreateInput = any, UpdateInput = any>
   /**
    * 根据ID查找记录
    */
-  async findById(id: string): Promise<ServiceResponse<T | null>> {
+  async findById(id: number): Promise<ServiceResponse<T | null>> {
     try {
       const result = await db
         .select()
@@ -254,7 +253,7 @@ export abstract class BaseService<T = any, CreateInput = any, UpdateInput = any>
    * 更新记录
    */
   async update(
-    id: string,
+    id: number,
     data: UpdateInput,
     options: UpdateOptions = {}
   ): Promise<ServiceResponse<T>> {
@@ -286,12 +285,13 @@ export abstract class BaseService<T = any, CreateInput = any, UpdateInput = any>
   /**
    * 删除记录
    */
-  async delete(id: string, options: DeleteOptions = {}): Promise<ServiceResponse<boolean>> {
+  async delete(id: number, options: DeleteOptions = {}): Promise<ServiceResponse<boolean>> {
     try {
       // 检查记录是否存在
       const existing = await this.findById(id);
       if (!existing.data == null || !existing.data) {
-        throw status('See Other', `Record with id ${id} not found`)
+
+        throw new NotFoundError(`Record with id ${id} not found`);
       }
 
       // 执行删除
@@ -313,7 +313,7 @@ export abstract class BaseService<T = any, CreateInput = any, UpdateInput = any>
   /**
    * 批量删除记录
    */
-  async deleteBatch(ids: string[]): Promise<ServiceResponse<number>> {
+  async deleteBatch(ids: number[]): Promise<ServiceResponse<number>> {
     try {
       if (!ids || ids.length === 0) {
         throw new ValidationError('No IDs provided for batch deletion');
@@ -361,7 +361,7 @@ export abstract class BaseService<T = any, CreateInput = any, UpdateInput = any>
   /**
    * 检查记录是否存在
    */
-  async exists(id: string): Promise<ServiceResponse<boolean>> {
+  async exists(id: number): Promise<ServiceResponse<boolean>> {
     try {
       const result = await this.findById(id);
       return commonRes(result.data !== null);

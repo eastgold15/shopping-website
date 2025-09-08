@@ -1,8 +1,9 @@
+import { UnoQuery } from "@backend/db/common.model";
 import { DbType } from "@backend/db/database.types";
 import { t } from "elysia";
 
 // 用户模块的TypeBox模型定义
-export const userModel = {
+export const usersModel = {
   // 创建用户 - 需要用户名和密码
   createUser: t.Composite([DbType.typebox.insert.userSchema, t.Object({
     username: t.String(),
@@ -13,14 +14,11 @@ export const userModel = {
   updateUser: DbType.typebox.insert.userSchema,
 
   // 用户查询参数
-  userQuery: t.Object({
-    page: t.Optional(t.Number({ minimum: 1 })),
-    pageSize: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
-    search: t.Optional(t.String()),
-    status: t.Optional(t.Number()),
-    sortBy: t.Optional(t.String()),
-    sortOrder: t.Optional(t.Union([t.Literal('asc'), t.Literal('desc')])),
-  }),
+  userQuery: t.Composite([UnoQuery, t.Object({
+    status: t.Number(),
+    sortBy: t.String(),
+  })]),
+
 
   // 批量操作
   batchUpdate: t.Object({
@@ -30,10 +28,10 @@ export const userModel = {
 };
 
 // 从TypeBox模型获取TypeScript类型
-export type CreateUser = typeof userModel.createUser.static;
-export type UpdateUser = typeof userModel.updateUser.static;
-export type UserQuery = typeof userModel.userQuery.static;
-export type BatchUpdate = typeof userModel.batchUpdate.static;
+export type CreateUser = typeof usersModel.createUser.static;
+export type UpdateUser = typeof usersModel.updateUser.static;
+export type UserQuery = typeof usersModel.userQuery.static;
+export type BatchUpdate = typeof usersModel.batchUpdate.static;
 
 // 从数据库schema获取实体类型
 export type UserEntity = typeof DbType.typebox.select.userSchema.static;

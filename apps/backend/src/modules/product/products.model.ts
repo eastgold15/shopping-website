@@ -1,14 +1,15 @@
+import { UnoQuery } from '@backend/db/common.model';
+import { DbType } from '@backend/db/database.types';
 import { t } from 'elysia';
-import { UnoQuery } from '../utils/common.model';
-import { DbType } from '../db/database.types';
+
 
 // 商品模型定义
 export const productsModel = {
   // 创建商品请求参数
-  CreateProductDto: DbType.typebox.insert.productsSchema,
+  CreateProductDto: t.Omit(DbType.typebox.insert.productsSchema, ['id', 'createdAt', 'updatedAt']),
 
   // 更新商品请求参数
-  UpdateProductDto: t.Partial(DbType.typebox.insert.productsSchema),
+  UpdateProductDto: t.Omit(DbType.typebox.insert.productsSchema, ['id', 'createdAt', 'updatedAt']),
 
   // 商品列表查询参数
   ProductListQueryDto: t.Object({
@@ -64,9 +65,9 @@ export const productsModel = {
 };
 
 // 导出类型
-export type CreateProductDto = typeof productsModel.CreateProductDto;
-export type UpdateProductDto = typeof productsModel.UpdateProductDto;
-export type ProductListQueryDto = typeof productsModel.ProductListQueryDto;
+export type CreateProductDto = typeof productsModel.CreateProductDto.static;
+export type UpdateProductDto = typeof productsModel.UpdateProductDto.static;
+export type ProductListQueryDto = typeof productsModel.ProductListQueryDto.static;
 export type ProductSearchQueryDto = typeof productsModel.ProductSearchQueryDto;
 export type PopularTermsQueryDto = typeof productsModel.PopularTermsQueryDto;
 export type FilterOptionsQueryDto = typeof productsModel.FilterOptionsQueryDto;

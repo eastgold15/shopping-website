@@ -1,0 +1,52 @@
+import { UnoQuery } from '@backend/db/common.model';
+import { DbType } from '@backend/db/database.types';
+import { t } from 'elysia';
+
+
+// 图片管理模型定义
+export const imagesModel = {
+  // 创建图片请求参数
+  CreateImageDto: t.Omit(DbType.typebox.insert.imagesSchema, ['id', 'createdAt', 'updatedAt']),
+
+  // 更新图片请求参数
+  UpdateImageDto: t.Omit(DbType.typebox.insert.imagesSchema, ['id', 'createdAt', 'updatedAt']),
+
+  // 图片列表查询参数 
+  ImageListQueryDto:
+    t.Composite([UnoQuery, t.Object({
+      category: t.Optional(t.String()),
+      search: t.Optional(t.String()),
+      mimeType: t.Optional(t.String())
+    })]),
+
+  // 批量删除请求参数
+  BatchDeleteImageDto: t.Object({
+    imageIds: t.Array(t.String())
+  }),
+
+  // 预签名URL请求参数
+  PresignedUrlDto: t.Object({
+    fileName: t.String(),
+    category: t.Optional(t.String())
+  }),
+
+  // 确认上传请求参数
+  ConfirmUploadDto: t.Object({
+    key: t.String(),
+    originalName: t.String(),
+    category: t.String(),
+    fileSize: t.Number(),
+    mimeType: t.String(),
+    altText: t.Optional(t.String())
+  }),
+
+
+};
+
+// 导出类型
+export type CreateImageDto = typeof imagesModel.CreateImageDto.static;
+export type UpdateImageDto = typeof imagesModel.UpdateImageDto.static;
+export type ImageListQueryDto = typeof imagesModel.ImageListQueryDto.static;
+export type BatchDeleteImageDto = typeof imagesModel.BatchDeleteImageDto.static;
+export type PresignedUrlDto = typeof imagesModel.PresignedUrlDto.static;
+export type ConfirmUploadDto = typeof imagesModel.ConfirmUploadDto.static;

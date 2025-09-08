@@ -6,17 +6,17 @@ import { err_handler } from "./utils/error/err.global";
 import path from 'path';
 
 // 导入模块化控制器
-import { userController } from './modules/user';
-import { uploadController } from './modules/upload';
-import { imageController } from './modules/image';
+import { usersController } from './modules/user/index';
+import { uploadsController } from './modules/upload';
+import { imagesController } from './modules/image';
 import { ossController } from './modules/oss';
-import { categoryController } from './modules/category';
-import { productController } from './modules/product';
-import { siteConfigController } from './modules/siteConfig';
-import { advertisementController } from './modules/advertisements';
-import { orderController } from './modules/order';
+import { categoriesController } from './modules/category';
+import { productsController } from './modules/product';
+import { siteConfigsController } from './modules/siteConfig';
+import { advertisementsController } from './modules/advertisements';
+import { ordersController } from './modules/order';
 import { statisticsController } from './modules/statistics';
-import { partnerController } from './modules/partner';
+import { partnersController } from './modules/partner';
 
 
 
@@ -26,17 +26,17 @@ const globalModel = {
 
 const api = new Elysia({ prefix: '/api' })
   .model(globalModel)
-  .use(userController)
-  .use(uploadController)
-  .use(imageController)
+  .use(usersController)
+  .use(uploadsController)
+  .use(imagesController)
   .use(ossController)
-  .use(categoryController)
-  .use(productController)
-  .use(siteConfigController)
-  .use(advertisementController)
-  .use(orderController)
+  .use(categoriesController)
+  .use(productsController)
+  .use(siteConfigsController)
+  .use(advertisementsController)
+  .use(ordersController)
   .use(statisticsController)
-  .use(partnerController);
+  .use(partnersController);
 
 
 export const app = new Elysia()
@@ -47,7 +47,7 @@ export const app = new Elysia()
   })
   .use(
     openapi({
-      references: fromTypes('server.ts', {
+      references: fromTypes('index.ts', {
         projectRoot: path.join(import.meta.dir)
       })
     })

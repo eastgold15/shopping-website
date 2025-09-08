@@ -1,15 +1,12 @@
 // 文件上传管理服务
 
-import { ossService } from '../oss';
-import { ServiceResponse } from '../services/types';
-import { commonRes } from '../Res';
-import { ValidationError, DatabaseError, UploadError, CustomeError, handleDatabaseError } from '../error/customError';
+import { ServiceResponse } from '@backend/utils/services';
+import { FileInfo, ossService } from '../oss';
 
-// 导入模型类型和常量
-import type {
-  FileInfo
-} from './model';
-import { MAX_FILE_SIZE, SUPPORTED_IMAGE_TYPES, UPLOAD_TYPE } from './model';
+
+import { CustomeError, DatabaseError, handleDatabaseError, UploadError, ValidationError } from '@backend/utils/error/customError';
+import { commonRes } from '@backend/utils/Res';
+import { SUPPORTED_IMAGE_TYPES, MAX_FILE_SIZE, UPLOAD_TYPE } from './uploads.model';
 
 export interface UploadOptions {
   folder?: string;
@@ -68,7 +65,7 @@ export class UploadService {
    * 上传单个文件
    */
   async uploadFile(
-    file: any, 
+    file: any,
     folder: string = 'general',
     options: UploadOptions = {}
   ): Promise<ServiceResponse<FileInfo>> {
@@ -80,8 +77,8 @@ export class UploadService {
       }
 
       // 生成文件名
-      const fileName = options.generateUniqueName !== false 
-        ? this.generateUniqueName(file.name) 
+      const fileName = options.generateUniqueName !== false
+        ? this.generateUniqueName(file.name)
         : file.name;
 
       // 读取文件内容
@@ -104,7 +101,7 @@ export class UploadService {
       if (error instanceof CustomeError) {
         throw error;
       }
-      
+
       console.error('文件上传失败:', error);
       throw handleDatabaseError(error);
     }
@@ -114,7 +111,7 @@ export class UploadService {
    * 批量上传文件
    */
   async uploadFiles(
-    files: any[], 
+    files: any[],
     folder: string = 'general',
     options: UploadOptions = {}
   ): Promise<ServiceResponse<FileInfo[]>> {
@@ -126,9 +123,9 @@ export class UploadService {
       const uploadResults: FileInfo[] = [];
       const errors: string[] = [];
 
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0;i < files.length;i++) {
         const file = files[i];
-        
+
         try {
           // 验证文件
           const validation = this.validateFile(file, options);
@@ -138,8 +135,8 @@ export class UploadService {
           }
 
           // 生成文件名
-          const fileName = options.generateUniqueName !== false 
-            ? this.generateUniqueName(file.name) 
+          const fileName = options.generateUniqueName !== false
+            ? this.generateUniqueName(file.name)
             : file.name;
 
           // 读取文件内容
@@ -178,7 +175,7 @@ export class UploadService {
       if (error instanceof CustomeError) {
         throw error;
       }
-      
+
       console.error('批量文件上传失败:', error);
       throw handleDatabaseError(error);
     }
@@ -233,10 +230,10 @@ export class UploadService {
       // 从URL中提取文件key
       const url = new URL(fileUrl);
       const pathname = url.pathname;
-      
+
       // 移除开头的斜杠
       let key = pathname.startsWith('/') ? pathname.substring(1) : pathname;
-      
+
       // 如果是自定义域名，需要进一步处理
       if (url.hostname !== 'obs.cn-north-4.myhuaweicloud.com') {
         // 从URL中提取相对路径
@@ -247,7 +244,7 @@ export class UploadService {
       }
 
       await ossService.deleteFile(key);
-      
+
       return commonRes({ success: true });
     } catch (error) {
       if (error instanceof CustomeError) {
@@ -268,9 +265,9 @@ export class UploadService {
       // 从URL中提取文件key
       const url = new URL(fileUrl);
       const pathname = url.pathname;
-      
+
       let key = pathname.startsWith('/') ? pathname.substring(1) : pathname;
-      
+
       // 如果是自定义域名，需要进一步处理
       if (url.hostname !== 'obs.cn-north-4.myhuaweicloud.com') {
         const match = pathname.match(/\/uploads\/(.+)/);
@@ -280,7 +277,7 @@ export class UploadService {
       }
 
       const exists = await ossService.fileExists(key);
-      
+
       return commonRes(exists);
     } catch (error) {
       if (error instanceof CustomeError) {
@@ -301,9 +298,9 @@ export class UploadService {
       // 从URL中提取文件key
       const url = new URL(fileUrl);
       const pathname = url.pathname;
-      
+
       let key = pathname.startsWith('/') ? pathname.substring(1) : pathname;
-      
+
       // 如果是自定义域名，需要进一步处理
       if (url.hostname !== 'obs.cn-north-4.myhuaweicloud.com') {
         const match = pathname.match(/\/uploads\/(.+)/);
@@ -313,7 +310,7 @@ export class UploadService {
       }
 
       const stats = await ossService.getFileStats(key);
-      
+
       const fileInfo: FileInfo = {
         url: fileUrl,
         fileName: key.split('/').pop() || 'unknown',

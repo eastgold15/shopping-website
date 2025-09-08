@@ -1,5 +1,5 @@
 // 软删除工具函数
-import { eq, isNull } from 'drizzle-orm'
+import { eq, isNull, isNotNull } from 'drizzle-orm'
 import type { SoftDeletableTable } from './types'
 import { QueryScope } from './types'
 
@@ -18,7 +18,7 @@ export function notDeleted(table: SoftDeletableTable) {
  * @returns 查询条件
  */
 export function onlyDeleted(table: SoftDeletableTable) {
-  return eq(table.deletedAt, new Date())
+  return isNotNull(table.deletedAt)
 }
 
 /**

@@ -3,7 +3,7 @@ import { t } from 'elysia';
 // 支持的图片类型
 export const SUPPORTED_IMAGE_TYPES = [
   "image/jpeg",
-  "image/jpg", 
+  "image/jpg",
   "image/png",
   "image/gif",
   "image/webp"
@@ -21,7 +21,9 @@ export const UPLOAD_TYPE = {
 } as const;
 
 // Elysia模型定义
-export const uploadModel = {
+export const uploadsModel = {
+
+  // FileInfo:DbType.typebox.select.imagesSchema,
   // 文件上传请求参数
   FileUploadDto: t.Object({
     file: t.Files({
@@ -36,7 +38,7 @@ export const uploadModel = {
       type: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
       maxSize: 5 * 1024 * 1024 // 5MB
     }),
-    folder: t.Optional(t.String())
+    folder: t.Optional(t.UnionEnum(['advertisement', 'category', 'product', 'other']))
   }),
 
   // 上传响应类型
@@ -71,8 +73,8 @@ export const uploadModel = {
 };
 
 // 导出类型
-export type FileUploadDto = typeof uploadModel.FileUploadDto;
-export type GeneralFileUploadDto = typeof uploadModel.GeneralFileUploadDto;
-export type UploadResponse = typeof uploadModel.UploadResponse;
-export type BatchUploadResponse = typeof uploadModel.BatchUploadResponse;
-export type FileInfo = typeof uploadModel.FileInfo;
+export type FileUploadDto = typeof uploadsModel.FileUploadDto;
+export type GeneralFileUploadDto = typeof uploadsModel.GeneralFileUploadDto;
+export type UploadResponse = typeof uploadsModel.UploadResponse;
+export type BatchUploadResponse = typeof uploadsModel.BatchUploadResponse;
+export type FileInfo = typeof uploadsModel.FileInfo;

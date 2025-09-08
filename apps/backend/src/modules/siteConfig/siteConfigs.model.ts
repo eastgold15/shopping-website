@@ -1,16 +1,15 @@
+import { UnoQuery } from '@backend/db/common.model';
+import { DbType } from '@backend/db/database.types';
 import { t } from 'elysia';
-import { UnoQuery } from '../utils/common.model';
-import { DbType } from '../db/database.types';
+
 
 // 网站配置模型定义
 export const siteConfigsModel = {
   // 创建配置请求参数
-  CreateSiteConfigDto: DbType.typebox.insert.siteConfigSchema,
+  CreateSiteConfigDto: t.Omit(DbType.typebox.insert.siteConfigSchema, ['id', 'createdAt', 'updatedAt']),
 
   // 更新配置请求参数
-  UpdateSiteConfigDto: t.Object({
-    ...DbType.spreads.insert.siteConfigSchema
-  }),
+  UpdateSiteConfigDto: t.Omit(DbType.typebox.insert.siteConfigSchema, ['id', 'createdAt', 'updatedAt']),
 
   // 批量更新配置请求参数
   BatchUpdateSiteConfigDto: t.Array(
@@ -40,9 +39,9 @@ export const siteConfigsModel = {
 };
 
 // 导出类型
-export type CreateSiteConfigDto = typeof siteConfigsModel.CreateSiteConfigDto;
-export type UpdateSiteConfigDto = typeof siteConfigsModel.UpdateSiteConfigDto;
-export type BatchUpdateSiteConfigDto = typeof siteConfigsModel.BatchUpdateSiteConfigDto;
+export type CreateSiteConfigDto = typeof siteConfigsModel.CreateSiteConfigDto.static;
+export type UpdateSiteConfigDto = typeof siteConfigsModel.UpdateSiteConfigDto.static
+export type BatchUpdateSiteConfigDto = typeof siteConfigsModel.BatchUpdateSiteConfigDto.static;
 export type SiteConfigQueryDto = typeof siteConfigsModel.SiteConfigQueryDto;
 export type KeyParams = typeof siteConfigsModel.KeyParams;
 export type CategoryParams = typeof siteConfigsModel.CategoryParams;

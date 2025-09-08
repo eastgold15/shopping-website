@@ -1,7 +1,7 @@
+import { UnoQuery } from '@backend/db/common.model';
+import { DbType } from '@backend/db/database.types';
 import { t } from 'elysia';
-import { UnoQuery } from '../utils/common.model';
-import { DbType } from '../db/database.types';
-import { dbSchema } from '../db/schema';
+
 
 // 合作伙伴基础类型
 export interface Partner {

@@ -1,8 +1,3 @@
-/**
- * 自动生成的 TypeBox 配置文件
- * 基于 Schema 文件中的 JSDoc @typebox 注释生成
- * 请勿手动修改此文件
- */
 
 import { createInsertSchema, createSelectSchema } from 'drizzle-typebox'
 import { t } from 'elysia'
@@ -16,7 +11,7 @@ export const DbType = {
   typebox: {
     insert: {
       userSchema: createInsertSchema(dbSchema.userSchema, {
-        email: t.String({"format":"email"})
+        email: t.Optional(t.String({ format: "email" }))
       }),
       tokenSchema: createInsertSchema(dbSchema.tokenSchema),
       categoriesSchema: createInsertSchema(dbSchema.categoriesSchema),
@@ -32,7 +27,7 @@ export const DbType = {
     },
     select: {
       userSchema: createSelectSchema(dbSchema.userSchema, {
-        email: t.String({"format":"email"})
+        email: t.Optional(t.String({ format: "email" }))
       }),
       tokenSchema: createSelectSchema(dbSchema.tokenSchema),
       categoriesSchema: createSelectSchema(dbSchema.categoriesSchema),
@@ -50,7 +45,7 @@ export const DbType = {
   spreads: {
     insert: spreads({
       userSchema: createInsertSchema(dbSchema.userSchema, {
-        email: t.String({"format":"email"})
+        email: t.Optional(t.String({ format: "email" }))
       }),
       tokenSchema: createInsertSchema(dbSchema.tokenSchema),
       categoriesSchema: createInsertSchema(dbSchema.categoriesSchema),
@@ -66,7 +61,7 @@ export const DbType = {
     }, 'insert'),
     select: spreads({
       userSchema: createSelectSchema(dbSchema.userSchema, {
-        email: t.String({"format":"email"})
+        email: t.Optional(t.String({ format: "email" }))
       }),
       tokenSchema: createSelectSchema(dbSchema.tokenSchema),
       categoriesSchema: createSelectSchema(dbSchema.categoriesSchema),

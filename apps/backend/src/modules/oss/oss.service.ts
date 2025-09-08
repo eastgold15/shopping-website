@@ -6,18 +6,15 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-
 // 创建华为云OSS客户端
 const createOSSClient = () => {
   const accessKeyId = process.env.HUAWEI_ACCESS_KEY_ID || "";
   const secretAccessKey = process.env.HUAWEI_SECRET_ACCESS_KEY || "";
   const bucket = process.env.HUAWEI_BUCKET || "";
-
-  const endpoint = process.env.HUAWEI_ENDPOINT || `https://obs.${region}.myhuaweicloud.com`;
   const region = process.env.HUAWEI_REGION || "cn-north-4";
+  const endpoint = process.env.HUAWEI_ENDPOINT || `https://obs.${region}.myhuaweicloud.com`;
 
   console.log("华为云OSS配置:", { accessKeyId, secretAccessKey, bucket, endpoint, region });
-
 
   if (!accessKeyId || !secretAccessKey || !bucket || !endpoint) {
     console.warn("华为云OSS配置不完整，将使用模拟模式");
@@ -36,7 +33,7 @@ const createOSSClient = () => {
 };
 
 // OSS服务类
-export class HuaweiOSSService {
+export class OssService {
   private client: S3Client | null = null;
   private bucket: string;
   private initialized = false;
@@ -284,17 +281,13 @@ export class HuaweiOSSService {
    */
   getPublicUrl(key: string): string {
     const endpoint = process.env.HUAWEI_ENDPOINT || "";
-
-
-    // 域名
     const domain = process.env.HUAWEI_DOMAIN || "";
     const bucket = process.env.HUAWEI_BUCKET || "";
 
-
-    console.log(111, domain, key, endpoint)
+    console.log(111, domain, key, endpoint);
     // 如果OSS客户端未初始化或者endpoint是自定义域名，直接返回自定义域名的URL
     if (!this.client || endpoint.includes('myhuaweicloud.com')) {
-      console.log(111, domain, key)
+      console.log(111, domain, key);
       return `${domain}/${key}`;
     }
 
@@ -339,16 +332,26 @@ export class HuaweiOSSService {
       };
     }
   }
+
+  /**
+   * 批量删除文件
+   * @param keys 文件路径数组
+   */
+  async deleteFiles(keys: string[]): Promise<void> {
+    for (const key of keys) {
+      await this.deleteFile(key);
+    }
+  }
+
+  /**
+   * 列出文件
+   * @param prefix 文件前缀
+   * @param maxKeys 最大返回数量
+   */
+  async listFiles(prefix?: string, maxKeys: number = 100): Promise<Array<{ key: string; size: number; lastModified: Date }>> {
+    // 模拟返回文件列表
+    return [];
+  }
 }
 
-// 导出单例实例
-export const ossService = new HuaweiOSSService();
-
-// 导出便捷方法
-export const uploadImage = ossService.uploadImage.bind(ossService);
-export const uploadFile = ossService.uploadFile.bind(ossService);
-export const deleteFile = ossService.deleteFile.bind(ossService);
-export const fileExists = ossService.fileExists.bind(ossService);
-export const getPublicUrl = ossService.getPublicUrl.bind(ossService);
-
-export default ossService;
+export const ossService = new OssService();
