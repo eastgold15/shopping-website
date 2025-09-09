@@ -25,7 +25,7 @@ export const usersController = new Elysia({ prefix: '/users' })
       {
         filters: query.search ?
           [{ field: 'username', operator: 'like', value: query.search }] : [],
-        sort: query.sortBy ? [{ field: query.sortBy, direction: query.sortBy || 'desc' }] : []
+        sort: query.sortBy ? [{ field: query.sortBy, direction: query.sortBy as 'desc' || 'desc' }] : []
       }
     );
     return result

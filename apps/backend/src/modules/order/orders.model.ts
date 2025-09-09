@@ -1,4 +1,3 @@
-
 import { UnoQuery } from "@backend/db/common.model";
 import { DbType } from "@backend/db/database.types";
 import { Omit } from "@sinclair/typebox";
@@ -7,19 +6,22 @@ import { t } from "elysia";
 
 // 订单模型定义
 export const ordersModel = {
-
-
-
-
   // 订单列表查询参数
-  orderListQuery: t.Composite([Omit(DbType.typebox.select.ordersSchema, ['id', 'createdAt', 'updatedAt']),
-    UnoQuery
+  orderListQuery: t.Composite([
+    Omit(DbType.typebox.select.ordersSchema, ['id', 'createdAt', 'updatedAt']),
+    UnoQuery,
+    t.Object({
+      status: t.Optional(t.String({ description: '订单状态' })),
+      paymentStatus: t.Optional(t.String({ description: '支付状态' })),
+      customerEmail: t.Optional(t.String({ description: '客户邮箱' })),
+      orderNumber: t.Optional(t.String({ description: '订单编号' }))
+    })
   ]),
 
   // 更新订单状态请求
   updateOrderStatus: t.Object({
     status: t.String({ description: '订单状态' }),
-    notes: t.Optional(t.String({ description: '备注' }))
+    notes: t.Optional(t.Union([t.String({ description: '备注' })]))
   }),
 
   // 更新物流信息请求
@@ -45,7 +47,7 @@ export const ordersModel = {
   // 处理退款申请请求
   processRefund: t.Object({
     status: t.String({ description: '退款状态' }),
-    notes: t.Optional(t.String({ description: '处理备注' }))
+    notes: t.Optional(t.Union([t.String({ description: '处理备注' })]))
   }),
 
   // 统计查询参数

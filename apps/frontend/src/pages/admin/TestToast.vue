@@ -71,7 +71,7 @@
 import Button from 'primevue/button'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { onMounted } from 'vue'
+
 
 // Toast 实例 - 使用条件导入解决 SSR 问题
 const toast = !import.meta.env.SSR ? useToast() : null

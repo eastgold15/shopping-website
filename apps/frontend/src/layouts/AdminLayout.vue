@@ -1,11 +1,11 @@
 <script setup>
-import Avatar from 'primevue/avatar';
-import Badge from 'primevue/badge';
-import Button from 'primevue/button';
-import Drawer from 'primevue/drawer';
-import Menu from 'primevue/menu';
-import PanelMenu from 'primevue/panelmenu';
-import { computed, onMounted, ref } from 'vue';
+
+
+
+
+
+
+
 import { useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();

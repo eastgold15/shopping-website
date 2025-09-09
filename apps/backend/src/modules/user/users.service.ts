@@ -211,7 +211,7 @@ export class UserService extends BaseService<UserEntity, CreateUser, UpdateUser>
   /**
    * 批量更新用户状态
    */
-  async batchUpdateStatus(userIds: string[], status: number): Promise<ServiceResponse<number>> {
+  async batchUpdateStatus(userIds: number[], status: number): Promise<ServiceResponse<number>> {
     try {
       if (!userIds || userIds.length === 0) {
         throw new ValidationError('用户ID列表不能为空');

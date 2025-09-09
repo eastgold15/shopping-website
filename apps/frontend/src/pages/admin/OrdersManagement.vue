@@ -1,24 +1,7 @@
 <script setup lang="ts">
-import Badge from 'primevue/badge'
-// PrimeVue 组件
-import Button from 'primevue/button'
-import Calendar from 'primevue/calendar'
-import Card from 'primevue/card'
-import Column from 'primevue/column'
-import ConfirmDialog from 'primevue/confirmdialog'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import Timeline from 'primevue/timeline'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
+import { api } from '@frontend/utils/handleApi'
 
 // 类型定义
 interface Order {
@@ -158,10 +141,17 @@ const loadOrders = async () => {
             endDate: filterDateRange.value?.[1]
         }
 
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // 实际API调用
+        const response = await api.orders.list(params)
         
-        // 模拟数据
+        if (response.code === 200) {
+            orders.value = response.data.orders || []
+            total.value = response.data.total || 0
+        } else {
+            throw new Error(response.message || '加载订单失败')
+        }
+        
+        // 临时模拟数据（如果API未实现）
         const mockOrders: Order[] = [
             {
                 id: 1,
@@ -306,11 +296,18 @@ const updateOrderStatus = async () => {
     if (!selectedOrder.value) return
     
     try {
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // 实际API调用
+        const response = await api.orders.updateStatus(selectedOrder.value.id.toString(), {
+            status: newStatus.value,
+            remark: statusRemark.value
+        })
         
-        selectedOrder.value.status = newStatus.value
-        selectedOrder.value.updatedAt = new Date()
+        if (response.code === 200) {
+            selectedOrder.value.status = newStatus.value
+            selectedOrder.value.updatedAt = new Date()
+        } else {
+            throw new Error(response.message || '更新订单状态失败')
+        }
         
         toast.add({ severity: 'success', summary: '成功', detail: '订单状态更新成功', life: 1000 })
         showStatusDialog.value = false

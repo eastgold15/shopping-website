@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 
 import { imagesModel } from './images.model';
 import { ImageService } from './images.service';
@@ -17,13 +17,9 @@ export const imagesController = new Elysia({ prefix: '/images' })
       tags: ['Images']
     }
   })
-
   // 获取图片列表
   .get('/', async ({ query, imagesService }) => {
     const result = await imagesService.findImagesByPage(query as any);
-
-
-
     return result
   }, {
     query: 'ImageListQueryDto',
@@ -35,14 +31,7 @@ export const imagesController = new Elysia({ prefix: '/images' })
 
   // 获取单个图片信息
   .get('/:id', async ({ params, imagesService }) => {
-    const imageId = parseInt(params.id as string);
-    if (isNaN(imageId)) {
-      return {
-        success: false,
-        error: '无效的图片ID'
-      };
-    }
-    const result = await imagesService.findById(imageId);
+    const result = await imagesService.findById(params.id);
 
     if (result.code !== 200) {
       return {
@@ -60,6 +49,9 @@ export const imagesController = new Elysia({ prefix: '/images' })
 
     return commonRes(result.data);
   }, {
+    params: t.Object({
+      id: t.Number()
+    }),
     detail: {
       summary: '获取单个图片信息',
       description: '根据ID获取图片的详细信息'
@@ -89,6 +81,10 @@ export const imagesController = new Elysia({ prefix: '/images' })
 
     return commonRes(result.data);
   }, {
+
+    params: t.Object({
+      id: t.Number()
+    }),
     body: 'UpdateImageDto',
     detail: {
       summary: '更新图片信息',
@@ -99,10 +95,15 @@ export const imagesController = new Elysia({ prefix: '/images' })
   // 删除图片
   .delete('/:id', async ({ params, imagesService }) => {
     try {
-      // 先获取图片信息
-      const imageResult = await imagesService.findById(params.id);
+      const id = parseInt(params.id as string, 10);
+      if (isNaN(id)) {
+        return { success: false, error: '无效的ID参数' };
+      }
 
-      if (!imageResult.success || !imageResult.data) {
+      // 先获取图片信息
+      const imageResult = await imagesService.findById(id);
+
+      if (imageResult.code !== 200 || !imageResult.data) {
         return {
           success: false,
           error: '图片不存在'
@@ -123,12 +124,12 @@ export const imagesController = new Elysia({ prefix: '/images' })
       }
 
       // 删除数据库记录
-      const deleteResult = await imagesService.delete(params.id);
+      const deleteResult = await imagesService.delete(id);
 
-      if (!deleteResult.success) {
+      if (deleteResult.code !== 200) {
         return {
           success: false,
-          error: deleteResult.error?.message || '删除图片记录失败'
+          error: deleteResult.message || '删除图片记录失败'
         };
       }
 
@@ -163,7 +164,7 @@ export const imagesController = new Elysia({ prefix: '/images' })
       const images = [];
       for (const id of imageIds) {
         const result = await imagesService.findById(id);
-        if (result.success && result.data) {
+        if (result.code === 200 && result.data) {
           images.push(result.data);
         }
       }
@@ -185,10 +186,10 @@ export const imagesController = new Elysia({ prefix: '/images' })
       // 批量删除数据库记录
       const deleteResult = await imagesService.deleteImages(imageIds);
 
-      if (!deleteResult.success) {
+      if (deleteResult.code !== 200) {
         return {
           success: false,
-          error: deleteResult.error?.message || '批量删除图片失败'
+          error: deleteResult.message || '批量删除图片失败'
         };
       }
 
@@ -215,10 +216,10 @@ export const imagesController = new Elysia({ prefix: '/images' })
   .get('/stats/overview', async ({ imagesService }) => {
     const result = await imagesService.getImageStats();
 
-    if (!result.success) {
+    if (result.code !== 200) {
       return {
         success: false,
-        error: result.error?.message || '获取统计信息失败'
+        error: result.message || '获取统计信息失败'
       };
     }
 
@@ -249,7 +250,7 @@ export const imagesController = new Elysia({ prefix: '/images' })
       const key = `${category}/${timestamp}_${randomStr}.${fileExtension}`;
 
       // 获取预签名URL
-      const presignedUrl = await ossService.getPresignedUrl(key, 'PUT');
+      const presignedUrl = await ossService.generatePresignedUploadUrl(key, 3600);
 
       return commonRes({
         uploadUrl: presignedUrl,
@@ -283,7 +284,7 @@ export const imagesController = new Elysia({ prefix: '/images' })
       }
 
       // 构建完整的文件URL
-      const fileUrl = await ossService.getFileUrl(key);
+      const fileUrl = ossService.getPublicUrl(key);
 
       // 创建图片记录
       const imageData = {
@@ -298,10 +299,10 @@ export const imagesController = new Elysia({ prefix: '/images' })
 
       const result = await imagesService.createImage(imageData);
 
-      if (!result.success) {
+      if (result.code !== 200) {
         return {
           success: false,
-          error: result.error?.message || '创建图片记录失败'
+          error: result.message || '创建图片记录失败'
         };
       }
 

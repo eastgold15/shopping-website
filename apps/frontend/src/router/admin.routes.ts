@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+// import { createRouter, createWebHistory } from 'vue-router' // 未使用的导入
 import AdminLayout from '@frontend/layouts/AdminLayout.vue'
 import Dashboard from '@frontend/pages/admin/Dashboard.vue'
 import CategoryManagement from '@frontend/pages/admin/CategoryManagement.vue'

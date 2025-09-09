@@ -2,23 +2,9 @@
 
 import type { BatchDeleteImageDto } from '@backend/routes/images.model';
 import { copyToClipboard, formatDate, formatSize, getImageUrl, openInNewTab } from '@frontend/utils/formatUtils';
-import { client } from '@frontend/utils/useTreaty';
-import Badge from 'primevue/badge';
-import Button from 'primevue/button';
-import Checkbox from 'primevue/checkbox';
-import ConfirmDialog from 'primevue/confirmdialog';
-import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
-import FileUpload from 'primevue/fileupload';
-import InputGroup from 'primevue/inputgroup';
-import InputGroupAddon from 'primevue/inputgroupaddon';
-import InputText from 'primevue/inputtext';
-import Paginator from 'primevue/paginator';
-import ProgressBar from 'primevue/progressbar';
-import ProgressSpinner from 'primevue/progressspinner';
+import { api } from '@frontend/utils/handleApi';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref } from 'vue';
 
 // 图片数据类型
 interface ImageData {
@@ -113,14 +99,8 @@ const totalPages = computed(() => {
 const loadImages = async () => {
   loading.value = true;
   try {
-    const response = await client.api.images.get();
-
-    console.log('加载图片成功:', response);
-    if (response.status === 200 && response.data.code == 200) {
-      images.value = response.data.data;
-    } else {
-      throw new Error(response.data?.error || '加载失败');
-    }
+    const response = await api.images.list();
+    images.value = response.data;
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -185,7 +165,7 @@ const saveImageEdit = async () => {
       altText: editImageData.value.altText
     };
 
-    const response = await client.api.images({ id: editImageData.value.id }).put(updateData);
+    const response = await api.images.update(editImageData.value.id, updateData);
 
     if (response.status === 200 && response.data?.code == 200) {
       // 更新本地数据
@@ -278,24 +258,20 @@ const confirmBatchDelete = () => {
  */
 const deleteImage = async (imageId: string) => {
   try {
-    const response = await client.api.images({ id: imageId }).delete();
+    await api.images.delete(imageId);
+    
+    // 从列表中移除
+    images.value = images.value.filter(img => img.id !== imageId);
 
-    if (response.status == 200 && response.data?.code == 200) {
-      // 从列表中移除
-      images.value = images.value.filter(img => img.id !== imageId);
+    // 从选中列表中移除
+    selectedImages.value = selectedImages.value.filter(id => id !== imageId);
 
-      // 从选中列表中移除
-      selectedImages.value = selectedImages.value.filter(id => id !== imageId);
-
-      toast.add({
-        severity: 'success',
-        summary: '删除成功',
-        detail: '图片已删除',
-        life: 2000
-      });
-    } else {
-      throw new Error(response.data?.error || '删除失败');
-    }
+    toast.add({
+      severity: 'success',
+      summary: '删除成功',
+      detail: '图片已删除',
+      life: 2000
+    });
   } catch (error) {
     console.error('删除失败:', error);
     toast.add({
@@ -316,22 +292,18 @@ const batchDeleteImages = async () => {
       imageIds: selectedImages.value
     };
 
-    const response = await client.api.images.batch.delete(batchDeleteData);
-
-    if (response.status == 200 && response.data?.code == 200) {
-      // 从列表中移除
-      images.value = images.value.filter(img => !selectedImages.value.includes(img.id));
-      // 清空选中列表
-      selectedImages.value = [];
-      toast.add({
-        severity: 'success',
-        summary: '删除成功',
-        detail: `已删除 ${response.data.data.deletedCount} 张图片`,
-        life: 3000
-      });
-    } else {
-      throw new Error(response.data?.error || '批量删除失败');
-    }
+    const response = await api.images.batchDelete(batchDeleteData);
+    
+    // 从列表中移除
+    images.value = images.value.filter(img => !selectedImages.value.includes(img.id));
+    // 清空选中列表
+    selectedImages.value = [];
+    toast.add({
+      severity: 'success',
+      summary: '删除成功',
+      detail: `已删除 ${response.data.deletedCount} 张图片`,
+      life: 3000
+    });
   } catch (error) {
     console.error('批量删除失败:', error);
     toast.add({

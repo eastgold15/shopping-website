@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import Drawer from 'primevue/drawer';
-import Menu from 'primevue/menu';
-import { onMounted, ref, reactive } from 'vue';
+
+
+
+
 import { useRouter } from 'vue-router';
 import CategoryNav from '../components/CategoryNav.vue';
-import { client } from '@frontend/utils/useTreaty';
-import { handleApiRes } from '../utils/handleApi';
+import { api, handleApiRes } from '../utils/handleApi';
 import type { FooterConfig, FooterSection } from '../types/layout';
 
 const router = useRouter();
@@ -98,7 +97,7 @@ const loadFooterConfig = async () => {
 		// 获取底部相关配置
 
 		// @ts-ignore
-		const footerResponse: any = await handleApiRes(client.api.siteConfigs.category['footer'].get())
+		const footerResponse: any = await api.siteConfigs.getByCategory('footer')
 
 
 		if (footerResponse.data && footerResponse.code === 200) {

@@ -68,13 +68,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+
 import { useToast } from 'primevue/usetoast';
-import ProgressBar from 'primevue/progressbar';
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import Message from 'primevue/message';
-import { $fetch } from 'ofetch';
+
+
+
+
+import { api } from '@frontend/utils/api';
 
 // Props
 interface Props {
@@ -265,17 +265,11 @@ const uploadSingleFile = async (file: File): Promise<UploadedImage> => {
   formData.append('file', file);
   formData.append('folder', props.folder);
   
-  const response = await $fetch('/api/upload/general', {
-    method: 'POST',
-    body: formData,
+  const response = await api.upload.image(formData, {
     onUploadProgress: (progress) => {
       uploadProgress.value = Math.round((progress.loaded / progress.total) * 100);
     }
   });
-  
-  if (!response.success) {
-    throw new Error(response.error || '上传失败');
-  }
   
   return {
     url: response.data.url,
@@ -320,10 +314,7 @@ const copyImageUrl = async (image: UploadedImage) => {
 const deleteImage = async (image: UploadedImage, index: number) => {
   try {
     // 从OSS删除文件
-    const key = encodeURIComponent(image.url.split('/').slice(-3).join('/'));
-    await $fetch(`/api/upload/file/${key}`, {
-      method: 'DELETE'
-    });
+    await api.upload.deleteFile(image.url);
     
     // 从列表中移除
     uploadedImages.value.splice(index, 1);

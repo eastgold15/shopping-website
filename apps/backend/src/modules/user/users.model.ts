@@ -14,15 +14,16 @@ export const usersModel = {
   updateUser: DbType.typebox.insert.userSchema,
 
   // 用户查询参数
-  userQuery: t.Composite([UnoQuery, t.Object({
-    status: t.Number(),
-    sortBy: t.String(),
-  })]),
+  userQuery: t.Object({
+    ...UnoQuery.properties,
+    status: t.Optional(t.Number({ description: '用户状态' })),
+    sortBy: t.Optional(t.String({ description: '排序字段' })),
+  }),
 
 
   // 批量操作
   batchUpdate: t.Object({
-    userIds: t.Array(t.String({ format: 'uuid' })),
+    userIds: t.Array(t.Number()),
     status: t.Number(),
   }),
 };

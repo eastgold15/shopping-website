@@ -53,16 +53,9 @@ export const ossController = new Elysia({ prefix: '/oss' })
 
   // 批量删除文件
   .delete('/files', async ({ body, ossService }) => {
-    const result = await ossService.batchDeleteFiles(body.keys);
+    await ossService.deleteFiles(body.keys);
 
-    if (!result.success) {
-      return {
-        success: false,
-        error: result.error?.message || '批量删除文件失败'
-      };
-    }
-
-    return commonRes(result.data);
+    return commonRes({ success: true });
   }, {
     body: 'batchDeleteParams',
     detail: {
@@ -73,16 +66,9 @@ export const ossController = new Elysia({ prefix: '/oss' })
 
   // 检查文件是否存在
   .post('/file/exists', async ({ body, ossService }) => {
-    const result = await ossService.fileExists(body.key);
+    const exists = await ossService.fileExists(body.key);
 
-    if (!result.success) {
-      return {
-        success: false,
-        error: result.error?.message || '检查文件存在性失败'
-      };
-    }
-
-    return commonRes({ exists: result.data });
+    return commonRes({ exists });
   }, {
     body: 'existsParams',
     detail: {
@@ -93,16 +79,9 @@ export const ossController = new Elysia({ prefix: '/oss' })
 
   // 获取文件信息
   .post('/file/info', async ({ body, ossService }) => {
-    const result = await ossService.getFileInfo(body.key);
+    const fileInfo = await ossService.getFileStats(body.key);
 
-    if (!result.success) {
-      return {
-        success: false,
-        error: result.error?.message || '获取文件信息失败'
-      };
-    }
-
-    return commonRes(result.data);
+    return commonRes(fileInfo);
   }, {
     body: 'existsParams',
     detail: {
@@ -113,11 +92,9 @@ export const ossController = new Elysia({ prefix: '/oss' })
 
   // 列出文件
   .post('/files/list', async ({ body, ossService }) => {
-    const result = await ossService.listFiles(body.prefix, body.maxKeys, body.marker);
+    const files = await ossService.listFiles(body.prefix, body.maxKeys);
 
-   
-
-    return commonRes(result.data);
+    return commonRes(files);
   }, {
     body: 'listParams',
     detail: {

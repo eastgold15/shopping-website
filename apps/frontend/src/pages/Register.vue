@@ -97,8 +97,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import GoogleLoginButton from '@frontend/components/GoogleLoginButton.vue'
 
 // 路由

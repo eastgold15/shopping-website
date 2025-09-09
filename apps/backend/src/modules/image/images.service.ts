@@ -1,27 +1,26 @@
 // 图片管理服务
 
-import { and, eq, like, inArray } from 'drizzle-orm';
 
+import { eq, getTableColumns } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { imagesSchema } from '../../db/schema';
+import { imagesSchema, productImagesSchema } from '../../db/schema';
 
 
 
 // 导入数据库类型
-import type {
-  DbType
-} from '../../db/database.types';
 
 // 导入模型类型
+import { CustomeError, DatabaseError, handleDatabaseError, NotFoundError, ValidationError } from '@backend/utils/error/customError';
+import { commonRes } from '@backend/utils/Res';
+import BaseService, { CreateOptions, PaginatedServiceResponse, QueryOptions, ServiceResponse, UpdateOptions, validateRequired } from '@backend/utils/services';
 import type {
-  CreateImageDto,
-  UpdateImageDto,
-  ImageListQueryDto
+  ImageListQueryDto,
+  UpdateImageDto
 } from './images.model';
 
 // 图片实体类型
 export interface ImageEntity {
-  id: string;
+  id: number;
   fileName: string;
   originalName: string;
   url: string;
@@ -29,8 +28,8 @@ export interface ImageEntity {
   fileSize: number;
   mimeType: string;
   altText: string;
-  uploadDate: string;
-  updatedDate: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 图片统计信息类型
@@ -40,9 +39,6 @@ export interface ImageStats {
   byMimeType: Record<string, number>;
   totalSize: number;
 }
-import { CustomeError, handleDatabaseError, ValidationError, NotFoundError, DatabaseError } from '@backend/utils/error/customError';
-import BaseService, { CreateOptions, PaginatedServiceResponse, QueryOptions, ServiceResponse, UpdateOptions, validateRequired } from '@backend/utils/services';
-import { commonRes } from '@backend/utils/Res';
 
 export interface ImageQueryOptions extends QueryOptions {
   category?: string;
@@ -52,13 +48,21 @@ export interface ImageQueryOptions extends QueryOptions {
   endDate?: string;
 }
 
-export interface ImageCreateInput extends Omit<CreateImageDto, 'id'> {
-  file?: Buffer;
+export interface ImageCreateInput {
+  url: string;
+  fileName: string;
   originalName?: string;
+  fileSize: number;
+  mimeType: string;
+  category?: string;
+  altText?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date | null;
+  file?: Buffer;
 }
 
 export interface ImageUpdateInput extends Partial<UpdateImageDto> {
-  id: string;
+  id: number;
 }
 
 export class ImageService extends BaseService<
@@ -79,13 +83,11 @@ export class ImageService extends BaseService<
   ): Promise<ServiceResponse<ImageEntity>> {
     try {
       // 验证必填字段
-      validateRequired(data, ['fileName', 'url', 'category', 'fileSize', 'mimeType']);
+      validateRequired(data, ['fileName', 'url', 'fileSize', 'mimeType']);
 
-      // 生成ID
       const imageData = {
         ...data,
-        id: this.generateImageId(),
-        uploadDate: new Date().toISOString(),
+        createdAt: new Date(),
       };
 
       return await this.create(imageData, options);
@@ -213,7 +215,7 @@ export class ImageService extends BaseService<
         throw new ValidationError(`Invalid image ID: ${id}`);
       }
       const existing = await this.findById(imageId);
-      if (!existing.code === 200 || !existing.data) {
+      if (existing.code !== 200 || !existing.data) {
         throw new NotFoundError(`Image with id ${id} not found`);
       }
 
@@ -325,12 +327,12 @@ export class ImageService extends BaseService<
     try {
       const filters = [
         {
-          field: 'uploadDate',
+          field: 'createdAt',
           operator: 'gte' as const,
           value: startDate
         },
         {
-          field: 'uploadDate',
+          field: 'createdAt',
           operator: 'lte' as const,
           value: endDate
         }
@@ -346,11 +348,34 @@ export class ImageService extends BaseService<
   }
 
   /**
-   * 生成图片ID
+   * 获取商品关联的图片
    */
-  private generateImageId(): string {
-    return `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  async findByProductId(productId: number) {
+    try {
+
+      const column = getTableColumns(imagesSchema);
+      const images = await db.select({
+        ...column,
+        isMain: productImagesSchema.isMain
+      })
+        .from(productImagesSchema)
+        .leftJoin(imagesSchema, eq(productImagesSchema.imageId, imagesSchema.id))
+        .where(eq(productImagesSchema.productId, productId));
+
+      if (images.length < 0) {
+        throw new CustomeError('未找到该商品图片');
+      }
+
+      return commonRes(images)
+    } catch (error) {
+      if (error instanceof CustomeError) {
+        throw error;
+      }
+      throw handleDatabaseError(error);
+    }
   }
+
+
 
   /**
    * 验证分类
@@ -373,9 +398,9 @@ export class ImageService extends BaseService<
    * 验证创建数据
    */
   protected async validateCreate(data: ImageCreateInput): Promise<void> {
-    validateRequired(data, ['fileName', 'url', 'category', 'fileSize', 'mimeType']);
+    validateRequired(data, ['fileName', 'url', 'fileSize', 'mimeType']);
 
-    if (!this.isValidCategory(data.category)) {
+    if (data.category && !this.isValidCategory(data.category)) {
       throw new ValidationError(`Invalid category: ${data.category}`);
     }
 

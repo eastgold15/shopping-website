@@ -268,12 +268,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
 import BannerAds from '../components/BannerAds.vue'
 import type { Products } from '../types/product'
-import { handleApiRes } from '../utils/handleApi'
+import { api, handleApiRes } from '../utils/handleApi'
 
 
 // 路由相关
@@ -405,7 +402,7 @@ const fetchProduct = async (productId: string) => {
   try {
     loading.value = true
     // 使用Eden Treaty调用API
-    const res = await handleApiRes(client.api.products({ id: productId }).get())
+    const res = await handleApiRes(api.products.getById(productId))
     if (!res) {
       return
     }

@@ -1,43 +1,40 @@
+import { count, desc, eq, sql } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import {
-  userSchema,
-  ordersSchema,
-  productsSchema,
   categoriesSchema,
-  advertisementsSchema
+  productsSchema,
+  imagesSchema,
+  productImagesSchema
 } from '../../db/schema';
-import { eq, desc, asc, like, and, count, sum, sql, gte, lte } from 'drizzle-orm';
+import { commonRes } from '../../utils/Res';
 import type {
-  DashboardQuery,
-  SalesTrendQuery,
-  PopularProductsQuery,
-  CategorySalesQuery,
-  UserGrowthQuery,
-  DashboardStats,
-  SalesTrendResponse,
-  PopularProductItem,
   CategorySalesItem,
-  UserGrowthResponse
+  CategorySalesQuery,
+  DashboardQuery,
+  DashboardStats,
+  PopularProductItem,
+  PopularProductsQuery,
+  SalesTrendQuery,
+  UserGrowthQuery,
 } from './statistics.model';
-
-/**
- * 统计服务类
- * 处理统计相关的业务逻辑
- */
 export class StatisticsService {
   /**
    * 获取仪表板统计数据
    */
-  async getDashboardStats(query: DashboardQuery): Promise<{ success: boolean; data?: DashboardStats; error?: Error }> {
+  async getDashboardStats(query: DashboardQuery) {
     try {
       // 获取商品统计数据
-      const [productStats] = await Promise.all([
-        db.select({
-          totalProducts: count(),
-          activeProducts: sql<number>`count(case when ${productsSchema.isActive} = true then 1 end)`,
-          featuredProducts: sql<number>`count(case when ${productsSchema.isFeatured} = true then 1 end)`
-        }).from(productsSchema)
-      ]);
+      const productStatsResult = await db.select({
+        totalProducts: count(),
+        activeProducts: sql<number>`count(case when ${productsSchema.isActive} = true then 1 end)`,
+        featuredProducts: sql<number>`count(case when ${productsSchema.isFeatured} = true then 1 end)`
+      }).from(productsSchema);
+      
+      const productStats = productStatsResult[0] || {
+        totalProducts: 0,
+        activeProducts: 0,
+        featuredProducts: 0
+      };
 
       // 获取最新商品列表（带链接）
       const recentProducts = await db
@@ -46,7 +43,6 @@ export class StatisticsService {
           name: productsSchema.name,
           slug: productsSchema.slug,
           price: productsSchema.price,
-          images: productsSchema.images,
           isActive: productsSchema.isActive,
           isFeatured: productsSchema.isFeatured,
           createdAt: productsSchema.createdAt
@@ -56,7 +52,7 @@ export class StatisticsService {
         .orderBy(desc(productsSchema.createdAt))
         .limit(10);
 
-      const result: DashboardStats = {
+      const result = {
         // 商品统计概览
         productStats: productStats[0],
         // 最新商品列表（可用于生成链接）
@@ -74,17 +70,17 @@ export class StatisticsService {
         }
       };
 
-      return { success: true, data: result };
+      return commonRes(result, 200, '获取仪表板统计数据成功');
     } catch (error) {
       console.error('获取仪表板统计数据失败:', error);
-      return { success: false, error: error as Error };
+      return commonRes(null, 50000, `获取仪表板统计数据失败${error as Error}`,);
     }
   }
 
   /**
    * 获取销售趋势数据
    */
-  async getSalesTrend(query: SalesTrendQuery): Promise<{ success: boolean; data?: SalesTrendResponse; error?: Error }> {
+  async getSalesTrend(query: SalesTrendQuery) {
     try {
       const { period = '7d', startDate, endDate } = query;
 
@@ -115,11 +111,11 @@ export class StatisticsService {
       // 这里应该查询订单表获取销售数据
       // 由于示例中没有完整的订单表结构，这里返回模拟数据
       const mockTrend = [];
-      const days = period === 'custom' && startDate && endDate 
+      const days = period === 'custom' && startDate && endDate
         ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (24 * 60 * 60 * 1000))
         : parseInt(period.replace('d', ''));
 
-      for (let i = 0; i < days; i++) {
+      for (let i = 0;i < days;i++) {
         const date = new Date(dateRange.getTime() + i * 24 * 60 * 60 * 1000);
         mockTrend.push({
           date: date.toISOString().split('T')[0],
@@ -137,92 +133,97 @@ export class StatisticsService {
       };
       summary.averageOrderValue = summary.totalOrders > 0 ? summary.totalRevenue / summary.totalOrders : 0;
 
-      return {
-        success: true,
-        data: {
-          trend: mockTrend,
-          summary
-        }
-      };
+      return commonRes({
+        trend: mockTrend,
+        summary
+      }, 200, '获取销售趋势成功');
     } catch (error) {
       console.error('获取销售趋势数据失败:', error);
-      return { success: false, error: error as Error };
+
+
+      return commonRes(null, 50000, `获取销售趋势数据失败${error as Error}`,);
     }
   }
 
   /**
    * 获取热门商品统计
    */
-  async getPopularProducts(query: PopularProductsQuery): Promise<{ success: boolean; data?: PopularProductItem[]; error?: Error }> {
+  async getPopularProducts(query: PopularProductsQuery) {
     try {
       const { pageSize = 10 } = query;
 
       // 获取商品列表（这里应该根据销量排序，暂时按创建时间）
+      // 使用左连接获取商品图片
       const products = await db
         .select({
           id: productsSchema.id,
           name: productsSchema.name,
           slug: productsSchema.slug,
           price: productsSchema.price,
-          images: productsSchema.images
+
+          imageUrl: imagesSchema.url,
+
         })
         .from(productsSchema)
+        .leftJoin(productImagesSchema, eq(productsSchema.id, productImagesSchema.productId))
+        .leftJoin(imagesSchema, eq(productImagesSchema.imageId, imagesSchema.id))
         .where(eq(productsSchema.isActive, true))
         .orderBy(desc(productsSchema.createdAt))
         .limit(pageSize);
 
       // 模拟销售数据
-      const result: PopularProductItem[] = products.map(product => ({
+      const result = products.map(product => ({
         ...product,
         salesCount: Math.floor(Math.random() * 500) + 100,
-        revenue: (Math.floor(Math.random() * 500) + 100) * product.price
+        revenue: (Math.floor(Math.random() * 500) + 100) * Number(product.price)
       }));
 
-      return { success: true, data: result };
+      return commonRes(result, 200, '获取热门商品统计成功');
     } catch (error) {
       console.error('获取热门商品统计失败:', error);
-      return { success: false, error: error as Error };
+
+
+      return commonRes(null, 50000, `获取热门商品统计失败${error as Error}`,);
     }
   }
 
   /**
    * 获取分类销售统计
    */
-  async getCategorySales(query: CategorySalesQuery): Promise<{ success: boolean; data?: CategorySalesItem[]; error?: Error }> {
+  async getCategorySales(query: CategorySalesQuery) {
     try {
+      const { pageSize = 10 } = query;
+
       // 获取分类列表
       const categories = await db
         .select({
           id: categoriesSchema.id,
-          name: categoriesSchema.name
+          name: categoriesSchema.name,
+          slug: categoriesSchema.slug
         })
         .from(categoriesSchema)
-        .where(eq(categoriesSchema.isActive, true));
+        .where(eq(categoriesSchema.isVisible, true))
+        .limit(pageSize);
 
       // 模拟销售数据
-      const totalRevenue = 100000;
-      const result: CategorySalesItem[] = categories.map(category => {
-        const revenue = Math.floor(Math.random() * 20000) + 5000;
-        return {
-          categoryId: category.id,
-          categoryName: category.name,
-          salesCount: Math.floor(Math.random() * 200) + 50,
-          revenue,
-          percentage: Math.round((revenue / totalRevenue) * 100 * 100) / 100
-        };
-      });
+      const result = categories.map(category => ({
+        ...category,
+        salesCount: Math.floor(Math.random() * 200) + 50,
+        revenue: Math.floor(Math.random() * 50000) + 10000,
+        productCount: Math.floor(Math.random() * 50) + 10
+      }));
 
-      return { success: true, data: result };
+      return commonRes(result, 200, '获取分类销售统计成功');
     } catch (error) {
       console.error('获取分类销售统计失败:', error);
-      return { success: false, error: error as Error };
+      return commonRes(null, 50000, `获取分类销售统计失败${error as Error}`,);
     }
   }
 
   /**
    * 获取用户增长趋势
    */
-  async getUserGrowth(query: UserGrowthQuery): Promise<{ success: boolean; data?: UserGrowthResponse; error?: Error }> {
+  async getUserGrowth(query: UserGrowthQuery) {
     try {
       const { period = '30d' } = query;
       const days = parseInt(period.replace('d', ''));
@@ -233,11 +234,11 @@ export class StatisticsService {
       const growth = [];
       let totalUsers = 1000;
 
-      for (let i = 0; i < days; i++) {
+      for (let i = 0;i < days;i++) {
         const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
         const newUsers = Math.floor(Math.random() * 20) + 5;
         totalUsers += newUsers;
-        
+
         growth.push({
           date: date.toISOString().split('T')[0],
           newUsers,
@@ -249,21 +250,20 @@ export class StatisticsService {
       const summary = {
         totalNewUsers: growth.reduce((sum, item) => sum + item.newUsers, 0),
         averageActiveUsers: Math.round(growth.reduce((sum, item) => sum + item.activeUsers, 0) / growth.length),
-        growthRate: growth.length > 1 
+        growthRate: growth.length > 1
           ? Math.round(((growth[growth.length - 1].totalUsers - growth[0].totalUsers) / growth[0].totalUsers) * 100 * 100) / 100
           : 0
       };
 
-      return {
-        success: true,
-        data: {
-          growth,
-          summary
-        }
-      };
+      return commonRes({
+        growth,
+        summary
+      }, 200, '获取用户增长趋势成功');
     } catch (error) {
       console.error('获取用户增长趋势失败:', error);
-      return { success: false, error: error as Error };
+
+
+      return commonRes(null, 50000, `获取用户增长趋势失败${error as Error}`,);
     }
   }
 }

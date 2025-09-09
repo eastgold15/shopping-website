@@ -29,10 +29,13 @@ export const ossModel = {
 
   // 文件信息
   fileInfo: t.Object({
-    key: t.String({ description: '文件路径' }),
+    fileName: t.String({ description: '文件名' }),
+    url: t.String({ description: '文件URL' }),
+
+    type: t.String({ description: '文件类型' }),
     size: t.Number({ description: '文件大小(字节)' }),
-    lastModified: t.Date({ description: '最后修改时间' }),
-    etag: t.String({ description: '文件ETag' }),
+    uploadedAt: t.Date({ description: '最后修改时间' }),
+
     contentType: t.Optional(t.String({ description: '文件MIME类型' }))
   }),
 
@@ -58,12 +61,7 @@ export const ossModel = {
     marker: t.Optional(t.String({ description: '分页标记' }))
   }),
 
-  // 文件列表响应
-  listResponse: t.Object({
-    files: t.Array(t.Ref('fileInfo')),
-    isTruncated: t.Boolean({ description: '是否还有更多文件' }),
-    nextMarker: t.Optional(t.String({ description: '下一页标记' }))
-  })
+
 } as const;
 
 // 导出类型
@@ -75,4 +73,3 @@ export type DeleteParams = typeof ossModel.deleteParams.static;
 export type BatchDeleteParams = typeof ossModel.batchDeleteParams.static;
 export type ExistsParams = typeof ossModel.existsParams.static;
 export type ListParams = typeof ossModel.listParams.static;
-export type ListResponse = typeof ossModel.listResponse.static;

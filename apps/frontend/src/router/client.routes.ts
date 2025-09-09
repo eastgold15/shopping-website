@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+// import { createRouter, createWebHistory } from 'vue-router' // 未使用的导入
 import ClientLayout from '@frontend/layouts/ClientLayout.vue'
 import Index from '@frontend/pages/index.vue'
 import Home from '@frontend/pages/Home.vue'
@@ -10,11 +10,6 @@ const clientRoutes = [
     path: '/',
     component: ClientLayout,
     children: [
-      {
-        path: '',
-        name: 'index',
-        component: Index
-      },
       {
         path: 'home',
         name: 'home',

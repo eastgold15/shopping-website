@@ -1,4 +1,4 @@
-import { commonRes } from '@backend/utils/Res';
+import { commonRes, pageRes } from '@backend/utils/Res';
 import { Elysia, t } from 'elysia';
 import { partnersModel } from './partners.model';
 import { PartnersService } from './partners.service';
@@ -10,14 +10,7 @@ import { PartnersService } from './partners.service';
 export const partnersController = new Elysia({ prefix: '/partners', tags: ['Partners'] })
   .model(partnersModel)
   .decorate('partnersService', new PartnersService())
-  .guard({
-    beforeHandle({ params }) {
-      // 转换路径参数 id 为数字
-      if ('id' in params) {
-        params.id = parseInt(params.id as string);
-      }
-    }
-  })
+
 
   // 获取所有合作伙伴（前台用）
   .get('/list', async ({ partnersService }) => {
@@ -155,6 +148,9 @@ export const partnersController = new Elysia({ prefix: '/partners', tags: ['Part
       return commonRes(null, 500, '更新合作伙伴排序失败');
     }
   }, {
+    params: t.Object({
+      id: t.Number()
+    }),
     body: 'UpdateSortRequest',
     detail: {
       tags: ['Partners'],
@@ -185,7 +181,3 @@ export const partnersController = new Elysia({ prefix: '/partners', tags: ['Part
       description: '切换合作伙伴的启用/禁用状态'
     }
   });
-
-function pageRes(data: { id: number; name: string; description: string; image: string; url: string; sortOrder: number | null; isActive: boolean | null; createdAt: Date | null; updatedAt: Date | null; }[], total: number, page: number, pageSize: number, arg4: string): any {
-  throw new Error('Function not implemented.');
-}

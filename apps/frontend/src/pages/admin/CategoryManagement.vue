@@ -1,30 +1,14 @@
 <script setup lang="ts">
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import Column from 'primevue/column'
-import ConfirmDialog from 'primevue/confirmdialog'
-import Dialog from 'primevue/dialog'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import ToggleSwitch from 'primevue/toggleswitch'
-import TreeSelect from 'primevue/treeselect'
-import TreeTable from 'primevue/treetable'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, reactive, ref } from 'vue'
+
 import { z } from 'zod'
-// PrimeVue 组件
 
 
-import { client } from '@frontend/utils/useTreaty'
-import { handleApiRes } from '../../utils/handleApiRes'
-import type { CategoryTree, } from '@frontend/types/layout'
+import { api } from '@frontend/utils/handleApi'
+import type { CategoryDisplay } from '@backend/types'
 
 
 
@@ -127,7 +111,7 @@ onMounted(() => {
 const loadCategories = async () => {
   try {
     loading.value = true
-    const response = await handleApiRes(client.api.categories.get(), false)
+    const response = await api.categories.list()
 
     // 修复API响应处理逻辑
     if (response?.code === 200 && Array.isArray(response.data)) {
@@ -347,10 +331,10 @@ const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) 
     let result
     if (editingCategory.value) {
       // 更新分类
-      result = await handleApiRes(client.api.categories({ id: editingCategory.value.id }).put(requestData), false)
+      result = await api.categories.update(editingCategory.value.id.toString(), requestData)
     } else {
       // 创建分类
-      result = await handleApiRes(client.api.categories.post(requestData), false)
+      result = await api.categories.create(requestData)
     }
     console.log("xxx", result)
     if (result.status == 200 && result.data.code === 200) {
@@ -424,7 +408,7 @@ const confirmDelete = (category: Category) => {
 const deleteCategory = async (categoryId: string) => {
   try {
     loading.value = true // 添加加载状态
-    const response = await handleApiRes(client.api.categories({ id: categoryId }).delete())
+    const response = await api.categories.delete(categoryId)
 
     if (response.code == 200) {
       toast?.add({ severity: 'success', summary: '成功', detail: '分类删除成功' })

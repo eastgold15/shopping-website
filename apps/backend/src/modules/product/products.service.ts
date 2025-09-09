@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, getTableColumns, like, or } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { categoriesSchema, productsSchema } from '../../db/schema';
+import { categoriesSchema, productsSchema, productImagesSchema, imagesSchema } from '../../db/schema';
 import { handleDatabaseError } from '../../utils/error/customError';
 import type { CreateProductDto, ProductListQueryDto, UpdateProductDto } from './products.model';
 
@@ -144,7 +144,24 @@ export class ProductsService {
         return { success: false, error: '商品不存在', code: 404 };
       }
 
-      return { success: true, data: product[0] };
+      // 获取商品关联的图片
+      const productImages = await db.select({
+        id: imagesSchema.id,
+        url: imagesSchema.url,
+        fileName: imagesSchema.fileName,
+        altText: imagesSchema.altText,
+        isMain: productImagesSchema.isMain
+      })
+        .from(productImagesSchema)
+        .leftJoin(imagesSchema, eq(productImagesSchema.imageId, imagesSchema.id))
+        .where(eq(productImagesSchema.productId, productId));
+
+      const productData = {
+        ...product[0],
+        images: productImages
+      };
+
+      return { success: true, data: productData };
     } catch (error) {
       console.error('获取商品详情失败:', error);
       throw handleDatabaseError(error);
@@ -169,7 +186,24 @@ export class ProductsService {
         return { success: false, error: '商品不存在', code: 404 };
       }
 
-      return { success: true, data: product[0] };
+      // 获取商品关联的图片
+      const productImages = await db.select({
+        id: imagesSchema.id,
+        url: imagesSchema.url,
+        fileName: imagesSchema.fileName,
+        altText: imagesSchema.altText,
+        isMain: productImagesSchema.isMain
+      })
+        .from(productImagesSchema)
+        .leftJoin(imagesSchema, eq(productImagesSchema.imageId, imagesSchema.id))
+        .where(eq(productImagesSchema.productId, product[0].id));
+
+      const productData = {
+        ...product[0],
+        images: productImages
+      };
+
+      return { success: true, data: productData };
     } catch (error) {
       console.error('获取商品详情失败:', error);
       throw handleDatabaseError(error);
@@ -208,5 +242,133 @@ export class ProductsService {
     }
   }
 
-  // 其他方法可以继续添加...
+  /**
+   * 删除商品
+   */
+  static async deleteProduct(id: string) {
+    try {
+      const productId = parseInt(id);
+      if (isNaN(productId)) {
+        throw new Error('无效的商品ID');
+      }
+
+      // 先删除商品关联的图片
+      await db
+        .delete(productImagesSchema)
+        .where(eq(productImagesSchema.productId, productId));
+
+      // 删除商品
+      const [deletedProduct] = await db
+        .delete(productsSchema)
+        .where(eq(productsSchema.id, productId))
+        .returning();
+
+      if (!deletedProduct) {
+        throw new Error('商品不存在');
+      }
+
+      return { success: true, message: '商品删除成功', data: deletedProduct };
+    } catch (error) {
+      console.error('删除商品失败:', error);
+      throw handleDatabaseError(error);
+    }
+  }
+
+  /**
+   * 为商品添加图片关联
+   */
+  static async addProductImage(productId: number, imageId: number, isMain: boolean = false) {
+    try {
+      // 如果设置为主图，先将其他图片的主图状态取消
+      if (isMain) {
+        await db.update(productImagesSchema)
+          .set({ isMain: false })
+          .where(eq(productImagesSchema.productId, productId));
+      }
+
+      const [productImage] = await db
+        .insert(productImagesSchema)
+        .values({ productId, imageId, isMain })
+        .returning();
+
+      return { success: true, data: productImage };
+    } catch (error) {
+      console.error('添加商品图片关联失败:', error);
+      throw handleDatabaseError(error);
+    }
+  }
+
+  /**
+   * 移除商品图片关联
+   */
+  static async removeProductImage(productId: number, imageId: number) {
+    try {
+      await db.delete(productImagesSchema)
+        .where(
+          and(
+            eq(productImagesSchema.productId, productId),
+            eq(productImagesSchema.imageId, imageId)
+          )
+        );
+
+      return { success: true };
+    } catch (error) {
+      console.error('移除商品图片关联失败:', error);
+      throw handleDatabaseError(error);
+    }
+  }
+
+  /**
+   * 设置商品主图
+   */
+  static async setProductMainImage(productId: number, imageId: number) {
+    try {
+      // 先将所有图片的主图状态取消
+      await db.update(productImagesSchema)
+        .set({ isMain: false })
+        .where(eq(productImagesSchema.productId, productId));
+
+      // 设置指定图片为主图
+      await db.update(productImagesSchema)
+        .set({ isMain: true })
+        .where(
+          and(
+            eq(productImagesSchema.productId, productId),
+            eq(productImagesSchema.imageId, imageId)
+          )
+        );
+
+      return { success: true };
+    } catch (error) {
+      console.error('设置商品主图失败:', error);
+      throw handleDatabaseError(error);
+    }
+  }
+
+  /**
+   * 批量设置商品图片
+   */
+  static async setProductImages(productId: number, imageIds: number[], mainImageId?: number) {
+    try {
+      // 先删除现有的图片关联
+      await db.delete(productImagesSchema)
+        .where(eq(productImagesSchema.productId, productId));
+
+      // 添加新的图片关联
+      if (imageIds.length > 0) {
+        const imageData = imageIds.map(imageId => ({
+          productId,
+          imageId,
+          isMain: imageId === mainImageId
+        }));
+
+        await db.insert(productImagesSchema).values(imageData);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('批量设置商品图片失败:', error);
+      throw handleDatabaseError(error);
+    }
+  }
 }

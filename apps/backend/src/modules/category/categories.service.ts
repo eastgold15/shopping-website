@@ -141,10 +141,23 @@ export class CategoriesService {
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+
+      // 允许的排序字段
+      const allowedSortFields = {
+        createdAt: categoriesSchema.createdAt,
+        updatedAt: categoriesSchema.updatedAt,
+        id: categoriesSchema.id,
+        name: categoriesSchema.name,
+      };
+
+      // 确定排序字段和方向
+      const sortFields =
+        allowedSortFields[sortBy as keyof typeof allowedSortFields] ||
+        categoriesSchema.id;
+      const orderByClause =
+        sortOrder === "desc" ? desc(sortFields) : asc(sortFields);
       // 排序
-      const orderByClause = sortOrder === 'asc'
-        ? asc(categoriesSchema[sortBy as keyof typeof categoriesSchema] || categoriesSchema.createdAt)
-        : desc(categoriesSchema[sortBy as keyof typeof categoriesSchema] || categoriesSchema.createdAt);
+
 
       // 查询数据和总数
       const [categories, totalResult] = await Promise.all([

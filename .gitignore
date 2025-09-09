@@ -81,3 +81,4 @@ deploy
 
 apps/backend/.env.production
 **.env.*
+apps/backend/index.exe

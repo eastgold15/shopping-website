@@ -123,14 +123,14 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button';
-import Dropdown from 'primevue/dropdown';
-import InputNumber from 'primevue/inputnumber';
-import InputText from 'primevue/inputtext';
-import MultiSelect from 'primevue/multiselect';
-import Paginator from 'primevue/paginator';
-import Tag from 'primevue/tag';
-import { onMounted, reactive, ref, watch } from 'vue';
+
+
+
+
+
+
+
+
 import { useRouter } from 'vue-router';
 import { client } from '@frontend/utils/useTreaty';
 import { handleApiRes } from '../utils/handleApiRes';

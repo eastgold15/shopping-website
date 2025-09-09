@@ -1,20 +1,7 @@
 <script setup lang="ts">
-// PrimeVue 组件
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import Column from 'primevue/column'
-import ConfirmDialog from 'primevue/confirmdialog'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import ToggleSwitch from 'primevue/toggleswitch'
+
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
 import { client } from '@frontend/utils/useTreaty'
 import ImageSelector from '@frontend/components/ImageSelector.vue'
 

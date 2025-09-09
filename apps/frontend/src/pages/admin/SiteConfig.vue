@@ -302,8 +302,8 @@ import TabPanel from 'primevue/tabpanel'
 import TabView from 'primevue/tabview'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
-import { onMounted, reactive, ref } from 'vue'
-import { client } from '@frontend/utils/useTreaty'
+
+import { api } from '@frontend/utils/handleApi'
 
 // 组合式API
 const toast = useToast()
@@ -418,7 +418,7 @@ const loadConfigs = async () => {
   try {
     loading.value = true
 
-    const response = await client.api.siteConfigs.get()
+    const response = await api.siteConfigs.list()
     if (response.data && response.data.code === 200 && Array.isArray(response.data.data)) {
       // 将配置数组转换为对象
       response.data.data.forEach((config: any) => {
@@ -520,7 +520,7 @@ const saveConfigs = async () => {
       }
     })
 
-    const response = await client.api.siteConfigs.batch.patch(updateData)
+    const response = await api.siteConfigs.batchUpdate(updateData)
 
     if (response.data && response.data.code === 200) {
       toast.add({

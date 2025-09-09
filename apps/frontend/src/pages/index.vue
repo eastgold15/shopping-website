@@ -81,8 +81,7 @@
 
 <script setup lang="ts">
 
-import { onMounted, ref } from 'vue'
-import { client } from '@frontend/utils/useTreaty'
+import { api } from '@frontend/utils/handleApi'
 
 
 // 合作伙伴数据
@@ -90,9 +89,6 @@ const partners = ref([])
 
 // 当前界面配置数据
 const viewConfig = ref({})
-
-
-
 // 默认介绍段落
 const defaultIntroParagraphs = [
     '我们通过化妆品牌，现在，我们正在工作7个不同的品牌的客户，具有各种性质',
@@ -106,7 +102,7 @@ console.log(JSON.stringify(defaultIntroParagraphs))
 // 加载合作伙伴数据
 const loadPartners = async () => {
     try {
-        const { data: response } = await client.api.partners.list.get()
+        const { data: response } = await api.partners.list()
         if (response.code == 200 && response.data) {
             partners.value = response.data
             console.log('合作伙伴数据:', response.data)
@@ -119,7 +115,7 @@ const loadPartners = async () => {
 // 加载当前界面配置数据
 const loadViewConfig = async () => {
     try {
-        const { data: response } = await client.api['site-configs'].category({ category: 'partners' }).get()
+        const { data: response } = await api.siteConfigs.getByCategory('partners')
         if (response.code == 200 && response.data) {
             // 将配置数组转换为对象，便于模板使用
             const configObj = {}
@@ -151,6 +147,31 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 隐藏滚动条 */
+:global(html) {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+}
+
+:global(html::-webkit-scrollbar) {
+    display: none;
+    /* Chrome, Safari and Opera */
+}
+
+:global(body) {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+}
+
+:global(body::-webkit-scrollbar) {
+    display: none;
+    /* Chrome, Safari and Opera */
+}
+
 /* 自定义样式 */
 .backdrop-blur-sm {
     backdrop-filter: blur(4px);

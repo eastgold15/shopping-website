@@ -3,8 +3,6 @@ import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
-import ProgressSpinner from 'primevue/progressspinner'
-import Button from 'primevue/button'
 import 'primeicons/primeicons.css'
 import 'virtual:uno.css'
 
@@ -40,8 +38,6 @@ app.use(PrimeVue, {
 app.use(ConfirmationService)
 app.use(ToastService)
 app.directive('tooltip', Tooltip)
-app.component('ProgressSpinner', ProgressSpinner)
-app.component('Button', Button)
 app.use(router)
 
 app.mount('#app')

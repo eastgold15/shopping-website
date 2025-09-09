@@ -1,13 +1,10 @@
 <script setup lang="ts">
 
-import Rating from 'primevue/rating';
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import type { Advertisement } from '../types/advertisement';
-import type { Products } from '../types/product';
-import { client } from '@frontend/utils/useTreaty';
-import { handleApiRes } from '../utils/handleApi';
+
+
+import { api } from '../utils/handleApi';
 import { useToast } from 'primevue/usetoast';
+// AutoImportTest 组件会自动导入，无需手动 import
 
 // 路由
 const router = useRouter();
@@ -32,12 +29,10 @@ const pageMeta = ref({
 const loadHotProducts = async () => {
 	loadingProducts.value = true;
 	try {
-		const res = await handleApiRes(client.api.products.hot.get({
-			query: {
-				page: 1,
-				pageSize: 10
-			}
-		}))
+		const res = await api.products.list({
+			page: 1,
+			pageSize: 10
+		})
 		console.log("response", res)
 
 		if (!res) {
@@ -64,7 +59,9 @@ const loadCarouselAds = async () => {
 
 	try {
 
-		const res = await handleApiRes(client.api.advertisements.position({ position: "home-hero" }).get())
+		// 注意：advertisements API在后端未实现，需要后端支持
+		// const res = await api.advertisements.getByPosition("home-hero")
+		const res = null // 临时处理
 		if (!res) {
 			throw new Error("加载轮播图广告失敗")
 		}
@@ -188,7 +185,8 @@ onMounted(() => {
 
 					<template #item="slotProps">
 						<div class="relative w-full aspect-[2/1]"> <!-- 父容器固定比例 -->
-							<img :src="slotProps.data.image" :alt="slotProps.data.name" class=" w-full h-full object-cover " />
+							<img :src="slotProps.data.image" :alt="slotProps.data.name"
+								class=" w-full h-full object-cover " />
 						</div>
 					</template>
 				</Carousel>
@@ -245,9 +243,11 @@ onMounted(() => {
 				</div>
 
 				<div class="products-grid" v-if="hotProducts.length > 0">
-					<div v-for="product in hotProducts" :key="product.id" class="product-card" @click="viewProduct(product.id)">
+					<div v-for="product in hotProducts" :key="product.id" class="product-card"
+						@click="viewProduct(product.id)">
 						<div class="product-image">
-							<img :src="product.images?.[0] || '/placeholder-product.png'" :alt="product.name" class="product-img" />
+							<img :src="product.images?.[0] || '/placeholder-product.png'" :alt="product.name"
+								class="product-img" />
 							<div class="product-overlay">
 								<Button icon="pi pi-eye" class="p-button-rounded p-button-secondary"
 									@click.stop="viewProduct(product.id)" />
@@ -257,7 +257,8 @@ onMounted(() => {
 							<h3 class="product-name">{{ product.name }}</h3>
 							<div class="product-price">
 								<span class="current-price">${{ product.price }}</span>
-								<span v-if="product.originalPrice && product.originalPrice > product.price" class="original-price">
+								<span v-if="product.originalPrice && product.originalPrice > product.price"
+									class="original-price">
 									${{ product.originalPrice }}
 								</span>
 							</div>
@@ -283,6 +284,13 @@ onMounted(() => {
 			</div>
 		</section>
 
+		<!-- 自动导入功能测试组件 -->
+		<section class="py-8">
+			<div class="container mx-auto px-4">
+				<h2 class="text-2xl font-bold mb-6 text-center">自动导入功能测试</h2>
+				<AutoImportTest />
+			</div>
+		</section>
 
 	</div>
 </template>
@@ -291,9 +299,8 @@ onMounted(() => {
 <style scoped>
 .home-page {
 	@apply min-h-screen;
-
-
 }
+
 
 /* 轮播图区域 */
 .hero-section {

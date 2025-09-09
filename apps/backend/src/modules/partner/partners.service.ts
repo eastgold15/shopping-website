@@ -77,11 +77,11 @@ export class PartnersService {
     // 计算总数
     const totalQuery = db.select({ count: sql`count(*)` })
       .from(partnersSchema);
-    
+
     if (whereCondition) {
       totalQuery.where(whereCondition);
     }
-    
+
     const [{ count }] = await totalQuery;
     const total = Number(count);
 
@@ -92,11 +92,11 @@ export class PartnersService {
       .orderBy(orderBy)
       .limit(pageSize)
       .offset(offset);
-    
+
     if (whereCondition) {
       dataQuery.where(whereCondition);
     }
-    
+
     const data = await dataQuery;
 
     return {
@@ -117,7 +117,7 @@ export class PartnersService {
       .select(this.columns)
       .from(partnersSchema)
       .where(eq(partnersSchema.id, id));
-    
+
     return partner || null;
   }
 
@@ -131,7 +131,7 @@ export class PartnersService {
       .insert(partnersSchema)
       .values(data)
       .returning(this.columns);
-    
+
     return newPartner;
   }
 
@@ -150,7 +150,7 @@ export class PartnersService {
       })
       .where(eq(partnersSchema.id, id))
       .returning(this.columns);
-    
+
     return updatedPartner || null;
   }
 
@@ -163,8 +163,15 @@ export class PartnersService {
     const result = await db
       .delete(partnersSchema)
       .where(eq(partnersSchema.id, id));
-    
-    return result.changes > 0;
+
+
+    if (result.count === 1) {
+      console.log('成功删除了一条记录');
+      return { success: true, message: '删除成功' };
+    } else if (result.count === 0) {
+      console.log('没有找到匹配的记录，无法删除');
+      return { success: false, message: '未找到该记录' };
+    }
   }
 
   /**
@@ -182,7 +189,7 @@ export class PartnersService {
       })
       .where(eq(partnersSchema.id, id))
       .returning(this.columns);
-    
+
     return updatedPartner || null;
   }
 
@@ -207,7 +214,7 @@ export class PartnersService {
       })
       .where(eq(partnersSchema.id, id))
       .returning(this.columns);
-    
+
     return updatedPartner || null;
   }
 }

@@ -1,3 +1,4 @@
+import { DbType } from '@backend/db/database.types';
 import { t } from 'elysia';
 
 /**
@@ -29,6 +30,7 @@ export const statisticsModel = {
 
   // 分类销售查询参数
   categorySalesQuery: t.Object({
+    pageSize: t.Optional(t.Number({ minimum: 1, maximum: 50 })),
     startDate: t.Optional(t.String()),
     endDate: t.Optional(t.String())
   }),
@@ -49,7 +51,7 @@ export const statisticsModel = {
     featuredProducts: t.Number()
   }),
 
-  // 商品信息
+  // 商品信息（用于最新商品列表）
   productInfo: t.Object({
     id: t.Number(),
     name: t.String(),
@@ -63,7 +65,7 @@ export const statisticsModel = {
     adminUrl: t.String()
   }),
 
-  // 仪表板统计响应
+  // 仪表板统计数据
   dashboardStats: t.Object({
     productStats: t.Ref('productStats'),
     recentProducts: t.Array(t.Ref('productInfo')),
@@ -78,27 +80,11 @@ export const statisticsModel = {
     revenue: t.Number()
   }),
 
-  // 销售趋势响应
-  salesTrendResponse: t.Object({
-    trend: t.Array(t.Ref('salesTrendPoint')),
-    summary: t.Object({
-      totalSales: t.Number(),
-      totalOrders: t.Number(),
-      totalRevenue: t.Number(),
-      averageOrderValue: t.Number()
-    })
-  }),
 
   // 热门商品项
-  popularProductItem: t.Object({
-    id: t.Number(),
-    name: t.String(),
-    slug: t.String(),
-    price: t.Number(),
-    images: t.Array(t.String()),
-    salesCount: t.Number(),
-    revenue: t.Number()
-  }),
+  popularProductItem: t.Pick(DbType.typebox.select.productsSchema, ['id', 'name', 'slug', 'price', 'salesCount', 'image', 'revenue']),
+
+
 
   // 分类销售项
   categorySalesItem: t.Object({
@@ -117,15 +103,6 @@ export const statisticsModel = {
     totalUsers: t.Number()
   }),
 
-  // 用户增长响应
-  userGrowthResponse: t.Object({
-    growth: t.Array(t.Ref('userGrowthPoint')),
-    summary: t.Object({
-      totalNewUsers: t.Number(),
-      averageActiveUsers: t.Number(),
-      growthRate: t.Number()
-    })
-  })
 } as const;
 
 // 导出类型
@@ -137,9 +114,9 @@ export type UserGrowthQuery = typeof statisticsModel.userGrowthQuery.static;
 export type ProductStats = typeof statisticsModel.productStats.static;
 export type ProductInfo = typeof statisticsModel.productInfo.static;
 export type DashboardStats = typeof statisticsModel.dashboardStats.static;
+
 export type SalesTrendPoint = typeof statisticsModel.salesTrendPoint.static;
-export type SalesTrendResponse = typeof statisticsModel.salesTrendResponse.static;
+
 export type PopularProductItem = typeof statisticsModel.popularProductItem.static;
 export type CategorySalesItem = typeof statisticsModel.categorySalesItem.static;
 export type UserGrowthPoint = typeof statisticsModel.userGrowthPoint.static;
-export type UserGrowthResponse = typeof statisticsModel.userGrowthResponse.static;

@@ -12,85 +12,100 @@ export const api = {
   // 商品相关
   products: {
     list: (params?: any) => handleApiRes(client.api.products.get({ query: params })),
-    search: (params?: any) => handleApiRes(client.api.products.search.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.products[':id'].get({ params: { id } })),
-    getBySlug: (slug: string) => handleApiRes(client.api.products[':slug'].get({ params: { slug } })),
-    create: (data: any) => handleApiRes(client.api.products.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.products[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.products[':id'].delete({ params: { id } })),
-    filterOptions: () => handleApiRes(client.api.products['filter-options'].get()),
-    popularTerms: () => handleApiRes(client.api.products.search['popular-terms'].get()),
+    search: (params?: any) => handleApiRes(client.api.products.get({ query: params })),
+    getById: (id: string) => handleApiRes(client.api.products({ id }).get()),
+    getBySlug: (slug: string) => handleApiRes(client.api.products.slug({ slug }).get()),
+    create: (data: any) => handleApiRes(client.api.products.post(data)),
+    update: (id: string, data: any) => handleApiRes(client.api.products({ id }).put(data)),
+    delete: (id: string) => handleApiRes(client.api.products({ id }).delete()),
+    // filterOptions: () => handleApiRes(client.api.products['filter-options'].get()),
+    // popularTerms: () => handleApiRes(client.api.products['popular-terms'].get()),
   },
-  
+
   // 分类相关
   categories: {
     list: (params?: any) => handleApiRes(client.api.categories.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.categories[':id'].get({ params: { id } })),
-    create: (data: any) => handleApiRes(client.api.categories.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.categories[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.categories[':id'].delete({ params: { id } })),
+    tree: () => handleApiRes(client.api.categories.tree.get()),
+    getById: (id: string) => handleApiRes(client.api.categories({ id }).get()),
+    create: (data: any) => handleApiRes(client.api.categories.post(data)),
+    update: (id: string, data: any) => handleApiRes(client.api.categories({ id }).put(data)),
+    delete: (id: string) => handleApiRes(client.api.categories({ id }).delete()),
+    getChildren: (id: string) => handleApiRes(client.api.categories({ id }).children.get()),
+    updateSort: (id: string, data: any) => handleApiRes(client.api.categories({ id }).sort.patch(data)),
+    toggleVisibility: (id: string) => handleApiRes(client.api.categories({ id })['toggle-visibility'].patch()),
+    moveUp: (id: string) => handleApiRes(client.api.categories({ id })['move-up'].patch()),
+    moveDown: (id: string) => handleApiRes(client.api.categories({ id })['move-down'].patch()),
   },
-  
-  // 订单相关
+
+  // 订单相关 - 后端只支持查询和状态更新
   orders: {
     list: (params?: any) => handleApiRes(client.api.orders.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.orders[':id'].get({ params: { id } })),
-    create: (data: any) => handleApiRes(client.api.orders.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.orders[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.orders[':id'].delete({ params: { id } })),
+    getById: (id: string) => handleApiRes(client.api.orders({ id }).get()),
+    updateStatus: (id: string, data: any) => handleApiRes(client.api.orders({ id }).status.patch(data)),
+    updateShipping: (id: string, data: any) => handleApiRes(client.api.orders({ id }).shipping.patch(data)),
+    getRefunds: (params?: any) => handleApiRes(client.api.orders.refunds.get({ query: params })),
+    createRefund: (id: string, data: any) => handleApiRes(client.api.orders({ id }).refunds.post(data)),
+    processRefund: (refundId: string, data: any) => handleApiRes(client.api.orders.refunds({ refundId }).patch(data)),
+    getStatistics: (params?: any) => handleApiRes(client.api.orders.statistics.get({ query: params })),
   },
-  
+
   // 用户相关
   users: {
     list: (params?: any) => handleApiRes(client.api.users.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.users[':id'].get({ params: { id } })),
-    create: (data: any) => handleApiRes(client.api.users.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.users[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.users[':id'].delete({ params: { id } })),
+    getById: (id: string) => handleApiRes(client.api.users({ id }).get()),
+    create: (data: any) => handleApiRes(client.api.users.post(data)),
+    update: (id: string, data: any) => handleApiRes(client.api.users({ id }).put(data)),
+    delete: (id: string) => handleApiRes(client.api.users({ id }).delete()),
+    batchUpdateStatus: (data: any) => handleApiRes(client.api.users['batch-status'].patch(data)),
+    getAdmins: (params?: any) => handleApiRes(client.api.users.admins.get({ query: params })),
+    getStatistics: () => handleApiRes(client.api.users.statistics.get()),
+    getByUsername: (username: string) => handleApiRes(client.api.users['by-username']({ username }).get()),
+    getActive: () => handleApiRes(client.api.users.active.get()),
   },
-  
+
   // 站点配置相关
   siteConfigs: {
-    list: (params?: any) => handleApiRes(client.api.siteConfigs.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.siteConfigs[':id'].get({ params: { id } })),
-    create: (data: any) => handleApiRes(client.api.siteConfigs.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.siteConfigs[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.siteConfigs[':id'].delete({ params: { id } })),
+    list: (params?: any) => handleApiRes(client.api['site-configs'].get({ query: params })),
+    getByCategory: (category: string) => handleApiRes(client.api['site-configs'].category[category].get()),
+    batchUpdate: (data: any) => handleApiRes(client.api['site-configs'].batch.patch(data)),
   },
-  
+
   // 图片相关
   images: {
     list: (params?: any) => handleApiRes(client.api.images.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.images[':id'].get({ params: { id } })),
-    upload: (data: any) => handleApiRes(client.api.images.upload.post({ body: data })),
-    delete: (id: string) => handleApiRes(client.api.images[':id'].delete({ params: { id } })),
+    getById: (id: string) => handleApiRes(client.api.images({ id }).get()),
+    update: (id: string, data: any) => handleApiRes(client.api.images({ id }).put(data)),
+    delete: (id: string) => handleApiRes(client.api.images({ id }).delete()),
   },
-  
+
   // 广告相关
   advertisements: {
     list: (params?: any) => handleApiRes(client.api.advertisements.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.advertisements[':id'].get({ params: { id } })),
-    create: (data: any) => handleApiRes(client.api.advertisements.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.advertisements[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.advertisements[':id'].delete({ params: { id } })),
+    getById: (id: string) => handleApiRes(client.api.advertisements({ id }).get()),
+    create: (data: any) => handleApiRes(client.api.advertisements.post(data)),
+    update: (id: string, data: any) => handleApiRes(client.api.advertisements({ id }).put(data)),
+    delete: (id: string) => handleApiRes(client.api.advertisements({ id }).delete()),
+    carousel: () => handleApiRes(client.api.advertisements.carousel.get()),
+    banner: (params?: any) => handleApiRes(client.api.advertisements.banner.get({ query: params })),
   },
-  
-  // 统计相关
-  statistics: {
-    get: (params?: any) => handleApiRes(client.api.statistics.get({ query: params })),
-  },
-  
+
   // 合作伙伴相关
   partners: {
     list: (params?: any) => handleApiRes(client.api.partners.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.partners[':id'].get({ params: { id } })),
-    create: (data: any) => handleApiRes(client.api.partners.post({ body: data })),
-    update: (id: string, data: any) => handleApiRes(client.api.partners[':id'].put({ params: { id }, body: data })),
-    delete: (id: string) => handleApiRes(client.api.partners[':id'].delete({ params: { id } })),
+    getById: (id: string) => handleApiRes(client.api.partners[id].get()),
+    create: (data: any) => handleApiRes(client.api.partners.post(data)),
+    update: (id: string, data: any) => handleApiRes(client.api.partners[id].put(data)),
+    delete: (id: string) => handleApiRes(client.api.partners[id].delete()),
+    toggleActive: (id: string) => handleApiRes(client.api.partners[id]['toggle-active'].patch()),
+    updateSort: (id: string, data: any) => handleApiRes(client.api.partners[id].sort.patch(data)),
   },
-  
-  // 上传相关
+
+  // 上传相关 - 对应后端 /upload 路由
   upload: {
-    post: (data: any) => handleApiRes(client.api.upload.post({ body: data })),
+    image: (data: FormData) => handleApiRes(client.api.upload.image.post(data)),
+    general: (data: any) => handleApiRes(client.api.upload.general.post(data)),
+    deleteFile: (url: string) => handleApiRes(client.api.upload.file.delete({ query: { url } })),
+    fileExists: (url: string) => handleApiRes(client.api.upload.file.exists.get({ query: { url } })),
+    fileInfo: (url: string) => handleApiRes(client.api.upload.file.info.get({ query: { url } })),
   },
 };

@@ -1,6 +1,7 @@
 import { Elysia, redirect, t } from "elysia";
 import { openapi } from '@elysiajs/openapi';
 import { fromTypes } from '@elysiajs/openapi/gen';
+import { cors } from '@elysiajs/cors';
 import { logPlugin } from "./plugins/logger";
 import { err_handler } from "./utils/error/err.global";
 import path from 'path';
@@ -17,15 +18,12 @@ import { advertisementsController } from './modules/advertisements';
 import { ordersController } from './modules/order';
 import { statisticsController } from './modules/statistics';
 import { partnersController } from './modules/partner';
+import { startupHealthCheck } from "./utils/healthyCheck";
 
 
 
-const globalModel = {
-  id: t.Number()
-};
 
 const api = new Elysia({ prefix: '/api' })
-  .model(globalModel)
   .use(usersController)
   .use(uploadsController)
   .use(imagesController)
@@ -40,6 +38,7 @@ const api = new Elysia({ prefix: '/api' })
 
 
 export const app = new Elysia()
+  .use(cors())
   .get('/', redirect('/openapi'), {
     detail: {
       hide: true
@@ -72,6 +71,7 @@ const APP_VERSION = "1.0.71";
   console.log(
     `🦊 Elysia is running at ${process.env.APP_NAME}:: ${process.env.APP_HOST}:${process.env.APP_PORT}`,
   );
+  startupHealthCheck()
 
   if (import.meta.env.NODE_ENV === "production") {
     console.log("当前环境：生产环境: https://wx.cykycyky.top");

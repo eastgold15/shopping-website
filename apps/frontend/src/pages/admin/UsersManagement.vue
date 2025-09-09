@@ -1,26 +1,7 @@
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
-import Badge from 'primevue/badge'
-// PrimeVue 组件
-import Button from 'primevue/button'
-import Calendar from 'primevue/calendar'
-import Card from 'primevue/card'
-import Column from 'primevue/column'
-import ConfirmDialog from 'primevue/confirmdialog'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { client } from '@frontend/utils/useTreaty'
+import { api } from '@frontend/utils/handleApi'
 
 // 类型定义
 interface User {
@@ -195,10 +176,17 @@ const loadUsers = async () => {
             endDate: filterDateRange.value?.[1]
         }
 
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // 实际API调用
+        const response = await api.users.list(params)
         
-        // 模拟数据
+        if (response.code === 200) {
+            users.value = response.data.users || []
+            total.value = response.data.total || 0
+        } else {
+            throw new Error(response.message || '加载用户失败')
+        }
+        
+        // 临时模拟数据（如果API未实现）
         const mockUsers: User[] = [
             {
                 id: 1,
@@ -363,11 +351,21 @@ const saveUser = async () => {
         saving.value = true
 
         if (editingUser.value) {
-            // 更新
-            toast.add({ severity: 'success', summary: '成功', detail: '更新用户成功', life: 1000 })
+            // 更新用户
+            const response = await api.users.update(editingUser.value.id.toString(), userForm.value)
+            if (response.code === 200) {
+                toast.add({ severity: 'success', summary: '成功', detail: '更新用户成功', life: 1000 })
+            } else {
+                throw new Error(response.message || '更新用户失败')
+            }
         } else {
-            // 创建
-            toast.add({ severity: 'success', summary: '成功', detail: '创建用户成功', life: 1000 })
+            // 创建用户
+            const response = await api.users.create(userForm.value)
+            if (response.code === 200) {
+                toast.add({ severity: 'success', summary: '成功', detail: '创建用户成功', life: 1000 })
+            } else {
+                throw new Error(response.message || '创建用户失败')
+            }
         }
         
         closeDialog()
@@ -394,8 +392,13 @@ const confirmDelete = (user: User) => {
 // 删除用户
 const deleteUser = async (id: number) => {
     try {
-        toast.add({ severity: 'success', summary: '成功', detail: '删除用户成功', life: 1000 })
-        loadUsers()
+        const response = await api.users.delete(id.toString())
+        if (response.code === 200) {
+            toast.add({ severity: 'success', summary: '成功', detail: '删除用户成功', life: 1000 })
+            loadUsers()
+        } else {
+            throw new Error(response.message || '删除用户失败')
+        }
     } catch (error) {
         console.error('删除用户失败:', error)
         toast.add({ severity: 'error', summary: '错误', detail: '删除用户失败', life: 1000 })
@@ -406,14 +409,20 @@ const deleteUser = async (id: number) => {
 const toggleUserStatus = async (user: User) => {
     try {
         const newStatus = user.status === 'active' ? 'inactive' : 'active'
-        user.status = newStatus
-        toast.add({
-            severity: 'success',
-            summary: '成功',
-            detail: `${newStatus === 'active' ? '启用' : '禁用'}用户成功`,
-            life: 1000
-        })
-        loadUsers()
+        const response = await api.users.update(user.id.toString(), { status: newStatus })
+        
+        if (response.code === 200) {
+            user.status = newStatus
+            toast.add({
+                severity: 'success',
+                summary: '成功',
+                detail: `${newStatus === 'active' ? '启用' : '禁用'}用户成功`,
+                life: 1000
+            })
+            loadUsers()
+        } else {
+            throw new Error(response.message || '切换用户状态失败')
+        }
     } catch (error) {
         console.error('切换用户状态失败:', error)
         toast.add({ severity: 'error', summary: '错误', detail: '切换用户状态失败', life: 1000 })

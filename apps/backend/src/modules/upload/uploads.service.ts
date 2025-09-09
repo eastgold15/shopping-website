@@ -86,14 +86,15 @@ export class UploadService {
       const buffer = new Uint8Array(fileBuffer);
 
       // 上传到OSS
-      const url = await ossService.uploadImage(buffer, folder, fileName);
+      const key = `${folder}/${fileName}`;
+      const url = await ossService.uploadFile(buffer, key, file.type);
 
       const fileInfo: FileInfo = {
         url,
         fileName,
         size: file.size,
         type: file.type,
-        uploadedAt: new Date().toISOString()
+        uploadedAt: new Date()
       };
 
       return commonRes(fileInfo);
@@ -151,7 +152,7 @@ export class UploadService {
             fileName,
             size: file.size,
             type: file.type,
-            uploadedAt: new Date().toISOString()
+            uploadedAt: new Date()
           };
 
           uploadResults.push(fileInfo);
@@ -316,7 +317,7 @@ export class UploadService {
         fileName: key.split('/').pop() || 'unknown',
         size: stats.size,
         type: 'unknown', // OSS不直接返回文件类型
-        uploadedAt: stats.lastModified.toISOString()
+        uploadedAt: stats.updatedAt
       };
 
       return commonRes(fileInfo);

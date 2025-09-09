@@ -41,8 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import Carousel from 'primevue/carousel';
-import { computed, onMounted, ref } from 'vue';
+
+
 import { client } from '@frontend/utils/useTreaty';
 import type { Advertisement } from '../types/advertisement';
 import { handleApiRes } from '../utils/handleApi';

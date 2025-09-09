@@ -24,7 +24,7 @@ export const categoriesSchema = pgTable("categories", {
   sortOrder: integer("sort_order").default(0), // 排序权重，值越小越靠前
   isVisible: boolean("is_visible").default(true), // 是否在前端显示
   icon: varchar("icon", { length: 255 }).default(""), // 分类图标
-  image: varchar("image", { length: 255 }).default(""), // 分类图片
+
   createdAt: timestamp("created_at").defaultNow(), // 创建时间
   updatedAt: timestamp("updated_at").defaultNow(), // 更新时间
 });
@@ -58,7 +58,7 @@ export const productsSchema = pgTable("products", {
   barcode: varchar("barcode", { length: 100 }).default(""), // 商品条形码
   weight: decimal("weight", { precision: 8, scale: 2 }).default("0.00"), // 商品重量(kg)
   dimensions: json("dimensions").default({}), // 商品尺寸(长宽高)
-  images: json("images").default([]), // 商品图片列表
+  // 商品图片通过 productImagesSchema 中间表关联
   videos: json("videos").default([]), // 商品视频列表
   colors: json("colors").default([]), // 商品可选颜色
   sizes: json("sizes").default([]), // 商品可选尺寸
@@ -84,7 +84,9 @@ export const productsRelations = relations(productsSchema, ({ one, many }) => ({
     references: [categoriesSchema.id]
   }),
   reviews: many(reviewsSchema),
-  orderItems: many(orderItemsSchema)
+  orderItems: many(orderItemsSchema),
+  // 商品图片关联(通过中间表)
+  productImages: many(productImagesSchema)
 }));
 
 /**
@@ -134,7 +136,7 @@ export const advertisementsSchema = pgTable("advertisements", {
   id: serial("id").primaryKey(), // 广告唯一标识
   title: varchar("title", { length: 255 }).notNull(), // 广告标题
   type: varchar("type", { length: 50 }).notNull(), // 广告类型(banner, popup, sidebar等)
-  image: text("image").notNull(), // 广告图片URL
+  image: text("image").notNull().references(() => imagesSchema.url), // 广告图片URL - 引用imagesSchema.url
   link: varchar("link", { length: 500 }).default(""), // 广告链接地址
   position: varchar("position", { length: 100 }).default(""), // 广告显示位置
   sortOrder: integer("sort_order").default(0), // 排序权重
@@ -145,22 +147,61 @@ export const advertisementsSchema = pgTable("advertisements", {
   updatedAt: timestamp("updated_at").defaultNow(), // 更新时间
 });
 
+export const advertisementsRelations = relations(advertisementsSchema, ({ one }) => ({
+  // 广告图片关联到图片管理表 - 外键在advertisements表中
+  imageRef: one(imagesSchema, {
+    fields: [advertisementsSchema.image],
+    references: [imagesSchema.url]
+  })
+}));
+
+/**
+ * 商品图片关联表 - 处理商品与图片的多对多关系
+ */
+export const productImagesSchema = pgTable("product_images", {
+  productId: integer("product_id").references(() => productsSchema.id).notNull(),
+  imageId: integer("image_id").references(() => imagesSchema.id).notNull(),
+  isMain: boolean("is_main").default(false),
+});
+
+export const productImagesRelations = relations(productImagesSchema, ({ one }) => ({
+  product: one(productsSchema, {
+    fields: [productImagesSchema.productId],
+    references: [productsSchema.id]
+  }),
+  image: one(imagesSchema, {
+    fields: [productImagesSchema.imageId],
+    references: [imagesSchema.id]
+  })
+}));
+
 /**
  * 图片管理表 - 存储网站上传的图片信息
  * 统一管理所有上传的图片资源
  */
 export const imagesSchema = pgTable("images", {
-  id: varchar("id", { length: 21 }).primaryKey(), // 图片唯一标识(ID生成器生成)
+  id: serial("id").primaryKey(), // 图片唯一标识
   fileName: varchar("file_name", { length: 255 }).notNull(), // 存储文件名
   originalName: varchar("original_name", { length: 255 }).notNull(), // 原始文件名
-  url: text("url").notNull(), // 图片访问URL
+  url: text("url").notNull().unique(), // 图片访问URL - 添加唯一约束用于外键引用
   category: varchar("category", { length: 50 }).notNull().default("general"), // 图片分类
   fileSize: integer("file_size").notNull(), // 文件大小(字节)
   mimeType: varchar("mime_type", { length: 100 }).notNull(), // 文件MIME类型
   altText: text("alt_text").default(""), // 图片ALT文本
-  uploadDate: timestamp("upload_date").defaultNow().notNull(), // 上传时间
-  updatedDate: timestamp("updated_date").defaultNow(), // 更新时间
+  createdAt: timestamp("created_at").defaultNow().notNull(), // 创建时间
+  updatedAt: timestamp("updated_at").defaultNow(), // 更新时间
 });
+
+export const imagesRelations = relations(imagesSchema, ({ many }) => ({
+  // 图片可以被多个广告使用 - 外键在advertisements表中
+  advertisements: many(advertisementsSchema),
+  // 图片可以被多个合作伙伴使用 - 外键在partners表中
+  partners: many(partnersSchema),
+  // 图片可以被多个订单项使用(作为商品图片快照) - 外键在order_items表中
+  orderItems: many(orderItemsSchema),
+  // 图片可以被多个商品使用(通过中间表)
+  productImages: many(productImagesSchema)
+}));
 
 /**
  * 订单表 - 存储用户订单信息
@@ -206,7 +247,7 @@ export const orderItemsSchema = pgTable("order_items", {
   productId: integer("product_id").references(() => productsSchema.id).notNull(), // 关联商品ID
   productName: varchar("product_name", { length: 255 }).notNull(), // 商品名称(快照)
   productSku: varchar("product_sku", { length: 100 }).default(""), // 商品SKU(快照)
-  productImage: text("product_image").default(""), // 商品图片URL(快照)
+  productImage: text("product_image").default("").references(() => imagesSchema.url), // 商品图片URL(快照) - 引用imagesSchema.url
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(), // 商品单价(快照)
   quantity: integer("quantity").notNull(), // 商品数量
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(), // 总价(单价*数量)
@@ -225,6 +266,11 @@ export const orderItemsRelations = relations(orderItemsSchema, ({ one }) => ({
   product: one(productsSchema, {
     fields: [orderItemsSchema.productId],
     references: [productsSchema.id]
+  }),
+  // 订单项商品图片快照关联到图片管理表 - 外键在order_items表中
+  productImageRef: one(imagesSchema, {
+    fields: [orderItemsSchema.productImage],
+    references: [imagesSchema.url]
   })
 }));
 
@@ -261,10 +307,18 @@ export const partnersSchema = pgTable("partners", {
   id: serial("id").primaryKey(), // 合作伙伴唯一标识
   name: varchar("name", { length: 255 }).notNull(), // 合作伙伴名称
   description: text("description").notNull(), // 合作伙伴描述
-  image: text("image").notNull(), // 合作伙伴Logo图片URL
+  image: text("image").notNull().references(() => imagesSchema.url), // 合作伙伴Logo图片URL - 引用imagesSchema.url
   url: varchar("url", { length: 500 }).notNull(), // 合作伙伴网站链接
   sortOrder: integer("sort_order").default(0), // 排序权重
   isActive: boolean("is_active").default(true), // 是否显示
   createdAt: timestamp("created_at").defaultNow(), // 创建时间
   updatedAt: timestamp("updated_at").defaultNow(), // 更新时间
 });
+
+export const partnersRelations = relations(partnersSchema, ({ one }) => ({
+  // 合作伙伴Logo关联到图片管理表 - 外键在partners表中
+  imageRef: one(imagesSchema, {
+    fields: [partnersSchema.image],
+    references: [imagesSchema.url]
+  })
+}));

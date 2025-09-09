@@ -194,9 +194,7 @@ export class OssService {
       await this.client.send(command);
       return true;
     } catch (error) {
-      if (error.name === 'NotFound') {
-        return false;
-      }
+
       // 如果是存储桶不存在或配置错误，切换到模拟模式
       if (error instanceof Error && (
         error.message.includes('NoSuchBucket') || error.name === 'NoSuchBucket' ||
@@ -306,8 +304,7 @@ export class OssService {
       console.warn('OSS客户端未初始化，返回模拟文件信息');
       return {
         size: 0,
-        lastModified: new Date(),
-        etag: 'mock-etag'
+        updatedAt: new Date(),
       };
     }
 
@@ -320,15 +317,14 @@ export class OssService {
 
       return {
         size: response.ContentLength || 0,
-        lastModified: response.LastModified || new Date(),
-        etag: response.ETag || 'unknown'
+        updatedAt: response.LastModified || new Date(),
+
       };
     } catch (error) {
-      console.warn("获取文件信息失败，返回模拟数据:", error.message || error);
+
       return {
         size: 0,
-        lastModified: new Date(),
-        etag: 'mock-etag'
+        updatedAt: new Date(),
       };
     }
   }

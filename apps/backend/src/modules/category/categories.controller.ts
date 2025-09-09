@@ -13,9 +13,16 @@ export const categoriesController = new Elysia({ prefix: '/categories', tags: ['
   .decorate('categoriesService', new CategoriesService())
   .guard({
     transform({ body }: { body: any }) {
-      // 处理parentId：如果是对象格式{"key":true}，提取key作为parentId
+      // 只对有 body 的请求进行处理
+      if (!body) return;
+      
+      // 处理parentId：支持字符串转整数和对象格式{"key":true}
       if (body?.parentId) {
-        if (typeof body.parentId === 'object' && body.parentId !== null) {
+        if (typeof body.parentId === 'string') {
+          // 字符串转整数
+          const parsed = parseInt(body.parentId);
+          body.parentId = isNaN(parsed) ? null : parsed;
+        } else if (typeof body.parentId === 'object' && body.parentId !== null) {
           // 从对象中提取第一个key作为parentId
           const keys = Object.keys(body.parentId);
           if (keys.length > 0) {

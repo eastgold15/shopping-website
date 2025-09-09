@@ -1,7 +1,7 @@
 <script setup>
 import Counter from '@frontend/components/count.vue'
-import { client } from '@frontend/utils/useTreaty';
-import { ref, onMounted } from 'vue';
+import { api } from '@frontend/utils/api';
+
 
 // 使用响应式数据存储API结果
 const data = ref(null);
@@ -11,7 +11,7 @@ const error = ref();
 // 在组件挂载后获取数据，避免setup函数返回Promise
 onMounted(async () => {
 	try {
-		const { data: result, error: apiError } = await client.api.get();
+		const { data: result, error: apiError } = await api.test.get();
 		if (result) {
 			data.value = result;
 			console.log("1111", result);

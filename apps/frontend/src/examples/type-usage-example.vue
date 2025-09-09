@@ -10,36 +10,90 @@ import type {
   BatchDeleteImageDto 
 } from '@backend/routes/images.model';
 
-// 2. 导入API相关类型
+// 2. 导入API相关类型 - 现在使用后端类型
 import type { 
   ApiResponse, 
   ApiListResponse, 
   ImageUploadRequest,
   FormState 
-} from '@frontend/types/api';
+} from '@backend/types';
 
-// 3. 导入前端自定义类型
-import type { 
-  ImageItem, 
-  ImageFormState, 
-  ImageModalState,
-  ProductItem 
-} from '@frontend/types/frontend';
+// 3. 导入API客户端
+import { api } from '@frontend/utils/api';
 
-// 4. 导入特定业务类型
-import type { 
-  ImageQueryParams, 
-  ImageApiResponse,
-  ImageUploadTask 
-} from '@frontend/types/frontend/images';
+// 3. 前端特有类型 - 现在直接使用后端类型或在组件内定义
+interface ImageItem {
+  id: string;
+  fileName: string;
+  url: string;
+  category: string;
+  fileSize: number;
+  mimeType: string;
+  altText?: string;
+  formattedSize?: string;
+  previewUrl?: string;
+  isSelected?: boolean;
+}
 
-// 5. 导入通用类型
-import type { 
-  ID, 
-  Status, 
-  AsyncState, 
-  PaginationState 
-} from '@frontend/types';
+interface ImageFormState {
+  selectedImages: ImageItem[];
+  isUploading: boolean;
+}
+
+interface ImageModalState {
+  visible: boolean;
+  mode: 'create' | 'edit' | 'view';
+}
+
+interface ProductItem {
+  id: string;
+  name: string;
+}
+
+// 4. 导入特定业务类型 - 在组件内定义
+interface ImageQueryParams {
+  page?: number;
+  pageSize?: number;
+  category?: string;
+  search?: string;
+  mimeType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface ImageApiResponse {
+  code: number;
+  data: any;
+  message?: string;
+  page?: number;
+  pageSize?: number;
+  total?: number;
+}
+
+interface ImageUploadTask {
+  id: string;
+  file: File;
+  progress: number;
+  status: 'pending' | 'success' | 'error';
+  result?: any;
+  error?: string;
+}
+
+// 5. 通用类型 - 使用后端类型
+type ID = string | number;
+type Status = 'active' | 'inactive' | 'pending';
+
+interface AsyncState {
+  loading: boolean;
+  error: string | null;
+}
+
+interface PaginationState {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
 
 // 使用示例
 interface Props {
@@ -136,7 +190,7 @@ const uploadImage = async (file: File) => {
     formData.append('file', file);
     formData.append('category', 'general');
     
-    const response = await client.api.images.upload.post(formData);
+    const response = await api.upload.image(formData);
     
     if (response.code === 200) {
       uploadTask.status = 'success';

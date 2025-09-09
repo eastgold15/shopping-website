@@ -26,9 +26,9 @@ function parseHSL(hslString: string): { h: number; s: number; l: number } {
     throw new Error(`Invalid HSL string: ${hslString}`)
   }
   
-  const h = parseInt(parts[0])
-  const s = parseInt(parts[1].replace('%', ''))
-  const l = parseInt(parts[2].replace('%', ''))
+  const h = parseInt(parts[0] || '0')
+  const s = parseInt(parts[1]?.replace('%', '') || '0')
+  const l = parseInt(parts[2]?.replace('%', '') || '0')
   
   if (isNaN(h) || isNaN(s) || isNaN(l)) {
     throw new Error(`Invalid HSL values in: ${hslString}`)

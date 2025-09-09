@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import Select from 'primevue/select';
-import InputText from 'primevue/inputtext';
-import InputGroup from 'primevue/inputgroup';
-import InputGroupAddon from 'primevue/inputgroupaddon';
-import Paginator from 'primevue/paginator';
-import ProgressSpinner from 'primevue/progressspinner';
-import { computed, onMounted, ref, watch } from 'vue';
-import { client } from '@frontend/utils/useTreaty';
-import { formatSize, formatDate, getImageUrl } from '@frontend/share/utils/formatUtils';
+
+
+
+
+
+
+
+
+
+import { api } from '@frontend/utils/handleApi'
+import { formatSize, formatDate, getImageUrl } from '@frontend/utils/formatUtils';
+
 import { useToast } from 'primevue/usetoast';
-import { handleApiRes } from '../utils/handleApi';
 
 // 图片数据类型
 interface ImageData {
@@ -116,35 +116,15 @@ const totalPages = computed(() => {
 const loadImages = async () => {
   loading.value = true;
   try {
-    // @ts-ignore
-    const response = await handleApiRes(client.api.images.get());
-    if (!response) {
-      throw new Error("加载图片列表失败");
-    }
-    console.log("111111111111", response)
-
-
-
-    if (response.code === 200) {
-      // @ts-ignore
-      images.value = response.data
-    }
+    const response = await api.images.list();
+    images.value = response.data;
   } catch (error) {
-
-
     toast.add({
       severity: 'error',
       summary: '加载失败',
       detail: (error as Error).message,
       life: 3000
     });
-
-
-
-
-    // if (error instanceof Error) {
-    //   error.message
-    // }
   } finally {
     loading.value = false;
   }

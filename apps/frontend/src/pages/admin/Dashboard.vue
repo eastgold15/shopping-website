@@ -1,15 +1,5 @@
 <script setup lang="ts">
-// PrimeVue 组件
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Chart from 'primevue/chart'
-
-import ProgressBar from 'primevue/progressbar'
-import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 
 // 类型定义

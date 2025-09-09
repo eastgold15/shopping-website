@@ -199,7 +199,7 @@ export class UserService extends BaseService<UserEntity, CreateUser, UpdateUser>
   /**
    * 批量更新用户状态
    */
-  async batchUpdateStatus(userIds: string[], status: number): Promise<ServiceResponse<number>> {
+  async batchUpdateStatus(userIds: number[], status: number): Promise<ServiceResponse<number>> {
     try {
       if (!userIds || userIds.length === 0) {
         throw new ValidationError('用户ID列表不能为空');
@@ -227,7 +227,7 @@ export class UserService extends BaseService<UserEntity, CreateUser, UpdateUser>
   /**
    * 软删除用户（设置状态为禁用）
    */
-  async softDelete(id: string): Promise<ServiceResponse<boolean>> {
+  async softDelete(id: number): Promise<ServiceResponse<boolean>> {
     try {
       // 检查用户是否存在
       const existing = await this.findById(id);

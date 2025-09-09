@@ -1,28 +1,13 @@
 <script setup lang="ts">
-// PrimeVue 组件
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import Column from 'primevue/column'
-import ConfirmDialog from 'primevue/confirmdialog'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import Dropdown from 'primevue/dropdown'
-import Image from 'primevue/image'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import ToggleSwitch from 'primevue/toggleswitch'
+
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+
 import { useRouter } from 'vue-router'
 import type { Category } from '@frontend/app/types/category'
 import type { Product, ProductForm } from '@frontend/app/types/product'
-import { client } from '@frontend/utils/useTreaty'
 import ImageSelector from '@frontend/components/ImageSelector.vue'
-import { handleApiRes } from '@frontend/utils/handleApi'
+import { api } from '@frontend/utils/handleApi'
 
 
 // 响应式数据
@@ -136,7 +121,7 @@ const loadProducts = async () => {
         if (searchKeyword.value) {
             params.search = searchKeyword.value
         }
-        const { data: response } = await client.api.products.get({ query: params })
+        const response = await api.products.list(params)
         if (response.code === 200) {
             const data = response.data
             // 根据新的API返回格式，直接从data中获取商品数据
@@ -159,7 +144,7 @@ const loadProducts = async () => {
 
 const loadCategories = async () => {
     try {
-        const { data: response } = await client.api.categories.get()
+        const response = await api.categories.list()
 
         if (response.code === 200) {
             categories.value = response.data || []
@@ -308,7 +293,7 @@ const saveProduct = async () => {
 
         if (editingProduct.value) {
             // 更新商品
-            const { data: response } = await client.api.products({ id: editingProduct.value.id }).put(submitData)
+            const response = await api.products.update(editingProduct.value.id.toString(), submitData)
 
             if (response.code === 200) {
                 toast.add({ severity: 'success', summary: '成功', detail: '更新商品成功', life: 1000 })
@@ -317,7 +302,7 @@ const saveProduct = async () => {
             }
         } else {
             // 创建商品
-            const { data: response } = await client.api.products.post(submitData)
+            const response = await api.products.create(submitData)
 
             if (response.code === 200) {
                 toast.add({ severity: 'success', summary: '成功', detail: '创建商品成功', life: 1000 })
@@ -350,7 +335,7 @@ const confirmDelete = (product: Product) => {
 // 删除商品
 const deleteProduct = async (id: number) => {
     try {
-        const response = await handleApiRes(client.api.products({ id }).delete())
+        const response = await api.products.delete(id.toString())
 
         if (response.code === 200) {
             toast.add({ severity: 'success', summary: '成功', detail: response.message, life: 1000 })
@@ -370,7 +355,7 @@ const toggleActive = async (product: Product) => {
     try {
         product.isActive = !product.isActive
 
-        const { data: response } = await client.api.products({ id: product.id }).put({
+        const response = await api.products.update(product.id.toString(), {
             isActive: product.isActive
         })
 
@@ -396,7 +381,7 @@ const toggleFeatured = async (product: Product) => {
     try {
         product.isFeatured = !product.isFeatured
 
-        const { data: response } = await client.api.products({ id: product.id }).put({
+        const response = await api.products.update(product.id.toString(), {
             isFeatured: product.isFeatured
         })
 

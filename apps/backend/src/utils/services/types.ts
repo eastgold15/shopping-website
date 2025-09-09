@@ -36,8 +36,6 @@ export interface QueryOptions {
   sort?: SortOption[];
 }
 
-
-
 // 分页参数
 export interface PaginationParams {
   page: number;
@@ -53,20 +51,18 @@ export interface PaginatedResult<T = any> {
   totalPages: number;
 }
 
-// 查询过滤器
+// 查询过滤器 - 用于构建数据库查询的过滤条件
 export interface QueryFilter {
-  field: string;
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'in' | 'nin';
-  value: any;
+  field: string;  // 要过滤的字段名
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'in' | 'nin';  // 操作符：等于、不等于、大于、大于等于、小于、小于等于、模糊匹配、在数组内、不在数组内
+  value: any;  // 过滤值
 }
 
-// 排序选项
+// 排序选项 - 用于指定查询结果的排序方式
 export interface SortOption {
-  field: string;
-  direction: 'asc' | 'desc';
+  field: string;  // 要排序的字段名
+  direction: 'asc' | 'desc';  // 排序方向：升序或降序
 }
-
-
 
 // 创建选项
 export interface CreateOptions {
@@ -86,8 +82,6 @@ export interface DeleteOptions {
   force?: boolean;
 }
 
-
-
 // 查询构建器选项
 export interface QueryBuilderOptions {
   table: string;
@@ -104,7 +98,6 @@ export interface QueryBuilderOptions {
   }>;
   groupBy?: string[];
   having?: Record<string, any>;
-
 }
 
 // 事务选项
@@ -127,4 +120,3 @@ export interface CacheOptions {
   ttl?: number;
   tags?: string[];
 }
-
