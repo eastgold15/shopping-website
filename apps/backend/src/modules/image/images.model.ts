@@ -1,6 +1,6 @@
 import { UnoQuery } from '@backend/db/common.model';
 import { DbType } from '@backend/db/database.types';
-import { t } from 'elysia';
+import { Static, t } from 'elysia';
 
 
 // 图片管理模型定义
@@ -24,17 +24,10 @@ export const imagesModel = {
     imageIds: t.Array(t.String())
   }),
 
-  // 预签名URL请求参数
+  // 预签名URL请求参数（包含创建图片记录所需信息）
   PresignedUrlDto: t.Object({
     fileName: t.String(),
-    category: t.Optional(t.String())
-  }),
-
-  // 确认上传请求参数
-  ConfirmUploadDto: t.Object({
-    key: t.String(),
-    originalName: t.String(),
-    category: t.String(),
+    category: t.Optional(t.String()),
     fileSize: t.Number(),
     mimeType: t.String(),
     altText: t.Optional(t.String())
@@ -44,9 +37,9 @@ export const imagesModel = {
 };
 
 // 导出类型
+export type ImageEntity = Static<typeof DbType.typebox.insert.imagesSchema>
 export type CreateImageDto = typeof imagesModel.CreateImageDto.static;
 export type UpdateImageDto = typeof imagesModel.UpdateImageDto.static;
 export type ImageListQueryDto = typeof imagesModel.ImageListQueryDto.static;
-export type BatchDeleteImageDto = typeof imagesModel.BatchDeleteImageDto.static;
+
 export type PresignedUrlDto = typeof imagesModel.PresignedUrlDto.static;
-export type ConfirmUploadDto = typeof imagesModel.ConfirmUploadDto.static;

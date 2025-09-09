@@ -1,5 +1,37 @@
 import { t } from 'elysia';
 
+
+
+// 支持的图片类型
+export const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp"
+];
+
+// 最大文件大小 (5MB)
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+// 图片文件扩展名到MIME类型的映射
+export const IMAGE_MIME_TYPE_MAP: Record<string, string> = {
+  'jpg': 'image/jpeg',
+  'jpeg': 'image/jpeg',
+  'png': 'image/png',
+  'gif': 'image/gif',
+  'webp': 'image/webp'
+};
+
+// 上传类型枚举
+export const UPLOAD_TYPE = {
+  ADVERTISEMENT: 'advertisement',
+  PRODUCT: 'product',
+  CATEGORY: 'category',
+  GENERAL: 'general',
+  USER_AVATAR: 'avatar'
+} as const;
+
 /**
  * OSS 模块模型定义
  */
@@ -31,11 +63,7 @@ export const ossModel = {
   fileInfo: t.Object({
     fileName: t.String({ description: '文件名' }),
     url: t.String({ description: '文件URL' }),
-
-    type: t.String({ description: '文件类型' }),
     size: t.Number({ description: '文件大小(字节)' }),
-    uploadedAt: t.Date({ description: '最后修改时间' }),
-
     contentType: t.Optional(t.String({ description: '文件MIME类型' }))
   }),
 

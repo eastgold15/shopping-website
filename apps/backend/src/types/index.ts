@@ -6,12 +6,12 @@ export * from '../db/database.types';
 export * from '../db/common.model';
 
 // 模块类型导出
-export * from '../modules/auth/auth.model';
-export * from '../modules/category/category.model';
+// export * from '../modules/auth/auth.model'; // auth模块暂未实现
+export * from '../modules/category/categories.model';
 export * from '../modules/product/products.model';
-export * from '../modules/order/order.model';
-export * from '../modules/user/user.model';
-export * from '../modules/advertisements/advertisements.model';
+export * from '../modules/order/orders.model';
+export * from '../modules/user/users.model';
+export * from '@backend/modules/image/images.model';
 export * from '../modules/statistics/statistics.model';
 
 // 通用响应类型

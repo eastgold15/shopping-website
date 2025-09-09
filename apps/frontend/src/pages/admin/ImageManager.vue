@@ -1,35 +1,24 @@
 <script setup lang="ts">
-
-import type { BatchDeleteImageDto } from '@backend/routes/images.model';
 import { copyToClipboard, formatDate, formatSize, getImageUrl, openInNewTab } from '@frontend/utils/formatUtils';
 import { api } from '@frontend/utils/handleApi';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
+import { computed, onMounted, ref } from 'vue';
 
-// 图片数据类型
-interface ImageData {
-  id: string;
-  fileName: string;
-  url: string;
-  category: string;
-  fileSize: number;
-  uploadDate: string;
-  altText?: string;
-}
+import type { BatchDeleteImageDto, ImageEntity, UpdateImageDto } from '@backend/modules/image/images.model';
 
 // 响应式数据
 const loading = ref(false);
 const saving = ref(false);
-const images = ref<ImageData[]>([]);
+const images = ref<ImageEntity[]>([]);
 const selectedImages = ref<string[]>([]);
 const searchQuery = ref('');
 const selectedCategory = ref('all');
-const showUploadDialog = ref(false);
+
 const showPreviewDialog = ref(false);
 const showEditDialog = ref(false);
-const previewImageData = ref<ImageData | null>(null);
-const editImageData = ref<ImageData | null>(null);
-const uploadCategory = ref('general');
+const previewImageData = ref<ImageEntity | null>(null);
+const editImageData = ref<ImageEntity | null>(null);
 
 // 分页
 const first = ref(0);
@@ -99,8 +88,17 @@ const totalPages = computed(() => {
 const loadImages = async () => {
   loading.value = true;
   try {
-    const response = await api.images.list();
-    images.value = response.data;
+    const res = await api.images.list();
+    if (!res) {
+      toast.add({
+        severity: 'error',
+        summary: '加载失败',
+        detail: (res as Error).message,
+        life: 3000
+      });
+    } else {
+      images.value = res.data.items;
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -138,7 +136,7 @@ const onPageChange = (event: any) => {
 /**
  * 预览图片
  */
-const previewImage = (image: ImageData) => {
+const previewImage = (image: ImageEntity) => {
   previewImageData.value = image;
   showPreviewDialog.value = true;
 };
@@ -146,7 +144,7 @@ const previewImage = (image: ImageData) => {
 /**
  * 编辑图片
  */
-const editImage = (image: ImageData) => {
+const editImage = (image: ImageEntity) => {
   editImageData.value = { ...image };
   showEditDialog.value = true;
 };
@@ -200,7 +198,7 @@ const saveImageEdit = async () => {
 /**
  * 复制图片URL
  */
-const copyImageUrl = async (image: ImageData) => {
+const copyImageUrl = async (image: ImageEntity) => {
   const success = await copyToClipboard(getImageUrl(image.url));
 
   if (success) {
@@ -223,14 +221,14 @@ const copyImageUrl = async (image: ImageData) => {
 /**
  * 在新标签页打开图片
  */
-const openImageInNewTab = (image: ImageData) => {
+const openImageInNewTab = (image: ImageEntity) => {
   openInNewTab(getImageUrl(image.url));
 };
 
 /**
  * 确认删除单个图片
  */
-const confirmDelete = (image: ImageData) => {
+const confirmDelete = (image: ImageEntity) => {
   confirm.require({
     message: `确定要删除图片 "${image.fileName}" 吗？`,
     header: '删除确认',
@@ -259,7 +257,7 @@ const confirmBatchDelete = () => {
 const deleteImage = async (imageId: string) => {
   try {
     await api.images.delete(imageId);
-    
+
     // 从列表中移除
     images.value = images.value.filter(img => img.id !== imageId);
 
@@ -293,7 +291,7 @@ const batchDeleteImages = async () => {
     };
 
     const response = await api.images.batchDelete(batchDeleteData);
-    
+
     // 从列表中移除
     images.value = images.value.filter(img => !selectedImages.value.includes(img.id));
     // 清空选中列表
@@ -315,68 +313,7 @@ const batchDeleteImages = async () => {
   }
 };
 
-// FileUpload 组件相关的响应式数据
-const totalSize = ref(0);
-const totalSizePercent = ref(0);
-const uploadFiles = ref([]);
 
-/**
- * 获取上传URL
- */
-const getUploadUrl = () => {
-  // 根据分类选择对应的上传接口
-
-  return `/api/upload/general/${uploadCategory.value}`
-};
-
-/**
- * 文件选择回调
- */
-const onSelectedFiles = (event: any) => {
-  uploadFiles.value = event.files;
-  uploadFiles.value.forEach((file: any) => {
-    totalSize.value += parseInt(formatSize(file.size));
-  });
-};
-
-/**
- * 移除待上传文件
- */
-const onRemoveTemplatingFile = (file: any, removeFileCallback: Function, index: number) => {
-  removeFileCallback(index);
-  totalSize.value -= parseInt(formatSize(file.size));
-  totalSizePercent.value = totalSize.value / 10;
-};
-
-/**
- * 上传事件
- */
-const uploadEvent = (callback: Function) => {
-  totalSizePercent.value = totalSize.value / 10;
-  callback();
-};
-
-/**
- * 上传完成回调
- */
-const onTemplatedUpload = (event: any) => {
-  toast.add({
-    severity: 'success',
-    summary: '上传成功',
-    detail: '文件上传完成',
-    life: 3000
-  });
-
-  // 重新加载图片列表
-  loadImages();
-
-  // 关闭上传对话框
-  showUploadDialog.value = false;
-
-  // 重置上传状态
-  totalSize.value = 0;
-  totalSizePercent.value = 0;
-};
 
 
 
@@ -387,15 +324,13 @@ const getCategoryLabel = (category: string): string => {
   const option = categoryOptions.find(opt => opt.value === category);
   return option?.label || category;
 };
-
-
-
-
-
 // 生命周期
 onMounted(() => {
   loadImages();
 });
+
+
+const showUploadDialog = ref(false)
 </script>
 <template>
   <div class="image-manager">
@@ -433,6 +368,7 @@ onMounted(() => {
 
         <!-- 上传按钮 -->
         <Button icon="pi pi-upload" label="上传图片" @click="showUploadDialog = true" class="upload-btn" />
+
       </div>
     </div>
 
@@ -478,7 +414,7 @@ onMounted(() => {
               <span class="image-size">{{ formatSize(image.fileSize) }}</span>
             </div>
             <div class="image-actions">
-              <small class="image-date">{{ formatDate(image.uploadDate) }}</small>
+              <small class="image-date">{{ formatDate(image.createdAt) }}</small>
               <div class="action-buttons">
                 <Button icon="pi pi-external-link" class="p-button-text p-button-sm" @click="openImageInNewTab(image)"
                   v-tooltip="'在新标签页打开'" />
@@ -495,83 +431,7 @@ onMounted(() => {
         :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
     </div>
 
-    <!-- 上传对话框 -->
-    <Dialog v-model:visible="showUploadDialog" :modal="true" :closable="true" :draggable="false" class="upload-dialog"
-      header="上传图片">
-      <div class="upload-dialog-content">
-        <!-- 分类选择 -->
-        <div class="form-field">
-          <label for="upload-category">图片分类</label>
-          <Dropdown v-model="uploadCategory" :options="categoryOptions.filter(c => c.value !== 'all')"
-            optionLabel="label" optionValue="value" placeholder="选择分类" inputId="upload-category" />
-        </div>
 
-        <!-- 图片上传组件 -->
-        <FileUpload name="file" :url="getUploadUrl()" @upload="onTemplatedUpload($event)" :multiple="true"
-          accept="image/*" :maxFileSize="5000000" @select="onSelectedFiles">
-          <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
-            <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
-              <div class="flex gap-2">
-                <Button @click="chooseCallback()" icon="pi pi-images" rounded variant="outlined"
-                  severity="secondary"></Button>
-                <Button @click="uploadEvent(uploadCallback)" icon="pi pi-cloud-upload" rounded variant="outlined"
-                  severity="success" :disabled="!files || files.length === 0"></Button>
-                <Button @click="clearCallback()" icon="pi pi-times" rounded variant="outlined" severity="danger"
-                  :disabled="!files || files.length === 0"></Button>
-              </div>
-              <ProgressBar :value="totalSizePercent" :showValue="false" class="md:w-[20rem] h-1 w-full md:ml-auto">
-                <span class="whitespace-nowrap">{{ totalSize }}B / 5MB</span>
-              </ProgressBar>
-            </div>
-          </template>
-          <template #content="{ files, uploadedFiles, removeUploadedFileCallback, removeFileCallback }">
-            <div class="flex flex-col gap-8 pt-4">
-              <div v-if="files.length > 0">
-                <h5>待上传</h5>
-                <div class="flex flex-wrap gap-4">
-                  <div v-for="(file, index) of files" :key="file.name + file.type + file.size"
-                    class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
-                    <div>
-                      <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
-                    </div>
-                    <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name
-                      }}</span>
-                    <div>{{ formatSize(file.size) }}</div>
-                    <Badge value="待上传" severity="warn" />
-                    <Button icon="pi pi-times" @click="onRemoveTemplatingFile(file, removeFileCallback, index)"
-                      variant="outlined" rounded severity="danger" />
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="uploadedFiles.length > 0">
-                <h5>已完成</h5>
-                <div class="flex flex-wrap gap-4">
-                  <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size"
-                    class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
-                    <div>
-                      <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
-                    </div>
-                    <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name
-                      }}</span>
-                    <div>{{ formatSize(file.size) }}</div>
-                    <Badge value="已完成" class="mt-4" severity="success" />
-                    <Button icon="pi pi-times" @click="removeUploadedFileCallback(index)" variant="outlined" rounded
-                      severity="danger" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-          <template #empty>
-            <div class="flex items-center justify-center flex-col">
-              <i class="pi pi-cloud-upload !border-2 !rounded-full !p-8 !text-4xl !text-muted-color" />
-              <p class="mt-6 mb-0">拖拽文件到此处上传</p>
-            </div>
-          </template>
-        </FileUpload>
-      </div>
-    </Dialog>
 
     <!-- 图片预览对话框 -->
     <Dialog v-model:visible="showPreviewDialog" :modal="true" :closable="true" :draggable="false" class="preview-dialog"
@@ -589,7 +449,7 @@ onMounted(() => {
             <strong>大小:</strong> {{ formatSize(previewImageData.fileSize) }}
           </div>
           <div class="info-row">
-            <strong>上传时间:</strong> {{ formatDate(previewImageData.uploadDate) }}
+            <strong>上传时间:</strong> {{ formatDate(previewImageData.createdAt) }}
           </div>
           <div class="info-row">
             <strong>URL:</strong>
@@ -629,6 +489,8 @@ onMounted(() => {
 
     <!-- 删除确认对话框 -->
     <ConfirmDialog />
+    <!-- 上传组件 -->
+    <ImageUpload v-model:visible="showUploadDialog" @uploaded="loadImages" />
   </div>
 </template>
 

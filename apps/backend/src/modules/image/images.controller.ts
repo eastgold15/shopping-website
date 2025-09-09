@@ -19,7 +19,7 @@ export const imagesController = new Elysia({ prefix: '/images' })
   })
   // 获取图片列表
   .get('/', async ({ query, imagesService }) => {
-    const result = await imagesService.findImagesByPage(query as any);
+    const result = await imagesService.findImagesByPage(query);
     return result
   }, {
     query: 'ImageListQueryDto',
@@ -28,6 +28,7 @@ export const imagesController = new Elysia({ prefix: '/images' })
       description: '获取图片列表，支持分类筛选、搜索和分页'
     }
   })
+
 
   // 获取单个图片信息
   .get('/:id', async ({ params, imagesService }) => {
@@ -58,27 +59,9 @@ export const imagesController = new Elysia({ prefix: '/images' })
     }
   })
 
-  // 创建图片记录
-  .post('/', async ({ body, imagesService }) => {
-    const result = await imagesService.createImage(body as any);
-
-
-
-    return commonRes(result.data);
-  }, {
-    body: 'CreateImageDto',
-    detail: {
-      summary: '创建图片记录',
-      description: '在数据库中创建新的图片记录'
-    }
-  })
-
   // 更新图片信息
   .put('/:id', async ({ params, body, imagesService }) => {
     const result = await imagesService.updateImage(params.id, body as any);
-
-
-
     return commonRes(result.data);
   }, {
 
@@ -93,12 +76,9 @@ export const imagesController = new Elysia({ prefix: '/images' })
   })
 
   // 删除图片
-  .delete('/:id', async ({ params, imagesService }) => {
+  .delete('/:id', async ({ params: { id }, imagesService }) => {
     try {
-      const id = parseInt(params.id as string, 10);
-      if (isNaN(id)) {
-        return { success: false, error: '无效的ID参数' };
-      }
+
 
       // 先获取图片信息
       const imageResult = await imagesService.findById(id);
@@ -142,6 +122,9 @@ export const imagesController = new Elysia({ prefix: '/images' })
       };
     }
   }, {
+    params: t.Object({
+      id: t.Number()
+    }),
     detail: {
       summary: '删除图片',
       description: '删除指定的图片记录和文件'
@@ -231,93 +214,3 @@ export const imagesController = new Elysia({ prefix: '/images' })
     }
   })
 
-  // 获取预签名上传URL
-  .post('/presigned-url', async ({ body }) => {
-    try {
-      const { fileName, category = 'general' } = body as any;
-
-      if (!fileName) {
-        return {
-          success: false,
-          error: '文件名不能为空'
-        };
-      }
-
-      // 生成唯一的文件key
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 8);
-      const fileExtension = fileName.split('.').pop();
-      const key = `${category}/${timestamp}_${randomStr}.${fileExtension}`;
-
-      // 获取预签名URL
-      const presignedUrl = await ossService.generatePresignedUploadUrl(key, 3600);
-
-      return commonRes({
-        uploadUrl: presignedUrl,
-        key: key,
-        fileName: fileName
-      });
-    } catch (error) {
-      console.error('获取预签名URL失败:', error);
-      return {
-        success: false,
-        error: '获取预签名URL失败'
-      };
-    }
-  }, {
-    detail: {
-      summary: '获取预签名上传URL',
-      description: '获取用于直接上传到OSS的预签名URL'
-    }
-  })
-
-  // 确认上传完成
-  .post('/confirm-upload', async ({ body, imagesService }) => {
-    try {
-      const { key, originalName, category, fileSize, mimeType, altText } = body as any;
-
-      if (!key || !originalName || !category || !fileSize || !mimeType) {
-        return {
-          success: false,
-          error: '缺少必要的上传信息'
-        };
-      }
-
-      // 构建完整的文件URL
-      const fileUrl = ossService.getPublicUrl(key);
-
-      // 创建图片记录
-      const imageData = {
-        fileName: key.split('/').pop() || key,
-        originalName,
-        url: fileUrl,
-        category,
-        fileSize,
-        mimeType,
-        altText: altText || ''
-      };
-
-      const result = await imagesService.createImage(imageData);
-
-      if (result.code !== 200) {
-        return {
-          success: false,
-          error: result.message || '创建图片记录失败'
-        };
-      }
-
-      return commonRes(result.data);
-    } catch (error) {
-      console.error('确认上传失败:', error);
-      return {
-        success: false,
-        error: '确认上传失败'
-      };
-    }
-  }, {
-    body: 'ConfirmUploadDto',
-    detail: {
-      summary: '确认上传完成',
-      description: '确认文件上传完成并创建数据库记录'
-    }
-  });

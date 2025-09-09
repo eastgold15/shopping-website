@@ -14,21 +14,21 @@ export async function handleApiRes<T>(
   showToast: boolean = true,
 ): Promise<T> {
   try {
-    const response = await apiPromise;
-    console.log("response", response);
+    const { status, data, message } = await apiPromise;
 
-    if (response.status !== 200) {
-      const errorMessage = response.message || "请求失败";
+
+    if (status !== 200) {
+      const errorMessage = message || "请求失败";
       if (showToast) {
         showErrorToast(errorMessage);
       }
       throw new Error(errorMessage);
     }
 
-    if (response.data === undefined) {
+    if (data === undefined) {
       throw new Error('响应数据为空');
     }
-    return response.data;
+    return data;
   } catch (error) {
     if (showToast && error instanceof Error) {
       showErrorToast(error.message);

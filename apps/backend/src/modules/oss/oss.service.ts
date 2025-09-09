@@ -5,6 +5,7 @@
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { IMAGE_MIME_TYPE_MAP } from './oss.model';
 
 // 创建华为云OSS客户端
 const createOSSClient = () => {
@@ -91,8 +92,22 @@ export class OssService {
         ContentType: contentType || "application/octet-stream"
       });
 
-      await this.client.send(command);
-      return this.getPublicUrl(key);
+      const res = await this.client.send(command);
+
+      // 上传成功，处理返回结果
+      console.log('文件上传成功:', {
+        key,
+        etag: res.ETag,
+        size: res.Size,
+        versionId: res.VersionId,
+        serverSideEncryption: res.ServerSideEncryption
+      });
+
+      // 生成公共访问URL
+      const publicUrl = this.getPublicUrl(key);
+      console.log('生成的公共URL:', publicUrl);
+
+      return publicUrl;
     } catch (error) {
       // 如果是存储桶不存在或配置错误，切换到模拟模式
       if (error instanceof Error && (
@@ -120,23 +135,14 @@ export class OssService {
     folder: string,
     filename?: string
   ): Promise<string> {
-    const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const extension = filename ? filename.split('.').pop() : 'jpg';
-    const key = `${folder}/${timestamp}_${randomStr}.${extension}`;
+    const key = `${folder}/${filename}_${randomStr}.${extension}`;
 
     let contentType = 'image/jpeg';
     if (extension) {
-      const typeMap: Record<string, string> = {
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'webp': 'image/webp'
-      };
-      contentType = typeMap[extension.toLowerCase()] || 'image/jpeg';
+      contentType = IMAGE_MIME_TYPE_MAP[extension.toLowerCase()]
     }
-
     return this.uploadFile(imageFile, key, contentType);
   }
 
@@ -209,68 +215,7 @@ export class OssService {
     }
   }
 
-  /**
-   * 生成预签名URL用于直接上传
-   * @param key 文件在OSS中的路径
-   * @param expiresIn 过期时间(秒)
-   * @param contentType 文件类型
-   * @returns 预签名URL
-   */
-  async generatePresignedUploadUrl(
-    key: string,
-    expiresIn: number = 3600,
-    contentType?: string
-  ): Promise<string> {
-    this.initialize();
 
-    if (!this.client) {
-      console.warn('OSS客户端未初始化，返回模拟URL');
-      return `/uploads/${key}`;
-    }
-
-    try {
-      const command = new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        ContentType: contentType || "application/octet-stream"
-      });
-
-      return await getSignedUrl(this.client, command, { expiresIn });
-    } catch (error) {
-      console.error("生成预签名上传URL失败:", error);
-      return `/uploads/${key}`;
-    }
-  }
-
-  /**
-   * 生成预签名下载URL
-   * @param key 文件在OSS中的路径
-   * @param expiresIn 过期时间(秒)
-   * @returns 预签名下载URL
-   */
-  async generatePresignedDownloadUrl(
-    key: string,
-    expiresIn: number = 3600
-  ): Promise<string> {
-    this.initialize();
-
-    if (!this.client) {
-      console.warn('OSS客户端未初始化，返回公共URL');
-      return this.getPublicUrl(key);
-    }
-
-    try {
-      const command = new HeadObjectCommand({
-        Bucket: this.bucket,
-        Key: key
-      });
-
-      return await getSignedUrl(this.client, command, { expiresIn });
-    } catch (error) {
-      console.error("生成预签名下载URL失败:", error);
-      return this.getPublicUrl(key);
-    }
-  }
 
   /**
    * 获取文件的公共访问URL
@@ -278,18 +223,8 @@ export class OssService {
    * @returns 公共访问URL
    */
   getPublicUrl(key: string): string {
-    const endpoint = process.env.HUAWEI_ENDPOINT || "";
     const domain = process.env.HUAWEI_DOMAIN || "";
-    const bucket = process.env.HUAWEI_BUCKET || "";
-
-    console.log(111, domain, key, endpoint);
-    // 如果OSS客户端未初始化或者endpoint是自定义域名，直接返回自定义域名的URL
-    if (!this.client || endpoint.includes('myhuaweicloud.com')) {
-      console.log(111, domain, key);
-      return `${domain}/${key}`;
-    }
-
-    return `${endpoint}/${bucket}/${key}`;
+    return `${domain}/${key}`;
   }
 
   /**

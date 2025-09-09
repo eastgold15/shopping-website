@@ -1,166 +1,74 @@
 // 文件上传管理服务
 
 import { ServiceResponse } from '@backend/utils/services';
+import { imageService } from '../image/images.service';
 import { FileInfo, ossService } from '../oss';
 
-
-import { CustomeError, DatabaseError, handleDatabaseError, UploadError, ValidationError } from '@backend/utils/error/customError';
+import { CustomeError, DatabaseError, handleDatabaseError, UploadError } from '@backend/utils/error/customError';
 import { commonRes } from '@backend/utils/Res';
-import { SUPPORTED_IMAGE_TYPES, MAX_FILE_SIZE, UPLOAD_TYPE } from './uploads.model';
+import { GeneralFilesUploadDto } from './uploads.model';
 
-export interface UploadOptions {
-  folder?: string;
-  allowedTypes?: string[];
-  maxSize?: number;
-  generateUniqueName?: boolean;
-}
 
-export interface FileValidationResult {
-  isValid: boolean;
-  error?: string;
-}
+
+
 
 export class UploadService {
-  private readonly defaultAllowedTypes = SUPPORTED_IMAGE_TYPES;
-  private readonly defaultMaxSize = MAX_FILE_SIZE;
-
-  /**
-   * 验证文件
-   */
-  private validateFile(file: any, options: UploadOptions = {}): FileValidationResult {
-    const allowedTypes = options.allowedTypes || this.defaultAllowedTypes;
-    const maxSize = options.maxSize || this.defaultMaxSize;
-
-    // 验证文件类型
-    if (!allowedTypes.includes(file.type)) {
-      return {
-        isValid: false,
-        error: `不支持的文件类型 ${file.type}，请上传 ${allowedTypes.join(', ')} 格式的文件`
-      };
-    }
-
-    // 验证文件大小
-    if (file.size > maxSize) {
-      const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-      return {
-        isValid: false,
-        error: `文件大小不能超过 ${maxSizeMB}MB`
-      };
-    }
-
-    return { isValid: true };
-  }
-
   /**
    * 生成唯一文件名
    */
   private generateUniqueName(originalName: string): string {
-    const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const extension = originalName.split('.').pop() || 'jpg';
-    return `${timestamp}_${randomStr}.${extension}`;
+    return `${originalName}_${randomStr}.${extension}`;
   }
-
-  /**
-   * 上传单个文件
-   */
-  async uploadFile(
-    file: any,
-    folder: string = 'general',
-    options: UploadOptions = {}
-  ): Promise<ServiceResponse<FileInfo>> {
-    try {
-      // 验证文件
-      const validation = this.validateFile(file, options);
-      if (!validation.isValid) {
-        throw new ValidationError(validation.error!);
-      }
-
-      // 生成文件名
-      const fileName = options.generateUniqueName !== false
-        ? this.generateUniqueName(file.name)
-        : file.name;
-
-      // 读取文件内容
-      const fileBuffer = await file.arrayBuffer();
-      const buffer = new Uint8Array(fileBuffer);
-
-      // 上传到OSS
-      const key = `${folder}/${fileName}`;
-      const url = await ossService.uploadFile(buffer, key, file.type);
-
-      const fileInfo: FileInfo = {
-        url,
-        fileName,
-        size: file.size,
-        type: file.type,
-        uploadedAt: new Date()
-      };
-
-      return commonRes(fileInfo);
-    } catch (error) {
-      if (error instanceof CustomeError) {
-        throw error;
-      }
-
-      console.error('文件上传失败:', error);
-      throw handleDatabaseError(error);
-    }
-  }
-
   /**
    * 批量上传文件
    */
   async uploadFiles(
-    files: any[],
-    folder: string = 'general',
-    options: UploadOptions = {}
+    { files, folder }: GeneralFilesUploadDto
   ): Promise<ServiceResponse<FileInfo[]>> {
     try {
-      if (!files || files.length === 0) {
-        throw new ValidationError('没有上传文件');
-      }
-
-      const uploadResults: FileInfo[] = [];
-      const errors: string[] = [];
-
-      for (let i = 0;i < files.length;i++) {
-        const file = files[i];
-
+      const uploadPromises = files.map(async (file) => {
         try {
-          // 验证文件
-          const validation = this.validateFile(file, options);
-          if (!validation.isValid) {
-            errors.push(`文件 ${file.name}: ${validation.error}`);
-            continue;
-          }
-
           // 生成文件名
-          const fileName = options.generateUniqueName !== false
-            ? this.generateUniqueName(file.name)
-            : file.name;
-
+          const fileName = file.name;
           // 读取文件内容
           const fileBuffer = await file.arrayBuffer();
           const buffer = new Uint8Array(fileBuffer);
 
           // 上传到OSS
-          const url = await ossService.uploadImage(buffer, folder, fileName);
+          const key = `${folder}/${fileName}`;
+          const url = await ossService.uploadFile(buffer, key, file.type);
 
           const fileInfo: FileInfo = {
             url,
             fileName,
             size: file.size,
-            type: file.type,
-            uploadedAt: new Date()
+            contentType: file.type
           };
-
-          uploadResults.push(fileInfo);
+          return { success: true, fileInfo, error: null };
         } catch (error) {
           console.error(`文件 ${file.name} 上传失败:`, error);
-          errors.push(`文件 ${file.name}: ${error instanceof Error ? error.message : '上传失败'}`);
+          return {
+            success: false,
+            fileInfo: null,
+            error: `文件 ${file.name}: ${error instanceof Error ? error.message : '上传失败'}`
+          };
         }
-      }
+      });
+
+      const results = await Promise.all(uploadPromises);
+
+      const uploadResults: FileInfo[] = [];
+      const errors: string[] = [];
+
+      results.forEach(result => {
+        if (result.success && result.fileInfo) {
+          uploadResults.push(result.fileInfo);
+        } else if (result.error) {
+          errors.push(result.error);
+        }
+      });
 
       if (uploadResults.length === 0) {
         throw new DatabaseError(`所有文件上传失败: ${errors.join(', ')}`);
@@ -182,46 +90,81 @@ export class UploadService {
     }
   }
 
-  /**
-   * 上传广告图片
-   */
-  async uploadAdvertisement(file: any): Promise<ServiceResponse<FileInfo>> {
-    return this.uploadFile(file, UPLOAD_TYPE.ADVERTISEMENT, {
-      allowedTypes: SUPPORTED_IMAGE_TYPES,
-      maxSize: MAX_FILE_SIZE
-    });
-  }
+
 
   /**
-   * 上传商品图片（支持批量）
+   * 批量上传图片
    */
-  async uploadProductImages(files: any): Promise<ServiceResponse<FileInfo[]>> {
-    const fileArray = Array.isArray(files) ? files : [files];
-    return this.uploadFiles(fileArray, UPLOAD_TYPE.PRODUCT, {
-      allowedTypes: SUPPORTED_IMAGE_TYPES,
-      maxSize: MAX_FILE_SIZE
-    });
+  async uploadImages(
+    { files, folder = 'general' }: GeneralFilesUploadDto
+  ): Promise<ServiceResponse<any[]>> {
+    try {
+      const uploadPromises = files.map(async (file) => {
+        try {
+          const fileName = file.name;
+          const url = await ossService.uploadImage(file, folder, fileName);
+
+          // 创建图片记录
+          const imageRecord = await imageService.createImage({
+            fileName,
+            url,
+            fileSize: file.size,
+            mimeType: file.type,
+            category: folder,
+            altText: fileName
+          });
+
+          if (imageRecord.code !== 200 || !imageRecord.data) {
+            throw new Error('创建图片记录失败');
+          }
+
+          return { success: true, imageData: imageRecord.data, error: null };
+        } catch (error) {
+          console.error(`图片 ${file.name} 上传失败:`, error);
+          return {
+            success: false,
+            imageData: null,
+            error: `图片 ${file.name}: ${error instanceof Error ? error.message : '上传失败'}`
+          };
+        }
+      });
+
+      const results = await Promise.all(uploadPromises);
+
+      const uploadResults: any[] = [];
+      const errors: string[] = [];
+
+      results.forEach(result => {
+        if (result.success && result.imageData) {
+          uploadResults.push(result.imageData);
+        } else if (result.error) {
+          errors.push(result.error);
+        }
+      });
+
+      if (uploadResults.length === 0) {
+        throw new DatabaseError(`所有图片上传失败: ${errors.join(', ')}`);
+      }
+
+      // 如果有部分失败，记录警告但返回成功结果
+      if (errors.length > 0) {
+        console.warn(`部分图片上传失败: ${errors.join(', ')}`);
+      }
+
+      return commonRes(uploadResults);
+    } catch (error) {
+      if (error instanceof CustomeError) {
+        throw error;
+      }
+
+      console.error('批量图片上传失败:', error);
+      throw handleDatabaseError(error);
+    }
   }
 
-  /**
-   * 上传分类图片
-   */
-  async uploadCategoryImage(file: any): Promise<ServiceResponse<FileInfo>> {
-    return this.uploadFile(file, UPLOAD_TYPE.CATEGORY, {
-      allowedTypes: SUPPORTED_IMAGE_TYPES,
-      maxSize: MAX_FILE_SIZE
-    });
-  }
 
-  /**
-   * 通用文件上传
-   */
-  async uploadGeneralFile(file: any, folder?: string): Promise<ServiceResponse<FileInfo>> {
-    return this.uploadFile(file, folder || UPLOAD_TYPE.GENERAL, {
-      allowedTypes: SUPPORTED_IMAGE_TYPES,
-      maxSize: MAX_FILE_SIZE
-    });
-  }
+
+
 
   /**
    * 删除文件
@@ -309,17 +252,14 @@ export class UploadService {
           key = `uploads/${match[1]}`;
         }
       }
-
       const stats = await ossService.getFileStats(key);
 
       const fileInfo: FileInfo = {
         url: fileUrl,
         fileName: key.split('/').pop() || 'unknown',
         size: stats.size,
-        type: 'unknown', // OSS不直接返回文件类型
-        uploadedAt: stats.updatedAt
-      };
 
+      };
       return commonRes(fileInfo);
     } catch (error) {
       if (error instanceof CustomeError) {

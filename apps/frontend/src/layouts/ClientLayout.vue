@@ -154,7 +154,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="container h-full">
+	<div class="layout-container">
 		<!-- 网站头部 -->
 		<header class="w-full">
 			<!-- 顶部信息栏 -->
@@ -242,7 +242,8 @@ onMounted(() => {
 
 					<!-- 登录/用户信息 -->
 					<button @click="handleLogin" class="login-btn " :title="isUserLoggedIn ? '用户中心' : '登录'">
-						<div :class="isUserLoggedIn ? 'i-ic:baseline-person' : 'i-ic:baseline-login'" class="w-5 h-5 mr-2"></div>
+						<div :class="isUserLoggedIn ? 'i-ic:baseline-person' : 'i-ic:baseline-login'"
+							class="w-5 h-5 mr-2"></div>
 						<span class="login-text">{{ isUserLoggedIn ? '用户中心' : '登录' }}</span>
 					</button>
 
@@ -259,7 +260,8 @@ onMounted(() => {
 							</button>
 
 							<!-- 移动端主题切换 -->
-							<button @click="toggleTheme" class="mobile-theme-btn" :title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
+							<button @click="toggleTheme" class="mobile-theme-btn"
+								:title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
 								<div :class="isDarkMode ? 'i-ic:baseline-light-mode' : 'i-ic:baseline-dark-mode'">
 								</div>
 							</button>
@@ -292,7 +294,8 @@ onMounted(() => {
 
 						<!-- 登录/用户信息 -->
 						<button @click="handleLogin" class="mobile-theme-btn " :title="isUserLoggedIn ? '用户中心' : '登录'">
-							<div :class="isUserLoggedIn ? 'i-ic:baseline-person' : 'i-ic:baseline-login'" class="w-5 h-5 mr-2">
+							<div :class="isUserLoggedIn ? 'i-ic:baseline-person' : 'i-ic:baseline-login'"
+								class="w-5 h-5 mr-2">
 							</div>
 							<span class="login-text">{{ isUserLoggedIn ? '用户中心' : '登录' }}</span>
 						</button>
@@ -360,7 +363,8 @@ onMounted(() => {
 						<h4>{{ section.title }}</h4>
 						<ul v-if="section.links && section.links.length > 0">
 							<li v-for="link in section.links" :key="link.text">
-								<a :href="link.url || '#'" :target="link.url && link.url.startsWith('http') ? '_blank' : '_self'"
+								<a :href="link.url || '#'"
+									:target="link.url && link.url.startsWith('http') ? '_blank' : '_self'"
 									:rel="link.url && link.url.startsWith('http') ? 'noopener noreferrer' : ''">
 									{{ link.text }}
 								</a>
@@ -626,9 +630,14 @@ onMounted(() => {
 	@apply absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center;
 }
 
+/* 布局容器 */
+.layout-container {
+	@apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen;
+}
+
 /* 主要内容区域 */
 .main-content {
-	@apply flex-1 min-h-screen;
+	@apply flex-1;
 }
 
 .loading-container {

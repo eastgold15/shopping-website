@@ -12,54 +12,15 @@ import { imagesSchema, productImagesSchema } from '../../db/schema';
 // 导入模型类型
 import { CustomeError, DatabaseError, handleDatabaseError, NotFoundError, ValidationError } from '@backend/utils/error/customError';
 import { commonRes } from '@backend/utils/Res';
-import BaseService, { CreateOptions, PaginatedServiceResponse, QueryOptions, ServiceResponse, UpdateOptions, validateRequired } from '@backend/utils/services';
+import BaseService, { CreateOptions, QueryOptions, ServiceResponse, UpdateOptions, validateRequired } from '@backend/utils/services';
 import type {
+  CreateImageDto,
+  ImageEntity,
   ImageListQueryDto,
   UpdateImageDto
 } from './images.model';
 
-// 图片实体类型
-export interface ImageEntity {
-  id: number;
-  fileName: string;
-  originalName: string;
-  url: string;
-  category: string;
-  fileSize: number;
-  mimeType: string;
-  altText: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
-// 图片统计信息类型
-export interface ImageStats {
-  total: number;
-  byCategory: Record<string, number>;
-  byMimeType: Record<string, number>;
-  totalSize: number;
-}
-
-export interface ImageQueryOptions extends QueryOptions {
-  category?: string;
-  search?: string;
-  mimeType?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
-export interface ImageCreateInput {
-  url: string;
-  fileName: string;
-  originalName?: string;
-  fileSize: number;
-  mimeType: string;
-  category?: string;
-  altText?: string | null;
-  createdAt?: Date;
-  updatedAt?: Date | null;
-  file?: Buffer;
-}
 
 export interface ImageUpdateInput extends Partial<UpdateImageDto> {
   id: number;
@@ -67,7 +28,7 @@ export interface ImageUpdateInput extends Partial<UpdateImageDto> {
 
 export class ImageService extends BaseService<
   ImageEntity,
-  ImageCreateInput,
+  CreateImageDto,
   ImageUpdateInput
 > {
   constructor() {
@@ -78,7 +39,7 @@ export class ImageService extends BaseService<
    * 创建图片记录
    */
   async createImage(
-    data: ImageCreateInput,
+    data: CreateImageDto,
     options: CreateOptions = {}
   ): Promise<ServiceResponse<ImageEntity>> {
     try {
@@ -104,7 +65,7 @@ export class ImageService extends BaseService<
    */
   async findImagesByPage(
     query: ImageListQueryDto
-  ): Promise<PaginatedServiceResponse<any>> {
+  ) {
     try {
       const { page = 1, pageSize = 12, category, search, mimeType } = query;
 
@@ -153,7 +114,7 @@ export class ImageService extends BaseService<
   async findByCategory(
     category: string,
     options: QueryOptions = {}
-  ): Promise<ServiceResponse<ImageEntity[]>> {
+  ) {
     try {
       const filters = [{
         field: 'category',
@@ -176,7 +137,7 @@ export class ImageService extends BaseService<
   async searchImages(
     searchTerm: string,
     options: QueryOptions = {}
-  ): Promise<ServiceResponse<ImageEntity[]>> {
+  ) {
     try {
       const filters = [
         {
@@ -323,7 +284,7 @@ export class ImageService extends BaseService<
     startDate: string,
     endDate: string,
     options: QueryOptions = {}
-  ): Promise<ServiceResponse<ImageEntity[]>> {
+  ) {
     try {
       const filters = [
         {
@@ -394,41 +355,7 @@ export class ImageService extends BaseService<
     return validCategories.includes(category);
   }
 
-  /**
-   * 验证创建数据
-   */
-  protected async validateCreate(data: ImageCreateInput): Promise<void> {
-    validateRequired(data, ['fileName', 'url', 'fileSize', 'mimeType']);
 
-    if (data.category && !this.isValidCategory(data.category)) {
-      throw new ValidationError(`Invalid category: ${data.category}`);
-    }
-
-    if (data.fileSize <= 0) {
-      throw new ValidationError('File size must be greater than 0');
-    }
-
-    if (!data.mimeType || !data.mimeType.includes('image/')) {
-      throw new ValidationError('Invalid MIME type for image');
-    }
-  }
-
-  /**
-   * 验证更新数据
-   */
-  protected async validateUpdate(data: ImageUpdateInput): Promise<void> {
-    if (data.category && !this.isValidCategory(data.category)) {
-      throw new ValidationError(`Invalid category: ${data.category}`);
-    }
-
-    if (data.fileSize !== undefined && data.fileSize <= 0) {
-      throw new ValidationError('File size must be greater than 0');
-    }
-
-    if (data.mimeType && !data.mimeType.includes('image/')) {
-      throw new ValidationError('Invalid MIME type for image');
-    }
-  }
 }
 
 // 导出服务实例

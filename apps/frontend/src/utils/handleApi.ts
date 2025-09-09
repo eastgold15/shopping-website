@@ -66,7 +66,9 @@ export const api = {
   // 站点配置相关
   siteConfigs: {
     list: (params?: any) => handleApiRes(client.api['site-configs'].get({ query: params })),
-    getByCategory: (category: string) => handleApiRes(client.api['site-configs'].category[category].get()),
+    getByCategory: (category: string) => handleApiRes(client.api['site-configs'].category({ category: category }).get()),
+
+
     batchUpdate: (data: any) => handleApiRes(client.api['site-configs'].batch.patch(data)),
   },
 
@@ -76,6 +78,9 @@ export const api = {
     getById: (id: string) => handleApiRes(client.api.images({ id }).get()),
     update: (id: string, data: any) => handleApiRes(client.api.images({ id }).put(data)),
     delete: (id: string) => handleApiRes(client.api.images({ id }).delete()),
+    batchDelete: (data: any) => handleApiRes(client.api.images.batch.delete(data)),
+    getStats: () => handleApiRes(client.api.images.stats.overview.get()),
+
   },
 
   // 广告相关
@@ -85,27 +90,38 @@ export const api = {
     create: (data: any) => handleApiRes(client.api.advertisements.post(data)),
     update: (id: string, data: any) => handleApiRes(client.api.advertisements({ id }).put(data)),
     delete: (id: string) => handleApiRes(client.api.advertisements({ id }).delete()),
-    carousel: () => handleApiRes(client.api.advertisements.carousel.get()),
-    banner: (params?: any) => handleApiRes(client.api.advertisements.banner.get({ query: params })),
+    carousel: () => handleApiRes(client.api.advertisements.carousels.get()),
+    banner: (params?: any) => handleApiRes(client.api.advertisements.banners.get({ query: params })),
   },
 
   // 合作伙伴相关
   partners: {
     list: (params?: any) => handleApiRes(client.api.partners.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.partners[id].get()),
+    getById: (id: string) => handleApiRes(client.api.partners({ id: id }).get()),
     create: (data: any) => handleApiRes(client.api.partners.post(data)),
-    update: (id: string, data: any) => handleApiRes(client.api.partners[id].put(data)),
-    delete: (id: string) => handleApiRes(client.api.partners[id].delete()),
-    toggleActive: (id: string) => handleApiRes(client.api.partners[id]['toggle-active'].patch()),
-    updateSort: (id: string, data: any) => handleApiRes(client.api.partners[id].sort.patch(data)),
+    update: (id: string, data: any) => handleApiRes(client.api.partners({ id: id }).put(data)),
+    delete: (id: string) => handleApiRes(client.api.partners({ id: id }).delete()),
+    toggleActive: (id: string) => handleApiRes(client.api.partners({ id: id })['toggle-active'].patch()),
+    updateSort: (id: string, data: any) => handleApiRes(client.api.partners({ id: id }).sort.patch(data))
   },
 
   // 上传相关 - 对应后端 /upload 路由
   upload: {
-    image: (data: FormData) => handleApiRes(client.api.upload.image.post(data)),
-    general: (data: any) => handleApiRes(client.api.upload.general.post(data)),
+    image: (data: UploadImageDto) => handleApiRes(client.api.upload.image.post(data)), // 单个图片上传
+    images: (data: UploadImagesDto) => handleApiRes(client.api.upload.images.post(data)), // 批量上传图片
     deleteFile: (url: string) => handleApiRes(client.api.upload.file.delete({ query: { url } })),
     fileExists: (url: string) => handleApiRes(client.api.upload.file.exists.get({ query: { url } })),
     fileInfo: (url: string) => handleApiRes(client.api.upload.file.info.get({ query: { url } })),
   },
 };
+
+interface UploadImageDto {
+  folder: Folder;
+  file: File;
+}
+
+interface UploadImagesDto {
+  folder: Folder;
+  files: File[];
+}
+type Folder = "avatar" | "category" | "general" | "product" | "advertisement" | undefined;

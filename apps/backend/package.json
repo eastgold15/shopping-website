@@ -3,7 +3,6 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "packageManager": "bun@1.2.21",
   "exports": {
     "./types": {
       "types": "./src/types/index.ts",

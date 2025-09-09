@@ -5,8 +5,8 @@
   "type": "module",
   "packageManager": "bun@1.2.21",
   "scripts": {
-    "i": "bun install",
     "dev": "vite",
+    "i": "bun install",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "clean": "rimraf node_modules bun.lockb dist",

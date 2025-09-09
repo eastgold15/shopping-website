@@ -1,15 +1,15 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
+  decimal,
   integer,
+  json,
   pgTable,
   serial,
   text,
   timestamp,
-  varchar,
-  decimal,
-  json
+  varchar
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
 /**
  * 商品分类表 - 存储商品的分类信息
@@ -182,7 +182,6 @@ export const productImagesRelations = relations(productImagesSchema, ({ one }) =
 export const imagesSchema = pgTable("images", {
   id: serial("id").primaryKey(), // 图片唯一标识
   fileName: varchar("file_name", { length: 255 }).notNull(), // 存储文件名
-  originalName: varchar("original_name", { length: 255 }).notNull(), // 原始文件名
   url: text("url").notNull().unique(), // 图片访问URL - 添加唯一约束用于外键引用
   category: varchar("category", { length: 50 }).notNull().default("general"), // 图片分类
   fileSize: integer("file_size").notNull(), // 文件大小(字节)

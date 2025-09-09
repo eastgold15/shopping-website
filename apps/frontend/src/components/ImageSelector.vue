@@ -1,39 +1,25 @@
 <script setup lang="ts">
+import type { ImageEntity } from '@backend/modules/image/images.model';
+import { formatDate, formatSize, getImageUrl } from '@frontend/utils/formatUtils';
 
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
-
-
-
-
-
-
-
-import { api } from '@frontend/utils/handleApi'
-import { formatSize, formatDate, getImageUrl } from '@frontend/utils/formatUtils';
-
+import { api } from '@frontend/utils/handleApi';
 import { useToast } from 'primevue/usetoast';
-
-// 图片数据类型
-interface ImageData {
-  id: string;
-  fileName: string;
-  url: string;
-  category: string;
-  fileSize: number;
-  uploadDate: string;
-  altText?: string;
-}
-
+// Toast
+const toast = useToast();
 // Props
 interface Props {
-  visible: boolean;
   category?: string; // 可选的分类过滤
 }
 
+const visible = defineModel('visible', { default: false })
+
+
 // Emits
 interface Emits {
-  (e: 'update:visible', value: boolean): void;
-  (e: 'select', imageUrl: string, imageData: ImageData): void;
+
+  (e: 'select', imageUrl: string, imageData: ImageEntity): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,25 +30,20 @@ const emit = defineEmits<Emits>();
 
 // 响应式数据
 const loading = ref(false);
-const images = ref<ImageData[]>([]);
+const images = ref<ImageEntity[]>([]);
 const searchQuery = ref('');
 const selectedCategory = ref(props.category);
-const hoveredImage = ref<string | null>(null);
+const hoveredImage = ref<number | undefined>(undefined);
 
-// 分页
-const first = ref(0);
-const pageSize = ref(12);
-
-// Toast
-const toast = useToast();
-
+const meta = reactive({
+  page: 1,
+  pageSize: 10
+})
 // 分类选项
 const categoryOptions = [
   { label: '全部', value: 'all' },
   { label: '轮播图', value: 'carousel' },
-  { label: 'Banner图', value: 'banner' },
-  { label: '新闻图片', value: 'news' },
-  { label: '产品图片', value: 'product' },
+  { label: '商品图片', value: 'product' },
   { label: '分类图片', value: 'category' },
   { label: '其他', value: 'general' }
 ];
@@ -96,8 +77,8 @@ const filteredImages = computed(() => {
  * 分页后的图片列表
  */
 const paginatedImages = computed(() => {
-  const start = first.value;
-  const end = start + pageSize.value;
+  const start = meta.page;
+  const end = start + meta.pageSize
   return filteredImages.value.slice(start, end);
 });
 
@@ -105,7 +86,7 @@ const paginatedImages = computed(() => {
  * 总页数
  */
 const totalPages = computed(() => {
-  return Math.ceil(filteredImages.value.length / pageSize.value);
+  return Math.ceil(filteredImages.value.length / meta.pageSize);
 });
 
 // 方法
@@ -116,8 +97,17 @@ const totalPages = computed(() => {
 const loadImages = async () => {
   loading.value = true;
   try {
-    const response = await api.images.list();
-    images.value = response.data;
+    const { code, data, message } = await api.images.list() as any
+    if (code !== 200) {
+      toast.add({
+        severity: 'error',
+        summary: '加载失败',
+        detail: message,
+        life: 3000
+      });
+    }
+    images.value = data.items
+    meta = data.meta
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -134,39 +124,34 @@ const loadImages = async () => {
  * 按分类过滤
  */
 const filterByCategory = () => {
-  first.value = 0; // 重置到第一页
+  meta.page = 0; // 重置到第一页
 };
 
 /**
  * 搜索图片
  */
 const searchImages = () => {
-  first.value = 0; // 重置到第一页
+  meta.page = 0;  // 重置到第一页
 };
 
 /**
  * 分页变化
  */
 const onPageChange = (event: any) => {
-  first.value = event.first;
-  pageSize.value = event.rows;
+  meta.page = event.first;
+  meta.pageSize = event.rows;
 };
 
 /**
  * 选择图片
  */
-const selectImage = (image: ImageData) => {
+const selectImage = (image: ImageEntity) => {
   const imageUrl = getImageUrl(image.url);
   emit('select', imageUrl, image);
-  emit('update:visible', false);
+
 };
 
-/**
- * 关闭对话框
- */
-const closeDialog = () => {
-  emit('update:visible', false);
-};
+
 
 /**
  * 获取分类标签
@@ -177,7 +162,7 @@ const getCategoryLabel = (category: string): string => {
 };
 
 // 监听visible变化，当对话框打开时加载图片
-watch(() => props.visible, (newVisible) => {
+watch(() => visible.value, (newVisible) => {
   if (newVisible) {
     loadImages();
   }
@@ -185,219 +170,167 @@ watch(() => props.visible, (newVisible) => {
 
 // 生命周期
 onMounted(() => {
-  if (props.visible) {
+  if (visible.value) {
     loadImages();
   }
 });
 </script>
 
 <template>
-  <Dialog :visible="visible" @update:visible="emit('update:visible', $event)" :modal="true" :closable="true"
-    :draggable="false" class="image-selector-dialog" header="选择图片" :style="{ width: '90vw', maxWidth: '1200px' }">
-    <div class="image-selector">
-      <!-- 搜索和筛选工具栏 -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <!-- 分类筛选 -->
-          <Select v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
-            placeholder="选择分类" class="category-filter" @change="filterByCategory" />
+  <Dialog v-model:visible="visible" modal :header="'选择图片'" class="w-80vw h-80vh">
+    <!-- 工具栏 -->
+    <div class=" flex justify-between items-center ">
+      <!-- 分类筛选 -->
+      <Select v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
+        placeholder="选择分类" @change="filterByCategory" />
 
-          <!-- 搜索框 -->
-          <InputGroup class="search-box">
-            <InputGroupAddon>
-              <i class="pi pi-search" />
-            </InputGroupAddon>
-            <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" />
-          </InputGroup>
-        </div>
+      <!-- 搜索框 -->
+      <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" />
+    </div>
+
+    <!-- 图片网格 -->
+    <div class=" min-h-300px flex-center-center">
+      <div v-if="loading" class="text-center">
+        <ProgressSpinner />
+        <p>加载中...</p>
       </div>
 
-      <!-- 图片网格 -->
-      <div class="images-container">
-        <div v-if="loading" class="loading-container">
-          <ProgressSpinner />
-          <p>加载中...</p>
-        </div>
+      <div v-else-if="filteredImages.length === 0" class="text-center mb-4">
+        <i class="pi pi-image empty-icon"></i>
+        <h3>暂无图片</h3>
+        <p>没有找到符合条件的图片</p>
+      </div>
 
-        <div v-else-if="filteredImages.length === 0" class="empty-state">
-          <i class="pi pi-image empty-icon"></i>
-          <h3>暂无图片</h3>
-          <p>没有找到符合条件的图片</p>
-        </div>
-
-        <div v-else class="images-grid">
-          <div v-for="image in paginatedImages" :key="image.id" class="image-card"
-            :class="{ 'hovered': hoveredImage === image.id }" @mouseenter="hoveredImage = image.id"
-            @mouseleave="hoveredImage = null" @click="selectImage(image)">
-            <!-- 图片预览 -->
-            <div class="image-preview">
-              <img :src="getImageUrl(image.url)" :alt="image.fileName" class="preview-img" loading="lazy" />
-              <div class="image-overlay">
-                <Button icon="pi pi-check" class="p-button-rounded p-button-sm p-button-success" label="选择" />
-              </div>
+      <div v-else class="image-grid ">
+        <div v-for="image in paginatedImages" :key="image.id" class="image-card"
+          :class="{ 'hovered': hoveredImage === image.id }" @mouseenter="hoveredImage = image.id"
+          @mouseleave="hoveredImage = undefined" @click="selectImage(image)">
+          <!-- 图片预览 -->
+          <div class="image-preview">
+            <img :src="getImageUrl(image.url)" :alt="image.fileName" class="preview-img" loading="lazy" />
+            <div class="image-overlay">
+              <Button icon="pi pi-check" class="p-button-rounded p-button-sm p-button-success" label="选择" />
             </div>
+          </div>
 
-            <!-- 图片信息 -->
-            <div class="image-info">
-              <h4 class="image-name" :title="image.fileName">{{ image.fileName }}</h4>
-              <div class="image-meta">
-                <span class="image-category">{{ getCategoryLabel(image.category) }}</span>
-                <span class="image-size">{{ formatSize(image.fileSize) }}</span>
-              </div>
-              <div class="image-date">
-                <small>{{ formatDate(image.uploadDate) }}</small>
-              </div>
+          <!-- 图片信息 -->
+          <div class="image-info">
+            <h4 class="image-name" :title="image.fileName">{{ image.fileName }}</h4>
+            <div class="image-meta">
+              <span class="image-category">{{ getCategoryLabel(image.category || 'general') }}</span>
+              <span class="image-size">{{ formatSize(image.fileSize) }}</span>
             </div>
+            <small class="image-date">{{ formatDate(image.createdAt || new Date()) }}</small>
           </div>
         </div>
       </div>
-
-      <!-- 分页 -->
-      <div v-if="totalPages > 1" class="pagination-container">
-        <Paginator v-model:first="first" :rows="pageSize" :totalRecords="filteredImages.length"
-          :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
-      </div>
     </div>
 
+    <!-- 分页 -->
+    <div v-if="totalPages > 1" class="pagination-container">
+      <Paginator v-model:first="meta.page" :rows="meta.pageSize" :totalRecords="filteredImages.length"
+        :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
+    </div>
+
+
+
+
     <template #footer>
-      <Button label="取消" icon="pi pi-times" @click="closeDialog" class="p-button-text" />
+      <Button label="取消" icon="pi pi-times" @click="visible = false" class="" />
     </template>
   </Dialog>
 </template>
 
 <style scoped>
-/* 对话框样式 */
-.image-selector-dialog {
-  @apply w-full;
-}
-
-.image-selector {
-  @apply space-y-4;
-}
-
-/* 工具栏 */
-.toolbar {
-  @apply flex items-center justify-between gap-4 pb-4 border-b;
-}
-
-.toolbar-left {
-  @apply flex items-center gap-4;
-}
-
-.category-filter {
-  @apply w-40;
-}
-
-.search-box {
-  @apply w-64;
-}
-
-/* 图片容器 */
-.images-container {
-  @apply min-h-96 max-h-96 overflow-y-auto;
-}
-
-.loading-container {
-  @apply flex flex-col items-center justify-center py-12;
-}
-
-.loading-container p {
-  @apply mt-4 text-gray-600;
-}
-
-.empty-state {
-  @apply flex flex-col items-center justify-center py-12 text-gray-500;
-}
-
-.empty-icon {
-  @apply text-6xl mb-4;
-}
-
-.empty-state h3 {
-  @apply text-xl font-semibold mb-2;
-}
-
-/* 图片网格 */
-.images-grid {
-  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4;
+.image-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
 }
 
 .image-card {
-  @apply bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer;
-  @apply border-2 border-transparent hover:border-primary;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: #fff;
 }
 
 .image-card.hovered {
-  @apply border-primary shadow-lg transform scale-105;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .image-preview {
-  @apply relative;
-  height: 120px;
+  position: relative;
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
 }
 
 .preview-img {
-  @apply w-full h-full object-cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .image-overlay {
-  @apply absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 transition-opacity duration-300;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.image-card:hover .image-overlay {
-  @apply opacity-100;
+.image-card.hovered .image-overlay {
+  opacity: 1;
 }
 
 .image-info {
-  @apply p-3;
+  padding: 1rem;
 }
 
 .image-name {
-  @apply text-sm font-medium text-gray-800 truncate mb-2;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .image-meta {
-  @apply flex justify-between items-center mb-2;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
-.image-category {
-  @apply text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded;
-}
-
+.image-category,
 .image-size {
-  @apply text-xs text-gray-500;
+  font-size: 0.8rem;
+  color: #6c757d;
 }
 
 .image-date {
-  @apply text-xs text-gray-500;
+  color: #6c757d;
 }
 
-/* 分页 */
+.empty-icon {
+  font-size: 3rem;
+  color: #ced4da;
+  margin-bottom: 1rem;
+}
+
 .pagination-container {
-  @apply mt-4 flex justify-center;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .toolbar {
-    @apply flex-col gap-4;
-  }
-
-  .toolbar-left {
-    @apply w-full justify-center;
-  }
-
-  .category-filter,
-  .search-box {
-    @apply w-full;
-  }
-
-  .images-grid {
-    @apply grid-cols-2;
-  }
-
-  .image-preview {
-    height: 100px;
-  }
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
 }
 </style>
