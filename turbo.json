@@ -30,7 +30,9 @@
         "^check-types"
       ]
     },
-    "clean": {},
+    "clean": {
+      "cache": false
+    },
     "dev": {
       "persistent": true,
       "cache": false

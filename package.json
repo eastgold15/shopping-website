@@ -14,7 +14,7 @@
     "start": "turbo run start",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "clean": "rimraf node_modules bun.lock "
+    "clean": "turbo run clean "
   },
   "engines": {
     "node": ">=18"
