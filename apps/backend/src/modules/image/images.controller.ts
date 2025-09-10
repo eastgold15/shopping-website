@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia';
 
+import { commonRes } from '@backend/utils/Res';
+import { ossService } from '../oss';
 import { imagesModel } from './images.model';
 import { ImageService } from './images.service';
-import { ossService } from '../oss';
-import { commonRes } from '@backend/utils/Res';
 
 /**
  * 图片管理控制器

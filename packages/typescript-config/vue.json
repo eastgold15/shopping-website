@@ -1,0 +1,27 @@
+// frontend/tsconfig.json 或 vue.config.ts
+{
+  "compilerOptions": {
+    /* 基础选项 */
+    "target": "ES2020", // Vite 默认的构建目标，良好的兼容性平衡点
+    "module": "ESNext", // 【关键】输出 ESM，供 Vite 进行最优打包和 Tree Shaking
+    "moduleResolution": "Bundler", // 【关键】使用 Vite/Rollup 的模块解析策略（最推荐！）
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ], // 包含 DOM 等浏览器环境类型定义
+    /* 模块处理 */
+    "allowSyntheticDefaultImports": true, // 允许兼容性默认导入
+    "esModuleInterop": true, // CJS/ESM 互操作
+    "isolatedModules": true, // 【关键】确保每个文件都能被安全地单独转换（Vite 等要求）
+    /* 输出控制 - 通常由 Vite 处理，tsc 仅用于类型检查 */
+    "noEmit": true, // 【关键】Vite 负责构建，tsc 只做类型检查
+    "jsx": "preserve", // 如果你用 TSX，保留让 Vite 处理
+    /* 类型检查严格性（推荐开启） */
+    "strict": true,
+    "skipLibCheck": true, // 跳过第三方库检查，加快速度
+    "forceConsistentCasingInFileNames": true,
+    /* Vue 相关特性支持 */
+    "useDefineForClassFields": true, // 与 Vue 的 Class API 兼容
+  }
+}

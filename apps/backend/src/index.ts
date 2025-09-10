@@ -1,23 +1,23 @@
-import { Elysia, redirect, t } from "elysia";
+import { cors } from '@elysiajs/cors';
 import { openapi } from '@elysiajs/openapi';
 import { fromTypes } from '@elysiajs/openapi/gen';
-import { cors } from '@elysiajs/cors';
+import { Elysia, redirect } from "elysia";
+import path from 'path';
 import { logPlugin } from "./plugins/logger";
 import { err_handler } from "./utils/error/err.global";
-import path from 'path';
 
 // 导入模块化控制器
-import { usersController } from './modules/user/index';
-import { uploadsController } from './modules/upload';
-import { imagesController } from './modules/image';
-import { ossController } from './modules/oss';
+import { advertisementsController } from './modules/advertisements';
 import { categoriesController } from './modules/category';
+import { imagesController } from './modules/image';
+import { ordersController } from './modules/order';
+import { ossController } from './modules/oss';
+import { partnersController } from './modules/partner';
 import { productsController } from './modules/product';
 import { siteConfigsController } from './modules/siteConfig';
-import { advertisementsController } from './modules/advertisements';
-import { ordersController } from './modules/order';
 import { statisticsController } from './modules/statistics';
-import { partnersController } from './modules/partner';
+import { uploadsController } from './modules/upload';
+import { usersController } from './modules/user/index';
 import { startupHealthCheck } from "./utils/healthyCheck";
 
 
@@ -46,7 +46,7 @@ export const app = new Elysia()
   })
   .use(
     openapi({
-      references: fromTypes('index.ts', {
+      references: fromTypes('src/index.ts', {
         projectRoot: path.join(import.meta.dir)
       })
     })

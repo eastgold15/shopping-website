@@ -21,7 +21,7 @@
     "db:studio": "drizzle-kit studio --config=container/dev/drizzle-dev.config.ts",
     "db:studio:prod": "drizzle-kit studio --config=container/prod/drizzle-prod.config.ts",
     "dev": "bun --watch src/index.ts",
-    "build": "bun build --compile --target bun --outfile index src/index.ts",
+    "build": "bun build --compile --minify-whitespace --minify-syntax --outfile ./dist/index.js src/index.ts",
     "clean": "rimraf dist  index.exe",
     "type-check": "bun --bun tsc --noEmit"
   },
@@ -45,6 +45,8 @@
     "postgres": "^3.4.7"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
     "@pori15/schema-typebox-generator": "^2.0.6",
     "@robino/tsconfig": "^1.1.0",
     "@types/bun": "^1.2.21",

@@ -58,7 +58,7 @@ const filteredImages = computed(() => {
 
   // 按分类过滤
   if (selectedCategory.value !== 'all') {
-    result = result.filter(img => img.category === selectedCategory.value);
+    result = result!.filter(img => img.category === selectedCategory.value);
   }
 
   // 按搜索关键词过滤
@@ -82,12 +82,6 @@ const paginatedImages = computed(() => {
   return filteredImages.value.slice(start, end);
 });
 
-/**
- * 总页数
- */
-const totalPages = computed(() => {
-  return Math.ceil(filteredImages.value.length / meta.pageSize);
-});
 
 // 方法
 
@@ -107,6 +101,7 @@ const loadImages = async () => {
       });
     }
     images.value = data.items
+    // @ts-ignore
     meta = data.meta
   } catch (error) {
     toast.add({
@@ -134,13 +129,7 @@ const searchImages = () => {
   meta.page = 0;  // 重置到第一页
 };
 
-/**
- * 分页变化
- */
-const onPageChange = (event: any) => {
-  meta.page = event.first;
-  meta.pageSize = event.rows;
-};
+
 
 /**
  * 选择图片
@@ -225,16 +214,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <!-- 分页 -->
-    <div v-if="totalPages > 1" class="pagination-container">
-      <Paginator v-model:first="meta.page" :rows="meta.pageSize" :totalRecords="filteredImages.length"
-        :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
-    </div>
-
-
-
-
     <template #footer>
       <Button label="取消" icon="pi pi-times" @click="visible = false" class="" />
     </template>

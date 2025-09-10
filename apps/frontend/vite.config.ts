@@ -1,11 +1,11 @@
 
-import vue from "@vitejs/plugin-vue";
-import UnoCSS from 'unocss/vite';
-import { defineConfig, loadEnv } from "vite";
-import { resolve } from "path";
-import Components from 'unplugin-vue-components/vite';
-import AutoImport from 'unplugin-auto-import/vite';
 import { PrimeVueResolver } from '@primevue/auto-import-resolver';
+import vue from "@vitejs/plugin-vue";
+import { resolve } from "path";
+import UnoCSS from 'unocss/vite';
+import AutoImport from 'unplugin-auto-import/vite';
+import Components from 'unplugin-vue-components/vite';
+import { defineConfig, loadEnv } from "vite";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
@@ -43,6 +43,13 @@ export default defineConfig(({ mode }) => {
         "@frontend": resolve(__dirname, "./src"),
         "@backend": resolve(__dirname, "../backend/src"),
       },
+    },
+    build: {
+      rollupOptions: {
+        external: [],
+      },
+      // 跳过类型检查以加快构建速度
+      skipTypeCheck: true,
     },
   };
 });

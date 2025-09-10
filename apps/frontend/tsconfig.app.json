@@ -1,32 +1,45 @@
 {
-  "extends": ["@vue/tsconfig/tsconfig.dom.json", "../../tsconfig.json"],
+  "extends": [
+    "@vue/tsconfig/tsconfig.dom.json",
+    "@repo/typescript-config/vue.json"
+  ],
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    /* Path Mapping */
+    /* 路径映射（必须与 vite.config.ts 中的 alias 匹配） */
     "baseUrl": ".",
     "paths": {
-      "@frontend/*": ["./src/*"],
-      "@backend/*": ["../backend/src/*"],
-      "@backend/types": ["../backend/src/types/index.ts"],
-      "@backend/server": ["../backend/src/index.ts"]
+      "@frontend/*": [
+        "./src/*"
+      ],
+      "@backend/*": [
+        "../backend/src/*"
+      ],
+      "@backend/types": [
+        "../backend/src/types/index.ts"
+      ],
+      "@backend/server": [
+        "../backend/src/index.ts"
+      ]
     },
-    /* Module Resolution */
-    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    /* Linting */
-    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
   },
   "include": [
     "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
     "auto-imports.d.ts",
-    "components.d.ts"
+    "components.d.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx", // 如果使用 TSX
+    "src/**/*.vue", // 【关键】包含 Vue 单文件组件
+    "types/**/*.d.ts",
+    "vite.config.ts" // 包含配置文件本身
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.js" // 排除已编译的 JS 文件
   ]
 }
