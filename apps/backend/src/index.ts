@@ -1,8 +1,8 @@
-import path from "node:path";
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import { fromTypes } from "@elysiajs/openapi/gen";
 import { Elysia, redirect } from "elysia";
+import path from "node:path";
 // 导入模块化控制器
 import { advertisementsController } from "./modules/advertisements";
 import { categoriesController } from "./modules/category";
@@ -41,7 +41,9 @@ export const app = new Elysia()
 	})
 	.use(
 		openapi({
-			references: fromTypes("src/index.ts", {
+			references: fromTypes(process.env.NODE_ENV === 'production'
+				? 'dist/index.d.ts'
+				: 'src/index.ts', {
 				projectRoot: path.join(import.meta.dir),
 			}),
 		}),

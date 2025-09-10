@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { useToast } from "primevue/usetoast";
 import { api } from "../utils/handleApi";
-
-// AutoImportTest 组件会自动导入，无需手动 import
-
 // 路由
 const router = useRouter();
 

@@ -82,3 +82,5 @@ deploy
 apps/backend/.env.production
 **.env.*
 apps/backend/index.exe
+apps/backend/deploy-backend.cjs
+apps/frontend/deploy-sftp.cjs
