@@ -1,9 +1,7 @@
 <script setup lang="ts">
+import { useToast } from "primevue/usetoast";
+import { api } from "../utils/handleApi";
 
-
-
-import { api } from '../utils/handleApi';
-import { useToast } from 'primevue/usetoast';
 // AutoImportTest 组件会自动导入，无需手动 import
 
 // 路由
@@ -20,7 +18,7 @@ const pageMeta = ref({
 	page: 1,
 	pageSize: 10,
 	totalPages: 0,
-})
+});
 
 // 方法
 /**
@@ -31,54 +29,51 @@ const loadHotProducts = async () => {
 	try {
 		const res = await api.products.list({
 			page: 1,
-			pageSize: 10
-		})
-		console.log("response", res)
+			pageSize: 10,
+		});
+		console.log("response", res);
 
 		if (!res) {
-			return
+			return;
 		}
 		if (res.code === 200) {
 			hotProducts.value = res.data?.items as any;
-			pageMeta.value = res.data?.meta as any
+			pageMeta.value = res.data?.meta as any;
 		}
 	} catch (error) {
-		console.error('加载热门商品失败:', error);
+		console.error("加载热门商品失败:", error);
 	} finally {
 		loadingProducts.value = false;
 	}
 };
 
+const carouselAds = ref<Advertisement[]>([]);
 
-const carouselAds = ref<Advertisement[]>([])
-
-const toast = useToast()
+const toast = useToast();
 
 // 加载轮播图广告
 const loadCarouselAds = async () => {
-
 	try {
-
 		// 注意：advertisements API在后端未实现，需要后端支持
 		// const res = await api.advertisements.getByPosition("home-hero")
-		const res = null // 临时处理
+		const res = null; // 临时处理
 		if (!res) {
-			throw new Error("加载轮播图广告失敗")
+			throw new Error("加载轮播图广告失敗");
 		}
 
 		if (res.code === 200) {
-			carouselAds.value = res.data as any
+			carouselAds.value = res.data as any;
 		}
 	} catch (error) {
 		toast.add({
-			severity: 'error',
-			summary: '加载失败',
+			severity: "error",
+			summary: "加载失败",
 			detail: (error as Error).message,
-			life: 3000
-		})
+			life: 3000,
+		});
 	}
 };
-loadCarouselAds()
+loadCarouselAds();
 /**
  * 加载最新资讯
  */
@@ -88,28 +83,28 @@ const loadLatestNews = async () => {
 		latestNews.value = [
 			{
 				id: 1,
-				title: '2024春季新品发布会',
-				excerpt: '全新春季服装系列即将上市，敬请期待...',
-				image: '/news-1.jpg',
-				createdAt: new Date('2024-03-01')
+				title: "2024春季新品发布会",
+				excerpt: "全新春季服装系列即将上市，敬请期待...",
+				image: "/news-1.jpg",
+				createdAt: new Date("2024-03-01"),
 			},
 			{
 				id: 2,
-				title: '品牌合作伙伴计划',
-				excerpt: '我们正在寻找优质的品牌合作伙伴...',
-				image: '/news-2.jpg',
-				createdAt: new Date('2024-02-28')
+				title: "品牌合作伙伴计划",
+				excerpt: "我们正在寻找优质的品牌合作伙伴...",
+				image: "/news-2.jpg",
+				createdAt: new Date("2024-02-28"),
 			},
 			{
 				id: 3,
-				title: '可持续发展倡议',
-				excerpt: '我们致力于环保和可持续发展...',
-				image: '/news-3.jpg',
-				createdAt: new Date('2024-02-25')
-			}
+				title: "可持续发展倡议",
+				excerpt: "我们致力于环保和可持续发展...",
+				image: "/news-3.jpg",
+				createdAt: new Date("2024-02-25"),
+			},
 		];
 	} catch (error) {
-		console.error('加载新闻失败:', error);
+		console.error("加载新闻失败:", error);
 	}
 };
 
@@ -124,7 +119,7 @@ const viewProduct = (productId: number) => {
  * 查看所有商品
  */
 const viewAllProducts = () => {
-	router.push('/products');
+	router.push("/products");
 };
 
 /**
@@ -138,17 +133,17 @@ const viewNews = (newsId: number) => {
  * 查看所有新闻
  */
 const viewAllNews = () => {
-	router.push('/news');
+	router.push("/news");
 };
 
 /**
  * 格式化日期
  */
 const formatDate = (date: Date) => {
-	return new Intl.DateTimeFormat('zh-CN', {
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric'
+	return new Intl.DateTimeFormat("zh-CN", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
 	}).format(new Date(date));
 };
 

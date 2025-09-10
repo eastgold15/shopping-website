@@ -1,217 +1,220 @@
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
-
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface DashboardStats {
-    totalProducts: number
-    totalOrders: number
-    totalUsers: number
-    totalRevenue: number
-    todayOrders: number
-    pendingOrders: number
-    completedOrders: number
-    cancelledOrders: number
+	totalProducts: number;
+	totalOrders: number;
+	totalUsers: number;
+	totalRevenue: number;
+	todayOrders: number;
+	pendingOrders: number;
+	completedOrders: number;
+	cancelledOrders: number;
 }
 
 interface RecentOrder {
-    id: number
-    orderNumber: string
-    customerName: string
-    amount: number
-    status: string
-    createdAt: Date
+	id: number;
+	orderNumber: string;
+	customerName: string;
+	amount: number;
+	status: string;
+	createdAt: Date;
 }
 
 interface SalesData {
-    labels: string[]
-    datasets: any[]
+	labels: string[];
+	datasets: any[];
 }
 
 // 响应式数据
-const loading = ref(false)
+const loading = ref(false);
 const stats = ref<DashboardStats>({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalUsers: 0,
-    totalRevenue: 0,
-    todayOrders: 0,
-    pendingOrders: 0,
-    completedOrders: 0,
-    cancelledOrders: 0
-})
-const recentOrders = ref<RecentOrder[]>([])
+	totalProducts: 0,
+	totalOrders: 0,
+	totalUsers: 0,
+	totalRevenue: 0,
+	todayOrders: 0,
+	pendingOrders: 0,
+	completedOrders: 0,
+	cancelledOrders: 0,
+});
+const recentOrders = ref<RecentOrder[]>([]);
 const salesData = ref<SalesData>({
-    labels: [],
-    datasets: []
-})
-const chartOptions = ref({})
+	labels: [],
+	datasets: [],
+});
+const chartOptions = ref({});
 
 // 工具函数
-const router = useRouter()
-const toast = useToast()
+const router = useRouter();
+const toast = useToast();
 
 // 计算属性
 const orderCompletionRate = computed(() => {
-    const total = stats.value.totalOrders
-    if (total === 0) return 0
-    return Math.round((stats.value.completedOrders / total) * 100)
-})
+	const total = stats.value.totalOrders;
+	if (total === 0) return 0;
+	return Math.round((stats.value.completedOrders / total) * 100);
+});
 
 const todayGrowthRate = computed(() => {
-    // 模拟增长率计算
-    return 12.5
-})
+	// 模拟增长率计算
+	return 12.5;
+});
 
 // 方法
 const loadDashboardData = async () => {
-    try {
-        loading.value = true
+	try {
+		loading.value = true;
 
-        // 模拟API调用 - 实际项目中应该调用真实API
-        await new Promise(resolve => setTimeout(resolve, 1000))
+		// 模拟API调用 - 实际项目中应该调用真实API
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // 模拟统计数据
-        stats.value = {
-            totalProducts: 156,
-            totalOrders: 1234,
-            totalUsers: 567,
-            totalRevenue: 89456.78,
-            todayOrders: 23,
-            pendingOrders: 45,
-            completedOrders: 1089,
-            cancelledOrders: 100
-        }
+		// 模拟统计数据
+		stats.value = {
+			totalProducts: 156,
+			totalOrders: 1234,
+			totalUsers: 567,
+			totalRevenue: 89456.78,
+			todayOrders: 23,
+			pendingOrders: 45,
+			completedOrders: 1089,
+			cancelledOrders: 100,
+		};
 
-        // 模拟最近订单
-        recentOrders.value = [
-            {
-                id: 1,
-                orderNumber: 'ORD-2024-001',
-                customerName: '张三',
-                amount: 299.99,
-                status: 'pending',
-                createdAt: new Date()
-            },
-            {
-                id: 2,
-                orderNumber: 'ORD-2024-002',
-                customerName: '李四',
-                amount: 599.99,
-                status: 'completed',
-                createdAt: new Date(Date.now() - 3600000)
-            },
-            {
-                id: 3,
-                orderNumber: 'ORD-2024-003',
-                customerName: '王五',
-                amount: 199.99,
-                status: 'shipped',
-                createdAt: new Date(Date.now() - 7200000)
-            }
-        ]
+		// 模拟最近订单
+		recentOrders.value = [
+			{
+				id: 1,
+				orderNumber: "ORD-2024-001",
+				customerName: "张三",
+				amount: 299.99,
+				status: "pending",
+				createdAt: new Date(),
+			},
+			{
+				id: 2,
+				orderNumber: "ORD-2024-002",
+				customerName: "李四",
+				amount: 599.99,
+				status: "completed",
+				createdAt: new Date(Date.now() - 3600000),
+			},
+			{
+				id: 3,
+				orderNumber: "ORD-2024-003",
+				customerName: "王五",
+				amount: 199.99,
+				status: "shipped",
+				createdAt: new Date(Date.now() - 7200000),
+			},
+		];
 
-        // 模拟销售图表数据
-        salesData.value = {
-            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-            datasets: [
-                {
-                    label: '销售额',
-                    data: [12000, 19000, 15000, 25000, 22000, 30000],
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 2,
-                    fill: true
-                }
-            ]
-        }
+		// 模拟销售图表数据
+		salesData.value = {
+			labels: ["1月", "2月", "3月", "4月", "5月", "6月"],
+			datasets: [
+				{
+					label: "销售额",
+					data: [12000, 19000, 15000, 25000, 22000, 30000],
+					backgroundColor: "rgba(54, 162, 235, 0.2)",
+					borderColor: "rgba(54, 162, 235, 1)",
+					borderWidth: 2,
+					fill: true,
+				},
+			],
+		};
 
-        chartOptions.value = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: (value: any) => '¥' + value.toLocaleString()
-                    }
-                }
-            }
-        }
-
-    } catch (error) {
-        console.error('加载仪表盘数据失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '加载仪表盘数据失败', life: 1000 })
-    } finally {
-        loading.value = false
-    }
-}
+		chartOptions.value = {
+			responsive: true,
+			maintainAspectRatio: false,
+			plugins: {
+				legend: {
+					display: false,
+				},
+			},
+			scales: {
+				y: {
+					beginAtZero: true,
+					ticks: {
+						callback: (value: any) => "¥" + value.toLocaleString(),
+					},
+				},
+			},
+		};
+	} catch (error) {
+		console.error("加载仪表盘数据失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载仪表盘数据失败",
+			life: 1000,
+		});
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-    return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
-}
+	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+};
 
 // 格式化日期
 const formatDate = (date: Date | string) => {
-    const d = new Date(date)
-    return d.toLocaleDateString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
+	const d = new Date(date);
+	return d.toLocaleDateString("zh-CN", {
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 
 // 获取订单状态标签
 const getOrderStatusTag = (status: string) => {
-    const statusMap: Record<string, { label: string; severity: string }> = {
-        pending: { label: '待处理', severity: 'warning' },
-        confirmed: { label: '已确认', severity: 'info' },
-        shipped: { label: '已发货', severity: 'success' },
-        completed: { label: '已完成', severity: 'success' },
-        cancelled: { label: '已取消', severity: 'danger' }
-    }
-    return statusMap[status] || { label: status, severity: 'secondary' }
-}
+	const statusMap: Record<string, { label: string; severity: string }> = {
+		pending: { label: "待处理", severity: "warning" },
+		confirmed: { label: "已确认", severity: "info" },
+		shipped: { label: "已发货", severity: "success" },
+		completed: { label: "已完成", severity: "success" },
+		cancelled: { label: "已取消", severity: "danger" },
+	};
+	return statusMap[status] || { label: status, severity: "secondary" };
+};
 
 // 快捷操作
 const quickActions = [
-    {
-        label: '添加商品',
-        icon: 'pi pi-plus',
-        action: () => router.push('/admin/products/add'),
-        color: 'success'
-    },
-    {
-        label: '查看订单',
-        icon: 'pi pi-shopping-cart',
-        action: () => router.push('/admin/orders'),
-        color: 'info'
-    },
-    {
-        label: '用户管理',
-        icon: 'pi pi-users',
-        action: () => router.push('/admin/users'),
-        color: 'warning'
-    },
-    {
-        label: '网站设置',
-        icon: 'pi pi-cog',
-        action: () => router.push('/admin/settings'),
-        color: 'secondary'
-    }
-]
+	{
+		label: "添加商品",
+		icon: "pi pi-plus",
+		action: () => router.push("/admin/products/add"),
+		color: "success",
+	},
+	{
+		label: "查看订单",
+		icon: "pi pi-shopping-cart",
+		action: () => router.push("/admin/orders"),
+		color: "info",
+	},
+	{
+		label: "用户管理",
+		icon: "pi pi-users",
+		action: () => router.push("/admin/users"),
+		color: "warning",
+	},
+	{
+		label: "网站设置",
+		icon: "pi pi-cog",
+		action: () => router.push("/admin/settings"),
+		color: "secondary",
+	},
+];
 
 // 组件挂载时加载数据
 onMounted(() => {
-    loadDashboardData()
-})
+	loadDashboardData();
+});
 </script>
 
 <template>

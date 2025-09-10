@@ -1,371 +1,472 @@
 <script setup lang="ts">
-
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { client } from '@frontend/utils/useTreaty'
-import ImageSelector from '@frontend/components/ImageSelector.vue'
+import ImageSelector from "@frontend/components/ImageSelector.vue";
+import { client } from "@frontend/utils/useTreaty";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface Partner {
-    id: number
-    name: string
-    description: string
-    image: string
-    url: string
-    sortOrder: number
-    isActive: boolean
-    createdAt: Date
-    updatedAt: Date
+	id: number;
+	name: string;
+	description: string;
+	image: string;
+	url: string;
+	sortOrder: number;
+	isActive: boolean;
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 interface PartnerForm {
-    name: string
-    description: string
-    image: string
-    url: string
-    sortOrder: number
-    isActive: boolean
+	name: string;
+	description: string;
+	image: string;
+	url: string;
+	sortOrder: number;
+	isActive: boolean;
 }
 
 // 响应式数据
-const loading = ref(false)
-const saving = ref(false)
-const partners = ref<Partner[]>([])
-const selectedPartners = ref<Partner[]>([])
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
-const sortField = ref('sortOrder')
-const sortOrder = ref(1) // 1 for asc, -1 for desc
-const searchKeyword = ref('')
-const filterStatus = ref('all')
-const showCreateDialog = ref(false)
-const editingPartner = ref<Partner | null>(null)
-const showImageSelector = ref(false)
+const loading = ref(false);
+const saving = ref(false);
+const partners = ref<Partner[]>([]);
+const selectedPartners = ref<Partner[]>([]);
+const total = ref(0);
+const page = ref(1);
+const pageSize = ref(10);
+const sortField = ref("sortOrder");
+const sortOrder = ref(1); // 1 for asc, -1 for desc
+const searchKeyword = ref("");
+const filterStatus = ref("all");
+const showCreateDialog = ref(false);
+const editingPartner = ref<Partner | null>(null);
+const showImageSelector = ref(false);
 
 // 表单数据
 const partnerForm = ref<PartnerForm>({
-    name: '',
-    description: '',
-    image: '',
-    url: '',
-    sortOrder: 0,
-    isActive: true
-})
+	name: "",
+	description: "",
+	image: "",
+	url: "",
+	sortOrder: 0,
+	isActive: true,
+});
 
 // 状态选项
 const statusOptions = [
-    { label: '全部', value: 'all' },
-    { label: '启用', value: true },
-    { label: '禁用', value: false }
-]
+	{ label: "全部", value: "all" },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
+];
 
 // 工具函数
-const confirm = useConfirm()
-const toast = useToast()
+const confirm = useConfirm();
+const toast = useToast();
 
 // 计算属性
 const isFormValid = computed(() => {
-    return partnerForm.value.name.trim() &&
-        partnerForm.value.description.trim() &&
-        partnerForm.value.image.trim()
-})
+	return (
+		partnerForm.value.name.trim() &&
+		partnerForm.value.description.trim() &&
+		partnerForm.value.image.trim()
+	);
+});
 
 // 图片选择相关方法
 const openImageSelector = () => {
-    showImageSelector.value = true
-}
+	showImageSelector.value = true;
+};
 
 const onImageSelected = (imageUrl: string, imageData: any) => {
-    partnerForm.value.image = imageUrl
-    showImageSelector.value = false
-    toast.add({
-        severity: 'success',
-        summary: '图片选择成功',
-        detail: `已选择图片: ${imageData.fileName}`,
-        life: 2000
-    })
-}
+	partnerForm.value.image = imageUrl;
+	showImageSelector.value = false;
+	toast.add({
+		severity: "success",
+		summary: "图片选择成功",
+		detail: `已选择图片: ${imageData.fileName}`,
+		life: 2000,
+	});
+};
 
 // 方法
 const loadPartners = async () => {
-    try {
-        loading.value = true
-        const params = {
-            page: page.value,
-            pageSize: pageSize.value,
-            sortBy: sortField.value,
-            sortOrder: sortOrder.value === 1 ? 'asc' : 'desc',
-            search: searchKeyword.value || undefined,
-            isActive: filterStatus.value !== 'all' ? filterStatus.value : undefined
-        }
+	try {
+		loading.value = true;
+		const params = {
+			page: page.value,
+			pageSize: pageSize.value,
+			sortBy: sortField.value,
+			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
+			search: searchKeyword.value || undefined,
+			isActive: filterStatus.value !== "all" ? filterStatus.value : undefined,
+		};
 
-        const response = await client.api.partners.get({ query: params })
+		const response = await client.api.partners.get({ query: params });
 
-        if (response.data && response.data.code === 200) {
-            // 处理分页数据结构 {items: [], meta: {total: number}}
-            const responseData = response.data.data
-            if (responseData && typeof responseData === 'object') {
-                if (Array.isArray(responseData.items)) {
-                    partners.value = responseData.items
-                    total.value = responseData.meta?.total || 0
-                } else if (Array.isArray(responseData)) {
-                    // 兼容直接返回数组的情况
-                    partners.value = responseData
-                    total.value = response.data.total || responseData.length
-                } else {
-                    console.error('API返回的数据格式不正确:', responseData)
-                    partners.value = []
-                    total.value = 0
-                    toast.add({ severity: 'error', summary: '错误', detail: '数据格式错误', life: 1000 })
-                }
-            } else {
-                partners.value = []
-                total.value = 0
-            }
-        } else {
-            console.error('API返回的数据格式错误:', response.data)
-            partners.value = []
-            total.value = 0
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '加载合作伙伴失败', life: 1000 })
-        }
-    } catch (error) {
-        console.error('加载合作伙伴失败:', error)
-        partners.value = []
-        total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载合作伙伴失败', life: 1000 })
-    } finally {
-        loading.value = false
-    }
-}
+		if (response.data && response.data.code === 200) {
+			// 处理分页数据结构 {items: [], meta: {total: number}}
+			const responseData = response.data.data;
+			if (responseData && typeof responseData === "object") {
+				if (Array.isArray(responseData.items)) {
+					partners.value = responseData.items;
+					total.value = responseData.meta?.total || 0;
+				} else if (Array.isArray(responseData)) {
+					// 兼容直接返回数组的情况
+					partners.value = responseData;
+					total.value = response.data.total || responseData.length;
+				} else {
+					console.error("API返回的数据格式不正确:", responseData);
+					partners.value = [];
+					total.value = 0;
+					toast.add({
+						severity: "error",
+						summary: "错误",
+						detail: "数据格式错误",
+						life: 1000,
+					});
+				}
+			} else {
+				partners.value = [];
+				total.value = 0;
+			}
+		} else {
+			console.error("API返回的数据格式错误:", response.data);
+			partners.value = [];
+			total.value = 0;
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: response.data?.message || "加载合作伙伴失败",
+				life: 1000,
+			});
+		}
+	} catch (error) {
+		console.error("加载合作伙伴失败:", error);
+		partners.value = [];
+		total.value = 0;
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载合作伙伴失败",
+			life: 1000,
+		});
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 分页处理
 const onPage = (event: any) => {
-    page.value = event.page + 1 // DataTable的page从0开始，API从1开始
-    pageSize.value = event.rows
-    loadPartners()
-}
+	page.value = event.page + 1; // DataTable的page从0开始，API从1开始
+	pageSize.value = event.rows;
+	loadPartners();
+};
 
 // 排序处理
 const onSort = (event: any) => {
-    sortField.value = event.sortField
-    sortOrder.value = event.sortOrder
-    loadPartners()
-}
+	sortField.value = event.sortField;
+	sortOrder.value = event.sortOrder;
+	loadPartners();
+};
 
 // 搜索处理
 const handleSearch = () => {
-    page.value = 1
-    loadPartners()
-}
+	page.value = 1;
+	loadPartners();
+};
 
 // 筛选处理
 const handleFilter = () => {
-    page.value = 1
-    loadPartners()
-}
+	page.value = 1;
+	loadPartners();
+};
 
 // 显示编辑对话框
 const showEditDialog = (partner: Partner) => {
-    editingPartner.value = partner
-    partnerForm.value = {
-        name: partner.name,
-        description: partner.description,
-        image: partner.image,
-        url: partner.url,
-        sortOrder: partner.sortOrder,
-        isActive: partner.isActive
-    }
-    showCreateDialog.value = true
-}
+	editingPartner.value = partner;
+	partnerForm.value = {
+		name: partner.name,
+		description: partner.description,
+		image: partner.image,
+		url: partner.url,
+		sortOrder: partner.sortOrder,
+		isActive: partner.isActive,
+	};
+	showCreateDialog.value = true;
+};
 
 // 关闭对话框
 const closeDialog = () => {
-    showCreateDialog.value = false
-    editingPartner.value = null
-    partnerForm.value = {
-        name: '',
-        description: '',
-        image: '',
-        url: '',
-        sortOrder: 0,
-        isActive: true
-    }
-}
+	showCreateDialog.value = false;
+	editingPartner.value = null;
+	partnerForm.value = {
+		name: "",
+		description: "",
+		image: "",
+		url: "",
+		sortOrder: 0,
+		isActive: true,
+	};
+};
 
 // 保存合作伙伴
 const savePartner = async () => {
-    if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
-        return
-    }
+	if (!isFormValid.value) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请填写必填字段",
+			life: 1000,
+		});
+		return;
+	}
 
-    try {
-        saving.value = true
+	try {
+		saving.value = true;
 
-        if (editingPartner.value) {
-            // 更新
-            const response = await client.api.partners[editingPartner.value.id.toString()].put(partnerForm.value)
-            if (response.data && response.data.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '更新合作伙伴成功', life: 1000 })
-                closeDialog()
-                loadPartners()
-            } else {
-                toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '更新合作伙伴失败', life: 1000 })
-            }
-        } else {
-            // 创建
-            const response = await client.api.partners.post(partnerForm.value)
-            if (response.data && response.data.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '创建合作伙伴成功', life: 1000 })
-                closeDialog()
-                loadPartners()
-            } else {
-                toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '创建合作伙伴失败', life: 1000 })
-            }
-        }
-    } catch (error) {
-        console.error('保存合作伙伴失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '保存合作伙伴失败', life: 1000 })
-    } finally {
-        saving.value = false
-    }
-}
+		if (editingPartner.value) {
+			// 更新
+			const response = await client.api.partners[
+				editingPartner.value.id.toString()
+			].put(partnerForm.value);
+			if (response.data && response.data.code === 200) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "更新合作伙伴成功",
+					life: 1000,
+				});
+				closeDialog();
+				loadPartners();
+			} else {
+				toast.add({
+					severity: "error",
+					summary: "错误",
+					detail: response.data?.message || "更新合作伙伴失败",
+					life: 1000,
+				});
+			}
+		} else {
+			// 创建
+			const response = await client.api.partners.post(partnerForm.value);
+			if (response.data && response.data.code === 200) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "创建合作伙伴成功",
+					life: 1000,
+				});
+				closeDialog();
+				loadPartners();
+			} else {
+				toast.add({
+					severity: "error",
+					summary: "错误",
+					detail: response.data?.message || "创建合作伙伴失败",
+					life: 1000,
+				});
+			}
+		}
+	} catch (error) {
+		console.error("保存合作伙伴失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "保存合作伙伴失败",
+			life: 1000,
+		});
+	} finally {
+		saving.value = false;
+	}
+};
 
 // 确认删除
 const confirmDelete = (partner: Partner) => {
-    confirm.require({
-        message: `确定要删除合作伙伴 "${partner.name}" 吗？`,
-        header: '删除确认',
-        icon: 'pi pi-exclamation-triangle',
-        acceptClass: 'p-button-danger',
-        accept: () => deletePartner(partner.id)
-    })
-}
+	confirm.require({
+		message: `确定要删除合作伙伴 "${partner.name}" 吗？`,
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => deletePartner(partner.id),
+	});
+};
 
 // 删除合作伙伴
 const deletePartner = async (id: number) => {
-    try {
-        const response = await client.api.partners[id.toString()].delete()
-        if (response.data && response.data.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: '删除合作伙伴成功', life: 1000 })
-            loadPartners()
-        } else {
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '删除合作伙伴失败', life: 1000 })
-        }
-    } catch (error) {
-        console.error('删除合作伙伴失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '删除合作伙伴失败', life: 1000 })
-    }
-}
+	try {
+		const response = await client.api.partners[id.toString()].delete();
+		if (response.data && response.data.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "删除合作伙伴成功",
+				life: 1000,
+			});
+			loadPartners();
+		} else {
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: response.data?.message || "删除合作伙伴失败",
+				life: 1000,
+			});
+		}
+	} catch (error) {
+		console.error("删除合作伙伴失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "删除合作伙伴失败",
+			life: 1000,
+		});
+	}
+};
 
 // 切换启用状态
 const toggleActive = async (partner: Partner) => {
-    try {
-        const response = await client.api.partners[partner.id.toString()]['toggle-active'].patch()
-        if (response.data && response.data.code === 200) {
-            toast.add({
-                severity: 'success',
-                summary: '成功',
-                detail: `${partner.isActive ? '启用' : '禁用'}合作伙伴成功`
-            })
-            loadPartners()
-        } else {
-            // 回滚状态
-            partner.isActive = !partner.isActive
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '切换状态失败', life: 1000 })
-        }
-    } catch (error) {
-        // 回滚状态
-        partner.isActive = !partner.isActive
-        console.error('切换状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '切换状态失败', life: 1000 })
-    }
-}
+	try {
+		const response =
+			await client.api.partners[partner.id.toString()]["toggle-active"].patch();
+		if (response.data && response.data.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: `${partner.isActive ? "启用" : "禁用"}合作伙伴成功`,
+			});
+			loadPartners();
+		} else {
+			// 回滚状态
+			partner.isActive = !partner.isActive;
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: response.data?.message || "切换状态失败",
+				life: 1000,
+			});
+		}
+	} catch (error) {
+		// 回滚状态
+		partner.isActive = !partner.isActive;
+		console.error("切换状态失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "切换状态失败",
+			life: 1000,
+		});
+	}
+};
 
 // 更新排序
 const updateSort = async (partner: Partner) => {
-    try {
-        const response = await client.api.partners[partner.id.toString()].sort.patch({
-            sortOrder: partner.sortOrder
-        })
-        if (response.data && response.data.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: '更新排序成功', life: 1000 })
-            loadPartners()
-        } else {
-            toast.add({ severity: 'error', summary: '错误', detail: response.data?.message || '更新排序失败', life: 1000 })
-            loadPartners() // 重新加载以恢复原始值
-        }
-    } catch (error) {
-        console.error('更新排序失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '更新排序失败', life: 1000 })
-        loadPartners() // 重新加载以恢复原始值
-    }
-}
+	try {
+		const response = await client.api.partners[
+			partner.id.toString()
+		].sort.patch({
+			sortOrder: partner.sortOrder,
+		});
+		if (response.data && response.data.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "更新排序成功",
+				life: 1000,
+			});
+			loadPartners();
+		} else {
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: response.data?.message || "更新排序失败",
+				life: 1000,
+			});
+			loadPartners(); // 重新加载以恢复原始值
+		}
+	} catch (error) {
+		console.error("更新排序失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "更新排序失败",
+			life: 1000,
+		});
+		loadPartners(); // 重新加载以恢复原始值
+	}
+};
 
 // 批量切换状态
 const batchToggleActive = async (isActive: boolean) => {
-    if (!selectedPartners.value.length) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请先选择要操作的合作伙伴', life: 1000 })
-        return
-    }
+	if (!selectedPartners.value.length) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请先选择要操作的合作伙伴",
+			life: 1000,
+		});
+		return;
+	}
 
-    confirm.require({
-        message: `确定要${isActive ? '启用' : '禁用'}选中的 ${selectedPartners.value.length} 个合作伙伴吗？`,
-        header: '批量操作确认',
-        icon: 'pi pi-exclamation-triangle',
-        accept: async () => {
-            try {
-                const promises = selectedPartners.value.map(partner =>
-                    client.api.partners[partner.id.toString()]['toggle-active'].patch()
-                )
+	confirm.require({
+		message: `确定要${isActive ? "启用" : "禁用"}选中的 ${selectedPartners.value.length} 个合作伙伴吗？`,
+		header: "批量操作确认",
+		icon: "pi pi-exclamation-triangle",
+		accept: async () => {
+			try {
+				const promises = selectedPartners.value.map((partner) =>
+					client.api.partners[partner.id.toString()]["toggle-active"].patch(),
+				);
 
-                await Promise.all(promises)
-                toast.add({
-                    severity: 'success',
-                    summary: '成功',
-                    detail: `批量${isActive ? '启用' : '禁用'}合作伙伴成功`
-                })
-                selectedPartners.value = []
-                loadPartners()
-            } catch (error) {
-                console.error('批量操作失败:', error)
-                toast.add({ severity: 'error', summary: '错误', detail: '批量操作失败', life: 1000 })
-            }
-        }
-    })
-}
+				await Promise.all(promises);
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: `批量${isActive ? "启用" : "禁用"}合作伙伴成功`,
+				});
+				selectedPartners.value = [];
+				loadPartners();
+			} catch (error) {
+				console.error("批量操作失败:", error);
+				toast.add({
+					severity: "error",
+					summary: "错误",
+					detail: "批量操作失败",
+					life: 1000,
+				});
+			}
+		},
+	});
+};
 
 // 格式化日期
 const formatDate = (date: Date | string) => {
-    const d = new Date(date)
-    return d.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
+	const d = new Date(date);
+	return d.toLocaleDateString("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 
 // 获取合作伙伴详情
 const getPartner = async (id: number) => {
-    try {
-        const response = await client.api.partners[id.toString()].get()
-        if (response.data && response.data.code === 200) {
-            return response.data.data
-        }
-        return null
-    } catch (error) {
-        console.error('获取合作伙伴详情失败:', error)
-        return null
-    }
-}
+	try {
+		const response = await client.api.partners[id.toString()].get();
+		if (response.data && response.data.code === 200) {
+			return response.data.data;
+		}
+		return null;
+	} catch (error) {
+		console.error("获取合作伙伴详情失败:", error);
+		return null;
+	}
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-    loadPartners()
-})
+	loadPartners();
+});
 </script>
 <template>
     <div class="partners-management">

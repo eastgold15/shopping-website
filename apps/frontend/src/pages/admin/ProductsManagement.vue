@@ -1,451 +1,513 @@
 <script setup lang="ts">
-
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-
-import { useRouter } from 'vue-router'
-import type { Category } from '@frontend/app/types/category'
-import type { Product, ProductForm } from '@frontend/app/types/product'
-import ImageSelector from '@frontend/components/ImageSelector.vue'
-import { api } from '@frontend/utils/handleApi'
-
+import type { Category } from "@frontend/app/types/category";
+import type { Product, ProductForm } from "@frontend/app/types/product";
+import ImageSelector from "@frontend/components/ImageSelector.vue";
+import { api } from "@frontend/utils/handleApi";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
+import { useRouter } from "vue-router";
 
 // 响应式数据
-const loading = ref(false)
-const saving = ref(false)
-const products = ref<Product[]>([])
-const selectedProducts = ref<Product[]>([])
-const categories = ref<Category[]>([])
+const loading = ref(false);
+const saving = ref(false);
+const products = ref<Product[]>([]);
+const selectedProducts = ref<Product[]>([]);
+const categories = ref<Category[]>([]);
 // 初始化元数据 页码
 const initMeta = ref({
-    total: 0,
-    page: 1,
-    pageSize: 10,
-    totalPages: 1
-})
-const sortField = ref('createdAt')
-const sortOrder = ref(-1) // 1 for asc, -1 for desc
-const searchKeyword = ref('')
-const filterCategory = ref<number | null>(null)
-const filterStatus = ref('all')
-const showCreateDialog = ref(false)
-const editingProduct = ref<Product | null>(null)
-const showImageSelector = ref(false)
+	total: 0,
+	page: 1,
+	pageSize: 10,
+	totalPages: 1,
+});
+const sortField = ref("createdAt");
+const sortOrder = ref(-1); // 1 for asc, -1 for desc
+const searchKeyword = ref("");
+const filterCategory = ref<number | null>(null);
+const filterStatus = ref("all");
+const showCreateDialog = ref(false);
+const editingProduct = ref<Product | null>(null);
+const showImageSelector = ref(false);
 
 // 表单数据
 const productForm = ref<ProductForm>({
-    name: '',
-    slug: '',
-    description: '',
-    shortDescription: '',
-    price: 0,
-    comparePrice: 0,
-    cost: 0,
-    sku: '',
-    barcode: '',
-    weight: 0,
-    dimensions: null,
-    images: [],
-    videos: [],
-    colors: [],
-    sizes: [],
-    materials: [],
-    careInstructions: '',
-    features: null,
-    specifications: null,
-    categoryId: null,
-    stock: 0,
-    minStock: 0,
-    isActive: true,
-    isFeatured: false,
-    metaTitle: '',
-    metaDescription: '',
-    metaKeywords: ''
-})
+	name: "",
+	slug: "",
+	description: "",
+	shortDescription: "",
+	price: 0,
+	comparePrice: 0,
+	cost: 0,
+	sku: "",
+	barcode: "",
+	weight: 0,
+	dimensions: null,
+	images: [],
+	videos: [],
+	colors: [],
+	sizes: [],
+	materials: [],
+	careInstructions: "",
+	features: null,
+	specifications: null,
+	categoryId: null,
+	stock: 0,
+	minStock: 0,
+	isActive: true,
+	isFeatured: false,
+	metaTitle: "",
+	metaDescription: "",
+	metaKeywords: "",
+});
 
 // 选项数据
 const statusOptions = [
-    { label: '全部', value: 'all' },
-    { label: '上架', value: true },
-    { label: '下架', value: false }
-]
+	{ label: "全部", value: "all" },
+	{ label: "上架", value: true },
+	{ label: "下架", value: false },
+];
 
-const availableTags = ref([
-    '热销', '新品', '推荐', '限时优惠', '包邮', '精选'
-])
+const availableTags = ref(["热销", "新品", "推荐", "限时优惠", "包邮", "精选"]);
 
 // 工具函数
-const router = useRouter()
-const confirm = useConfirm()
-const toast = useToast()
+const router = useRouter();
+const confirm = useConfirm();
+const toast = useToast();
 
 // 计算属性
 const isFormValid = computed(() => {
-    return productForm.value.name.trim() &&
-        productForm.value.slug.trim() &&
-        productForm.value.description.trim() &&
-        productForm.value.shortDescription.trim() &&
-        productForm.value.price > 0 &&
-        productForm.value.stock >= 0 &&
-        productForm.value.sku.trim() &&
-        productForm.value.categoryId !== null
-})
+	return (
+		productForm.value.name.trim() &&
+		productForm.value.slug.trim() &&
+		productForm.value.description.trim() &&
+		productForm.value.shortDescription.trim() &&
+		productForm.value.price > 0 &&
+		productForm.value.stock >= 0 &&
+		productForm.value.sku.trim() &&
+		productForm.value.categoryId !== null
+	);
+});
 
 const categoryOptions = computed(() => {
-    return categories.value.map(cat => ({
-        label: cat.name,
-        value: cat.id
-    }))
-})
+	return categories.value.map((cat) => ({
+		label: cat.name,
+		value: cat.id,
+	}));
+});
 
 const tagOptions = computed(() => {
-    return availableTags.value.map(tag => ({
-        label: tag,
-        value: tag
-    }))
-})
+	return availableTags.value.map((tag) => ({
+		label: tag,
+		value: tag,
+	}));
+});
 
 // 方法
 const loadProducts = async () => {
-    try {
-        loading.value = true
-        const params = {
-            page: initMeta.value.page,
-            pageSize: initMeta.value.pageSize,
-            sortBy: sortField.value,
-            sortOrder: sortOrder.value === 1 ? 'asc' : 'desc',
-            categoryId: filterCategory.value || undefined,
-            isActive: filterStatus.value !== 'all' ? filterStatus.value : undefined
-        }
-        // 添加搜索参数
-        if (searchKeyword.value) {
-            params.search = searchKeyword.value
-        }
-        const response = await api.products.list(params)
-        if (response.code === 200) {
-            const data = response.data
-            // 根据新的API返回格式，直接从data中获取商品数据
-            products.value = data.items || []
-            initMeta.value = data.meta
-            console.log("init", products.value, initMeta.value)
-        } else {
-            throw new Error(response.message || '获取商品列表失败')
-        }
-
-    } catch (error) {
-        console.error('加载商品失败:', error)
-        products.value = []
-        initMeta.value.total = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载商品失败', life: 1000 })
-    } finally {
-        loading.value = false
-    }
-}
+	try {
+		loading.value = true;
+		const params = {
+			page: initMeta.value.page,
+			pageSize: initMeta.value.pageSize,
+			sortBy: sortField.value,
+			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
+			categoryId: filterCategory.value || undefined,
+			isActive: filterStatus.value !== "all" ? filterStatus.value : undefined,
+		};
+		// 添加搜索参数
+		if (searchKeyword.value) {
+			params.search = searchKeyword.value;
+		}
+		const response = await api.products.list(params);
+		if (response.code === 200) {
+			const data = response.data;
+			// 根据新的API返回格式，直接从data中获取商品数据
+			products.value = data.items || [];
+			initMeta.value = data.meta;
+			console.log("init", products.value, initMeta.value);
+		} else {
+			throw new Error(response.message || "获取商品列表失败");
+		}
+	} catch (error) {
+		console.error("加载商品失败:", error);
+		products.value = [];
+		initMeta.value.total = 0;
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载商品失败",
+			life: 1000,
+		});
+	} finally {
+		loading.value = false;
+	}
+};
 
 const loadCategories = async () => {
-    try {
-        const response = await api.categories.list()
+	try {
+		const response = await api.categories.list();
 
-        if (response.code === 200) {
-            categories.value = response.data || []
-        } else {
-            throw new Error(response.message || '获取分类列表失败')
-        }
-    } catch (error) {
-        console.error('加载分类失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '加载分类失败', life: 1000 })
-    }
-}
+		if (response.code === 200) {
+			categories.value = response.data || [];
+		} else {
+			throw new Error(response.message || "获取分类列表失败");
+		}
+	} catch (error) {
+		console.error("加载分类失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载分类失败",
+			life: 1000,
+		});
+	}
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-    loadCategories()
-    loadProducts()
-})
+	loadCategories();
+	loadProducts();
+});
 
 // 分页处理
 const onPage = (event: any) => {
-    initMeta.value.page = event.page + 1
-    initMeta.value.pageSize = event.rows
-    loadProducts()
-}
+	initMeta.value.page = event.page + 1;
+	initMeta.value.pageSize = event.rows;
+	loadProducts();
+};
 
 // 排序处理
 const onSort = (event: any) => {
-    sortField.value = event.sortField
-    sortOrder.value = event.sortOrder
-    loadProducts()
-}
+	sortField.value = event.sortField;
+	sortOrder.value = event.sortOrder;
+	loadProducts();
+};
 
 // 搜索处理
 const handleSearch = (searchTerm?: string) => {
-    if (searchTerm !== undefined) {
-        searchKeyword.value = searchTerm
-    }
-    initMeta.value.page = 1
-    loadProducts()
-}
+	if (searchTerm !== undefined) {
+		searchKeyword.value = searchTerm;
+	}
+	initMeta.value.page = 1;
+	loadProducts();
+};
 
 // 筛选处理
 const handleFilter = (filters?: any) => {
-    if (filters) {
-        if (filters.category !== undefined) {
-            filterCategory.value = filters.category
-        }
-        if (filters.status !== undefined) {
-            filterStatus.value = filters.status
-        }
-    }
-    initMeta.value.page = 1
-    loadProducts()
-}
+	if (filters) {
+		if (filters.category !== undefined) {
+			filterCategory.value = filters.category;
+		}
+		if (filters.status !== undefined) {
+			filterStatus.value = filters.status;
+		}
+	}
+	initMeta.value.page = 1;
+	loadProducts();
+};
 
 // 显示编辑对话框
 const showEditDialog = (product: Product) => {
-    editingProduct.value = product
-    productForm.value = {
-        name: product.name,
-        slug: product.slug,
-        description: product.description,
-        shortDescription: product.shortDescription,
-        price: product.price,
-        comparePrice: product.comparePrice,
-        cost: product.cost,
-        sku: product.sku,
-        barcode: product.barcode,
-        weight: product.weight,
-        dimensions: product.dimensions,
-        images: [...(product.images || [])],
-        videos: [...(product.videos || [])],
-        colors: [...(product.colors || [])],
-        sizes: [...(product.sizes || [])],
-        materials: [...(product.materials || [])],
-        careInstructions: product.careInstructions || '',
-        features: product.features,
-        specifications: product.specifications,
-        categoryId: product.categoryId,
-        stock: product.stock,
-        minStock: product.minStock,
-        isActive: product.isActive,
-        isFeatured: product.isFeatured,
-        metaTitle: product.metaTitle || '',
-        metaDescription: product.metaDescription || '',
-        metaKeywords: product.metaKeywords || ''
-    }
-    showCreateDialog.value = true
-}
+	editingProduct.value = product;
+	productForm.value = {
+		name: product.name,
+		slug: product.slug,
+		description: product.description,
+		shortDescription: product.shortDescription,
+		price: product.price,
+		comparePrice: product.comparePrice,
+		cost: product.cost,
+		sku: product.sku,
+		barcode: product.barcode,
+		weight: product.weight,
+		dimensions: product.dimensions,
+		images: [...(product.images || [])],
+		videos: [...(product.videos || [])],
+		colors: [...(product.colors || [])],
+		sizes: [...(product.sizes || [])],
+		materials: [...(product.materials || [])],
+		careInstructions: product.careInstructions || "",
+		features: product.features,
+		specifications: product.specifications,
+		categoryId: product.categoryId,
+		stock: product.stock,
+		minStock: product.minStock,
+		isActive: product.isActive,
+		isFeatured: product.isFeatured,
+		metaTitle: product.metaTitle || "",
+		metaDescription: product.metaDescription || "",
+		metaKeywords: product.metaKeywords || "",
+	};
+	showCreateDialog.value = true;
+};
 
 // 关闭对话框
 const closeDialog = () => {
-    showCreateDialog.value = false
-    editingProduct.value = null
-    productForm.value = {
-        name: '',
-        slug: '',
-        description: '',
-        shortDescription: '',
-        price: 0,
-        comparePrice: 0,
-        cost: 0,
-        sku: '',
-        barcode: '',
-        weight: 0,
-        dimensions: null,
-        images: [],
-        videos: [],
-        colors: [],
-        sizes: [],
-        materials: [],
-        careInstructions: '',
-        features: null,
-        specifications: null,
-        categoryId: null,
-        stock: 0,
-        minStock: 0,
-        isActive: true,
-        isFeatured: false,
-        metaTitle: '',
-        metaDescription: '',
-        metaKeywords: ''
-    }
-}
+	showCreateDialog.value = false;
+	editingProduct.value = null;
+	productForm.value = {
+		name: "",
+		slug: "",
+		description: "",
+		shortDescription: "",
+		price: 0,
+		comparePrice: 0,
+		cost: 0,
+		sku: "",
+		barcode: "",
+		weight: 0,
+		dimensions: null,
+		images: [],
+		videos: [],
+		colors: [],
+		sizes: [],
+		materials: [],
+		careInstructions: "",
+		features: null,
+		specifications: null,
+		categoryId: null,
+		stock: 0,
+		minStock: 0,
+		isActive: true,
+		isFeatured: false,
+		metaTitle: "",
+		metaDescription: "",
+		metaKeywords: "",
+	};
+};
 
 // 保存商品
 const saveProduct = async () => {
-    if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
-        return
-    }
+	if (!isFormValid.value) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请填写必填字段",
+			life: 1000,
+		});
+		return;
+	}
 
-    try {
-        saving.value = true
+	try {
+		saving.value = true;
 
-        // 准备提交数据
-        const submitData = {
-            ...productForm.value,
-            // 确保数组字段不为null
-            images: productForm.value.images || [],
-            videos: productForm.value.videos || [],
-            colors: productForm.value.colors || [],
-            sizes: productForm.value.sizes || [],
-            materials: productForm.value.materials || []
-        }
+		// 准备提交数据
+		const submitData = {
+			...productForm.value,
+			// 确保数组字段不为null
+			images: productForm.value.images || [],
+			videos: productForm.value.videos || [],
+			colors: productForm.value.colors || [],
+			sizes: productForm.value.sizes || [],
+			materials: productForm.value.materials || [],
+		};
 
-        if (editingProduct.value) {
-            // 更新商品
-            const response = await api.products.update(editingProduct.value.id.toString(), submitData)
+		if (editingProduct.value) {
+			// 更新商品
+			const response = await api.products.update(
+				editingProduct.value.id.toString(),
+				submitData,
+			);
 
-            if (response.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '更新商品成功', life: 1000 })
-            } else {
-                throw new Error(response.message || '更新商品失败')
-            }
-        } else {
-            // 创建商品
-            const response = await api.products.create(submitData)
+			if (response.code === 200) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "更新商品成功",
+					life: 1000,
+				});
+			} else {
+				throw new Error(response.message || "更新商品失败");
+			}
+		} else {
+			// 创建商品
+			const response = await api.products.create(submitData);
 
-            if (response.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '创建商品成功', life: 1000 })
-            } else {
-                throw new Error(response.message || '创建商品失败')
-            }
-        }
+			if (response.code === 200) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "创建商品成功",
+					life: 1000,
+				});
+			} else {
+				throw new Error(response.message || "创建商品失败");
+			}
+		}
 
-        closeDialog()
-        loadProducts()
-    } catch (error) {
-        console.error('保存商品失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '保存商品失败', life: 1000 })
-    } finally {
-        saving.value = false
-    }
-}
+		closeDialog();
+		loadProducts();
+	} catch (error) {
+		console.error("保存商品失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: error.message || "保存商品失败",
+			life: 1000,
+		});
+	} finally {
+		saving.value = false;
+	}
+};
 
 // 确认删除
 const confirmDelete = (product: Product) => {
-    confirm.require({
-        message: `确定要删除商品 "${product.name}" 吗？`,
-        header: '删除确认',
-        icon: 'pi pi-exclamation-triangle',
-        acceptClass: 'p-button-danger',
-        accept: () => deleteProduct(product.id)
-    })
-}
+	confirm.require({
+		message: `确定要删除商品 "${product.name}" 吗？`,
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => deleteProduct(product.id),
+	});
+};
 
 // 删除商品
 const deleteProduct = async (id: number) => {
-    try {
-        const response = await api.products.delete(id.toString())
+	try {
+		const response = await api.products.delete(id.toString());
 
-        if (response.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: response.message, life: 1000 })
-            loadProducts()
-        } else {
-            throw new Error(response.message || '删除商品失败')
-        }
-    } catch (error) {
-        console.error('删除商品失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '删除商品失败', life: 1000 })
-    }
-}
+		if (response.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: response.message,
+				life: 1000,
+			});
+			loadProducts();
+		} else {
+			throw new Error(response.message || "删除商品失败");
+		}
+	} catch (error) {
+		console.error("删除商品失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: error.message || "删除商品失败",
+			life: 1000,
+		});
+	}
+};
 
 // 切换上架状态
 const toggleActive = async (product: Product) => {
-    const originalStatus = product.isActive
-    try {
-        product.isActive = !product.isActive
+	const originalStatus = product.isActive;
+	try {
+		product.isActive = !product.isActive;
 
-        const response = await api.products.update(product.id.toString(), {
-            isActive: product.isActive
-        })
+		const response = await api.products.update(product.id.toString(), {
+			isActive: product.isActive,
+		});
 
-        if (response.code === 200) {
-            toast.add({
-                severity: 'success',
-                summary: '成功',
-                detail: `${product.isActive ? '上架' : '下架'}商品成功`
-            })
-        } else {
-            throw new Error(response.message || '切换状态失败')
-        }
-    } catch (error) {
-        product.isActive = originalStatus
-        console.error('切换状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '切换状态失败', life: 1000 })
-    }
-}
+		if (response.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: `${product.isActive ? "上架" : "下架"}商品成功`,
+			});
+		} else {
+			throw new Error(response.message || "切换状态失败");
+		}
+	} catch (error) {
+		product.isActive = originalStatus;
+		console.error("切换状态失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: error.message || "切换状态失败",
+			life: 1000,
+		});
+	}
+};
 
 // 切换推荐状态
 const toggleFeatured = async (product: Product) => {
-    const originalStatus = product.isFeatured
-    try {
-        product.isFeatured = !product.isFeatured
+	const originalStatus = product.isFeatured;
+	try {
+		product.isFeatured = !product.isFeatured;
 
-        const response = await api.products.update(product.id.toString(), {
-            isFeatured: product.isFeatured
-        })
+		const response = await api.products.update(product.id.toString(), {
+			isFeatured: product.isFeatured,
+		});
 
-        if (response.code === 200) {
-            toast.add({
-                severity: 'success',
-                summary: '成功',
-                detail: `${product.isFeatured ? '设为推荐' : '取消推荐'}成功`
-            })
-        } else {
-            throw new Error(response.message || '切换推荐状态失败')
-        }
-    } catch (error) {
-        product.isFeatured = originalStatus
-        console.error('切换推荐状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: error.message || '切换推荐状态失败', life: 1000 })
-    }
-}
+		if (response.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: `${product.isFeatured ? "设为推荐" : "取消推荐"}成功`,
+			});
+		} else {
+			throw new Error(response.message || "切换推荐状态失败");
+		}
+	} catch (error) {
+		product.isFeatured = originalStatus;
+		console.error("切换推荐状态失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: error.message || "切换推荐状态失败",
+			life: 1000,
+		});
+	}
+};
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-    return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
-}
+	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+};
 
 // 格式化日期
 const formatDate = (date: Date | string) => {
-    const d = new Date(date)
-    return d.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
+	const d = new Date(date);
+	return d.toLocaleDateString("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 
 // 打开图片选择器
 const openImageSelector = () => {
-    showImageSelector.value = true
-}
+	showImageSelector.value = true;
+};
 
 // 处理图片选择
 const onImageSelected = (imageUrl: string) => {
-    if (!productForm.value.images.includes(imageUrl)) {
-        productForm.value.images.push(imageUrl)
-        toast.add({ severity: 'success', summary: '成功', detail: '图片添加成功', life: 1000 })
-    } else {
-        toast.add({ severity: 'warn', summary: '提示', detail: '图片已存在', life: 1000 })
-    }
-    showImageSelector.value = false
-}
+	if (!productForm.value.images.includes(imageUrl)) {
+		productForm.value.images.push(imageUrl);
+		toast.add({
+			severity: "success",
+			summary: "成功",
+			detail: "图片添加成功",
+			life: 1000,
+		});
+	} else {
+		toast.add({
+			severity: "warn",
+			summary: "提示",
+			detail: "图片已存在",
+			life: 1000,
+		});
+	}
+	showImageSelector.value = false;
+};
 
 // 移除图片
 const removeImage = (index: number) => {
-    productForm.value.images.splice(index, 1)
-    toast.add({ severity: 'info', summary: '提示', detail: '图片已移除', life: 1000 })
-}
+	productForm.value.images.splice(index, 1);
+	toast.add({
+		severity: "info",
+		summary: "提示",
+		detail: "图片已移除",
+		life: 1000,
+	});
+};
 
 // 跳转到添加商品页面
 const goToAddProduct = () => {
-    router.push('/admin/products/add')
-}
-
-
+	router.push("/admin/products/add");
+};
 </script>
 
 <template>

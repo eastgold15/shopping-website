@@ -1,450 +1,472 @@
 <script setup lang="ts">
-import { Form, FormField } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-
-import { z } from 'zod'
-
-
-import { api } from '@frontend/utils/handleApi'
-import type { CategoryDisplay } from '@backend/types'
-
-
+import type { CategoryDisplay } from "@backend/types";
+import { api } from "@frontend/utils/handleApi";
+import { Form, FormField } from "@primevue/forms";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
+import { z } from "zod";
 
 // 响应式数据
-const loading = ref(false)
-const saving = ref(false)
-const categories = ref<CategoryTree[]>([])
-const expandedKeys = ref<Record<string, boolean>>({})
-const searchKeyword = ref('')
-const filterStatus = ref('all')
-const showDialog = ref(false)
-const editingCategory = ref(null)
-
-
+const loading = ref(false);
+const saving = ref(false);
+const categories = ref<CategoryTree[]>([]);
+const expandedKeys = ref<Record<string, boolean>>({});
+const searchKeyword = ref("");
+const filterStatus = ref("all");
+const showDialog = ref(false);
+const editingCategory = ref(null);
 
 // 表单初始值
 const initialValues = reactive({
-  name: '',
-  slug: '',
-  parentId: undefined,
-  description: '',
-  sortOrder: 0,
-  isVisible: true,
-  icon: 'pi-clock',
-  image: ''
-})
+	name: "",
+	slug: "",
+	parentId: undefined,
+	description: "",
+	sortOrder: 0,
+	isVisible: true,
+	icon: "pi-clock",
+	image: "",
+});
 
 // 表单验证器
 const formResolver = zodResolver(
-  z.object({
-    name: z.string().min(1, { message: '分类名称不能为空' }),
-    description: z.string().optional(),
-    parentId: z.any().optional(),
-    sortOrder: z.number().min(0, { message: '排序必须大于等于0' }),
-    icon: z.string().optional(),
-    image: z.string().optional(),
-    isVisible: z.boolean(),
-    slug: z.string().min(1, { message: 'URL标识符不能为空' }),
-  })
-)
+	z.object({
+		name: z.string().min(1, { message: "分类名称不能为空" }),
+		description: z.string().optional(),
+		parentId: z.any().optional(),
+		sortOrder: z.number().min(0, { message: "排序必须大于等于0" }),
+		icon: z.string().optional(),
+		image: z.string().optional(),
+		isVisible: z.boolean(),
+		slug: z.string().min(1, { message: "URL标识符不能为空" }),
+	}),
+);
 
 // 单独的字段验证器
-const nameResolver = zodResolver(z.string().min(1, { message: '分类名称不能为空' }))
-const sortOrderResolver = zodResolver(z.number().min(0, { message: '排序值不能小于0' }))
-
-
-
+const nameResolver = zodResolver(
+	z.string().min(1, { message: "分类名称不能为空" }),
+);
+const sortOrderResolver = zodResolver(
+	z.number().min(0, { message: "排序值不能小于0" }),
+);
 
 // 状态选项
 const statusOptions = [
-  { label: '全部', value: 'all' },
-  { label: '显示', value: 'visible' },
-  { label: '隐藏', value: 'hidden' }
-]
+	{ label: "全部", value: "all" },
+	{ label: "显示", value: "visible" },
+	{ label: "隐藏", value: "hidden" },
+];
 
 // 工具函数
-const confirm = useConfirm()
-const toast = !import.meta.env.SSR ? useToast() : null
+const confirm = useConfirm();
+const toast = !import.meta.env.SSR ? useToast() : null;
 // 计算属性
 const filteredCategories = computed(() => {
-  let result = categories.value
+	let result = categories.value;
 
-  // 搜索过滤
-  if (searchKeyword.value) {
-    result = filterByKeyword(result, searchKeyword.value)
-  }
+	// 搜索过滤
+	if (searchKeyword.value) {
+		result = filterByKeyword(result, searchKeyword.value);
+	}
 
-  // 状态过滤
-  if (filterStatus.value !== 'all') {
-    const isVisible = filterStatus.value === 'visible'
-    result = filterByStatus(result, isVisible)
-  }
+	// 状态过滤
+	if (filterStatus.value !== "all") {
+		const isVisible = filterStatus.value === "visible";
+		result = filterByStatus(result, isVisible);
+	}
 
-  return result
-})
-
-
+	return result;
+});
 
 // 计算属性 - 用于TreeSelect的数据源
 const treeData = computed(() => {
-  // TreeSelect使用标准的TreeNode格式，key作为选中值，label作为显示文本
-  const convertToTreeSelectFormat = (nodes: CategoryTree[]): any[] => {
-    return nodes.map(node => ({
-      key: node.key, // TreeSelect的key就是选中时返回的值
-      label: node.data.name,
-      data: node.data,
-      children: node.children && node.children.length > 0 ? convertToTreeSelectFormat(node.children) : undefined
-    }))
-  }
+	// TreeSelect使用标准的TreeNode格式，key作为选中值，label作为显示文本
+	const convertToTreeSelectFormat = (nodes: CategoryTree[]): any[] => {
+		return nodes.map((node) => ({
+			key: node.key, // TreeSelect的key就是选中时返回的值
+			label: node.data.name,
+			data: node.data,
+			children:
+				node.children && node.children.length > 0
+					? convertToTreeSelectFormat(node.children)
+					: undefined,
+		}));
+	};
 
-  return convertToTreeSelectFormat(categories.value)
-})
+	return convertToTreeSelectFormat(categories.value);
+});
 
 // 生命周期
 onMounted(() => {
-  loadCategories()
-})
+	loadCategories();
+});
 
 // 方法
 const loadCategories = async () => {
-  try {
-    loading.value = true
-    const response = await api.categories.list()
+	try {
+		loading.value = true;
+		const response = await api.categories.list();
 
-    // 修复API响应处理逻辑
-    if (response?.code === 200 && Array.isArray(response.data)) {
-      categories.value = buildCategoryTree(response.data)
-      console.log('加载分类成功:', categories.value)
-    } else {
-      console.error('API返回的数据格式错误:', response)
-      categories.value = []
-      toast.add({
-        severity: 'error',
-        summary: '错误',
-        detail: response?.message || '加载分类失败'
-      })
-    }
-  } catch (error) {
-    console.error('加载分类失败:', error)
-    categories.value = []
-    toast.add({
-      severity: 'error',
-      summary: '错误',
-      detail: error instanceof Error ? error.message : '加载分类失败'
-    })
-  } finally {
-    loading.value = false
-  }
-}
+		// 修复API响应处理逻辑
+		if (response?.code === 200 && Array.isArray(response.data)) {
+			categories.value = buildCategoryTree(response.data);
+			console.log("加载分类成功:", categories.value);
+		} else {
+			console.error("API返回的数据格式错误:", response);
+			categories.value = [];
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: response?.message || "加载分类失败",
+			});
+		}
+	} catch (error) {
+		console.error("加载分类失败:", error);
+		categories.value = [];
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: error instanceof Error ? error.message : "加载分类失败",
+		});
+	} finally {
+		loading.value = false;
+	}
+};
 
 const buildCategoryTree = (categoryList: Category[]): CategoryTree[] => {
-  // 使用共享库的buildTree方法构建基础树形结构
-  const treeNodes = buildTree(categoryList, 'id', 'parentId', 'children')
+	// 使用共享库的buildTree方法构建基础树形结构
+	const treeNodes = buildTree(categoryList, "id", "parentId", "children");
 
-  // 转换为CategoryTree格式并计算level、排序
-  const convertToTreeFormat = (nodes: any[], level: number = 0): CategoryTree[] => {
-    return nodes
-      .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0))
-      .map(node => ({
-        key: node.id,
-        data: {
-          ...node,
-          // 保持数据类型一致
-          id: node.id,
-          parentId: node.parentId,
-          sortOrder: Number(node.sortOrder) || 0,
-          isVisible: Boolean(node.isVisible),
-          level: level
-        },
-        children: node.children ? convertToTreeFormat(node.children, level + 1) : []
-      }))
-  }
+	// 转换为CategoryTree格式并计算level、排序
+	const convertToTreeFormat = (
+		nodes: any[],
+		level: number = 0,
+	): CategoryTree[] => {
+		return nodes
+			.sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0))
+			.map((node) => ({
+				key: node.id,
+				data: {
+					...node,
+					// 保持数据类型一致
+					id: node.id,
+					parentId: node.parentId,
+					sortOrder: Number(node.sortOrder) || 0,
+					isVisible: Boolean(node.isVisible),
+					level: level,
+				},
+				children: node.children
+					? convertToTreeFormat(node.children, level + 1)
+					: [],
+			}));
+	};
 
-  return convertToTreeFormat(treeNodes)
-}
+	return convertToTreeFormat(treeNodes);
+};
 
 // 移除不需要的转换函数，直接使用 categories 数据结构
 
-const filterByKeyword = (treeData: CategoryTree[], keyword: string): CategoryTree[] => {
-  const filtered: CategoryTree[] = []
+const filterByKeyword = (
+	treeData: CategoryTree[],
+	keyword: string,
+): CategoryTree[] => {
+	const filtered: CategoryTree[] = [];
 
-  treeData.forEach(node => {
-    const matchesKeyword = node.data.name.toLowerCase().includes(keyword.toLowerCase())
-    const filteredChildren = node.children ? filterByKeyword(node.children, keyword) : []
+	treeData.forEach((node) => {
+		const matchesKeyword = node.data.name
+			.toLowerCase()
+			.includes(keyword.toLowerCase());
+		const filteredChildren = node.children
+			? filterByKeyword(node.children, keyword)
+			: [];
 
-    if (matchesKeyword || filteredChildren.length > 0) {
-      filtered.push({
-        ...node,
-        children: filteredChildren
-      })
-    }
-  })
+		if (matchesKeyword || filteredChildren.length > 0) {
+			filtered.push({
+				...node,
+				children: filteredChildren,
+			});
+		}
+	});
 
-  return filtered
-}
+	return filtered;
+};
 
-const filterByStatus = (treeData: CategoryTree[], isVisible: boolean): CategoryTree[] => {
-  const filtered: CategoryTree[] = []
+const filterByStatus = (
+	treeData: CategoryTree[],
+	isVisible: boolean,
+): CategoryTree[] => {
+	const filtered: CategoryTree[] = [];
 
-  treeData.forEach(node => {
-    const matchesStatus = node.data.isVisible === isVisible
-    const filteredChildren = node.children ? filterByStatus(node.children, isVisible) : []
+	treeData.forEach((node) => {
+		const matchesStatus = node.data.isVisible === isVisible;
+		const filteredChildren = node.children
+			? filterByStatus(node.children, isVisible)
+			: [];
 
-    if (matchesStatus || filteredChildren.length > 0) {
-      filtered.push({
-        ...node,
-        children: filteredChildren
-      })
-    }
-  })
+		if (matchesStatus || filteredChildren.length > 0) {
+			filtered.push({
+				...node,
+				children: filteredChildren,
+			});
+		}
+	});
 
-  return filtered
-}
+	return filtered;
+};
 
 const expandAll = () => {
-  const keys: Record<string, boolean> = {}
-  const addKeys = (nodes: CategoryTree[]) => {
-    nodes.forEach(node => {
-      keys[node.key] = true
-      if (node.children) {
-        addKeys(node.children)
-      }
-    })
-  }
-  addKeys(categories.value)
-  expandedKeys.value = keys
-}
+	const keys: Record<string, boolean> = {};
+	const addKeys = (nodes: CategoryTree[]) => {
+		nodes.forEach((node) => {
+			keys[node.key] = true;
+			if (node.children) {
+				addKeys(node.children);
+			}
+		});
+	};
+	addKeys(categories.value);
+	expandedKeys.value = keys;
+};
 
 const collapseAll = () => {
-  expandedKeys.value = {}
-}
+	expandedKeys.value = {};
+};
 
 const onNodeExpand = (node: any) => {
-  expandedKeys.value[node.key] = true
-}
+	expandedKeys.value[node.key] = true;
+};
 
 const onNodeCollapse = (node: any) => {
-  delete expandedKeys.value[node.key]
-}
+	delete expandedKeys.value[node.key];
+};
 
 const showCreateDialog = () => {
-  editingCategory.value = null
-  // 重置表单初始值
-  Object.assign(initialValues, {
-    name: '',
-    slug: '',
-    parentId: undefined,
-    description: '',
-    sortOrder: 0,
-    isVisible: true,
-    icon: '',
-    image: ''
-  })
+	editingCategory.value = null;
+	// 重置表单初始值
+	Object.assign(initialValues, {
+		name: "",
+		slug: "",
+		parentId: undefined,
+		description: "",
+		sortOrder: 0,
+		isVisible: true,
+		icon: "",
+		image: "",
+	});
 
-  showDialog.value = true
-}
+	showDialog.value = true;
+};
 
 const showCreateChildDialog = (parentCategory: Category) => {
-  editingCategory.value = null
-  // 更新表单初始值 - TreeSelect需要对象格式
-  Object.assign(initialValues, {
-    name: '',
-    slug: '',
-    parentId: { [parentCategory.id]: true }, // TreeSelect的选中格式
-    description: '',
-    sortOrder: 0,
-    isVisible: true,
-    icon: '',
-    image: ''
-  })
+	editingCategory.value = null;
+	// 更新表单初始值 - TreeSelect需要对象格式
+	Object.assign(initialValues, {
+		name: "",
+		slug: "",
+		parentId: { [parentCategory.id]: true }, // TreeSelect的选中格式
+		description: "",
+		sortOrder: 0,
+		isVisible: true,
+		icon: "",
+		image: "",
+	});
 
-  showDialog.value = true
-}
+	showDialog.value = true;
+};
 
 const showEditDialog = (category: Category) => {
-  editingCategory.value = category
-  // 更新表单初始值，确保数据类型正确
-  Object.assign(initialValues, {
-    name: category.name || '',
-    slug: category.slug || '',
-    parentId: category.parentId ? { [category.parentId]: true } : undefined, // TreeSelect的选中格式
-    description: category.description || '',
-    sortOrder: Number(category.sortOrder) || 0,
-    isVisible: Boolean(category.isVisible),
-    icon: category.icon || '',
-    image: category.image || ''
-  })
+	editingCategory.value = category;
+	// 更新表单初始值，确保数据类型正确
+	Object.assign(initialValues, {
+		name: category.name || "",
+		slug: category.slug || "",
+		parentId: category.parentId ? { [category.parentId]: true } : undefined, // TreeSelect的选中格式
+		description: category.description || "",
+		sortOrder: Number(category.sortOrder) || 0,
+		isVisible: Boolean(category.isVisible),
+		icon: category.icon || "",
+		image: category.image || "",
+	});
 
-  showDialog.value = true
-}
+	showDialog.value = true;
+};
 
 const closeDialog = () => {
-  showDialog.value = false
-  editingCategory.value = null
-  // 重置表单初始值
-  Object.assign(initialValues, {
-    name: '',
-    slug: '',
-    parentId: undefined,
-    description: '',
-    sortOrder: 0,
-    isVisible: true,
-    icon: '',
-    image: ''
-  })
-}
+	showDialog.value = false;
+	editingCategory.value = null;
+	// 重置表单初始值
+	Object.assign(initialValues, {
+		name: "",
+		slug: "",
+		parentId: undefined,
+		description: "",
+		sortOrder: 0,
+		isVisible: true,
+		icon: "",
+		image: "",
+	});
+};
 
-const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) => {
+const onFormSubmit = async ({
+	valid,
+	values,
+}: {
+	valid: boolean;
+	values: any;
+}) => {
+	console.log("value", values);
+	if (!valid) {
+		toast?.add({ severity: "warn", summary: "警告", detail: "请检查表单输入" });
+		return;
+	}
 
-  console.log("value", values)
-  if (!valid) {
-    toast?.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
-    return
-  }
+	try {
+		saving.value = true;
+		loading.value = true; // 添加加载状态
 
-  try {
-    saving.value = true
-    loading.value = true // 添加加载状态
+		// 处理TreeSelect的parentId格式 - 从对象{key: true}转换为字符串key
+		let parentId;
+		if (values.parentId && typeof values.parentId === "object") {
+			const keys = Object.keys(values.parentId);
+			parentId = keys.length > 0 ? keys[0] : undefined;
+		} else if (typeof values.parentId === "string") {
+			parentId = values.parentId;
+		}
 
-    // 处理TreeSelect的parentId格式 - 从对象{key: true}转换为字符串key
-    let parentId
-    if (values.parentId && typeof values.parentId === 'object') {
-      const keys = Object.keys(values.parentId)
-      parentId = keys.length > 0 ? keys[0] : undefined
-    } else if (typeof values.parentId === 'string') {
-      parentId = values.parentId
-    }
+		const requestData = {
+			name: values.name?.trim() || "",
+			slug: values.slug?.trim() || undefined,
+			parentId: Number(parentId) || undefined,
+			description: values.description?.trim() || undefined,
+			sortOrder: Number(values.sortOrder) || 0,
+			isVisible: Boolean(values.isVisible),
+			icon: values.icon?.trim() || undefined,
+			image: values.image?.trim() || undefined,
+		};
 
-    const requestData = {
-      name: values.name?.trim() || '',
-      slug: values.slug?.trim() || undefined,
-      parentId: Number(parentId) || undefined,
-      description: values.description?.trim() || undefined,
-      sortOrder: Number(values.sortOrder) || 0,
-      isVisible: Boolean(values.isVisible),
-      icon: values.icon?.trim() || undefined,
-      image: values.image?.trim() || undefined
-    }
-
-    let result
-    if (editingCategory.value) {
-      // 更新分类
-      result = await api.categories.update(editingCategory.value.id.toString(), requestData)
-    } else {
-      // 创建分类
-      result = await api.categories.create(requestData)
-    }
-    console.log("xxx", result)
-    if (result.status == 200 && result.data.code === 200) {
-      toast?.add({
-        severity: 'success',
-        summary: '成功',
-        detail: editingCategory.value ? '分类更新成功' : '分类创建成功'
-      })
-      closeDialog()
-      await loadCategories()
-    } else {
-      console.log(111)
-      toast?.add({
-        severity: 'error',
-        summary: '错误',
-        detail: result.data.data || '操作失败'
-      })
-    }
-  } catch (error) {
-    console.error('保存分类失败:', error)
-    toast?.add({ severity: 'error', summary: '错误', detail: '保存分类失败' })
-  } finally {
-    saving.value = false
-    loading.value = false // 确保加载状态重置
-  }
-}
-
-
-
-
+		let result;
+		if (editingCategory.value) {
+			// 更新分类
+			result = await api.categories.update(
+				editingCategory.value.id.toString(),
+				requestData,
+			);
+		} else {
+			// 创建分类
+			result = await api.categories.create(requestData);
+		}
+		console.log("xxx", result);
+		if (result.status == 200 && result.data.code === 200) {
+			toast?.add({
+				severity: "success",
+				summary: "成功",
+				detail: editingCategory.value ? "分类更新成功" : "分类创建成功",
+			});
+			closeDialog();
+			await loadCategories();
+		} else {
+			console.log(111);
+			toast?.add({
+				severity: "error",
+				summary: "错误",
+				detail: result.data.data || "操作失败",
+			});
+		}
+	} catch (error) {
+		console.error("保存分类失败:", error);
+		toast?.add({ severity: "error", summary: "错误", detail: "保存分类失败" });
+	} finally {
+		saving.value = false;
+		loading.value = false; // 确保加载状态重置
+	}
+};
 
 const toggleVisibility = async (categoryId: string) => {
-  try {
-    loading.value = true // 添加加载状态
-    const response = await handleApiRes(client.api.categories({ id: categoryId })['toggle'].patch(), false)
+	try {
+		loading.value = true; // 添加加载状态
+		const response = await handleApiRes(
+			client.api.categories({ id: categoryId })["toggle"].patch(),
+			false,
+		);
 
-    if (response.status === 200 && response.data.code == 200) {
-      toast?.add({ severity: 'success', summary: '成功', detail: '显示状态更新成功' })
-      await loadCategories() // 重新加载数据
-    } else {
-      toast?.add({
-        severity: 'error',
-        summary: '错误',
-        detail: response.message || '更新显示状态失败'
-      })
-      await loadCategories() // 重新加载数据
-    }
-  } catch (error) {
-
-    toast?.add({
-      severity: 'error',
-      summary: '错误',
-      detail: error instanceof Error ? error.message : '更新显示状态失败'
-    })
-    await loadCategories()
-  } finally {
-    loading.value = false // 确保加载状态重置
-  }
-}
+		if (response.status === 200 && response.data.code == 200) {
+			toast?.add({
+				severity: "success",
+				summary: "成功",
+				detail: "显示状态更新成功",
+			});
+			await loadCategories(); // 重新加载数据
+		} else {
+			toast?.add({
+				severity: "error",
+				summary: "错误",
+				detail: response.message || "更新显示状态失败",
+			});
+			await loadCategories(); // 重新加载数据
+		}
+	} catch (error) {
+		toast?.add({
+			severity: "error",
+			summary: "错误",
+			detail: error instanceof Error ? error.message : "更新显示状态失败",
+		});
+		await loadCategories();
+	} finally {
+		loading.value = false; // 确保加载状态重置
+	}
+};
 
 const confirmDelete = (category: Category) => {
-  confirm.require({
-    message: `确定要删除分类 "${category.name}" 吗？此操作不可撤销。`,
-    header: '删除确认',
-    icon: 'pi pi-exclamation-triangle',
-    acceptClass: 'p-button-danger',
-    accept: () => deleteCategory(category.id)
-  })
-}
+	confirm.require({
+		message: `确定要删除分类 "${category.name}" 吗？此操作不可撤销。`,
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => deleteCategory(category.id),
+	});
+};
 
 const deleteCategory = async (categoryId: string) => {
-  try {
-    loading.value = true // 添加加载状态
-    const response = await api.categories.delete(categoryId)
+	try {
+		loading.value = true; // 添加加载状态
+		const response = await api.categories.delete(categoryId);
 
-    if (response.code == 200) {
-      toast?.add({ severity: 'success', summary: '成功', detail: '分类删除成功' })
-      await loadCategories()
-    }
-    else {
-      throw new Error(response.data.data || '删除分类失败')
-    }
-
-  } catch (error) {
-    toast?.add({
-      severity: 'error',
-      summary: 'http错误',
-      detail: error.message,
-      life: 1000
-    })
-  } finally {
-    loading.value = false // 确保加载状态重置
-  }
-}
+		if (response.code == 200) {
+			toast?.add({
+				severity: "success",
+				summary: "成功",
+				detail: "分类删除成功",
+			});
+			await loadCategories();
+		} else {
+			throw new Error(response.data.data || "删除分类失败");
+		}
+	} catch (error) {
+		toast?.add({
+			severity: "error",
+			summary: "http错误",
+			detail: error.message,
+			life: 1000,
+		});
+	} finally {
+		loading.value = false; // 确保加载状态重置
+	}
+};
 
 const hasChildren = (node: CategoryTree): boolean => {
-  return node.children ? node.children.length > 0 : false
-}
+	return node.children ? node.children.length > 0 : false;
+};
 
 const formatDate = (date: Date | string): string => {
-  return new Date(date).toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-
+	return new Date(date).toLocaleDateString("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 </script>
 <template>
   <div class="category-management">

@@ -41,12 +41,10 @@
 </template>
 
 <script setup lang="ts">
-
-
-import { client } from '@frontend/utils/useTreaty';
-import type { Advertisement } from '../types/advertisement';
-import { handleApiRes } from '../utils/handleApi';
-import { useToast } from 'primevue/usetoast';
+import { client } from "@frontend/utils/useTreaty";
+import { useToast } from "primevue/usetoast";
+import type { Advertisement } from "../types/advertisement";
+import { handleApiRes } from "../utils/handleApi";
 
 // Props
 interface Props {
@@ -69,19 +67,19 @@ const props = withDefaults(defineProps<Props>(), {
 	showNavigators: true,
 	showIndicators: true,
 	showTitle: false,
-	height: '400px',
-	rounded: true
+	height: "400px",
+	rounded: true,
 });
 
 // 响应式数据
 const loading = ref(false);
 const advertisements = ref<Advertisement[]>([]);
 const imageLoadErrors = ref<Set<string>>(new Set());
-const toast = useToast()
+const toast = useToast();
 // 计算属性
 const carouselStyle = computed(() => ({
 	height: props.height,
-	borderRadius: props.rounded ? '8px' : '0'
+	borderRadius: props.rounded ? "8px" : "0",
 }));
 
 // 方法
@@ -93,24 +91,23 @@ const loadCarouselAds = async () => {
 	try {
 		const res = await handleApiRes(client.api.advertisements.carousel.get());
 
-		console.log("aaaa", res)
+		console.log("aaaa", res);
 
 		if (!res) {
-			throw new Error("加载轮播图广告失敗")
+			throw new Error("加载轮播图广告失敗");
 		}
 
 		if (res.code == 200) {
-			advertisements.value = res.data as any
+			advertisements.value = res.data as any;
 		}
-
 	} catch (error) {
 		toast.add({
-			severity: 'error',
-			summary: '加载失败',
+			severity: "error",
+			summary: "加载失败",
 			detail: (error as Error).message,
-			life: 3000
-		})
-		console.error('加载轮播图广告失败:', error);
+			life: 3000,
+		});
+		console.error("加载轮播图广告失败:", error);
 		advertisements.value = [];
 	} finally {
 		loading.value = false;
@@ -122,7 +119,11 @@ const loadCarouselAds = async () => {
  */
 const isExternalLink = (url: string): boolean => {
 	if (!url) return false;
-	return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
+	return (
+		url.startsWith("http://") ||
+		url.startsWith("https://") ||
+		url.startsWith("//")
+	);
 };
 
 /**
@@ -136,7 +137,7 @@ const handleImageError = (event: Event) => {
 	if (!imageLoadErrors.value.has(src)) {
 		imageLoadErrors.value.add(src);
 		// 设置默认图片
-		img.src = '/placeholder-carousel.png';
+		img.src = "/placeholder-carousel.png";
 	}
 };
 
@@ -145,7 +146,7 @@ const handleImageError = (event: Event) => {
  */
 const handleImageLoad = (event: Event) => {
 	const img = event.target as HTMLImageElement;
-	img.classList.add('loaded');
+	img.classList.add("loaded");
 };
 
 /**
@@ -157,7 +158,7 @@ const refresh = () => {
 
 // 暴露方法给父组件
 defineExpose({
-	refresh
+	refresh,
 });
 
 // 生命周期

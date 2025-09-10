@@ -493,334 +493,330 @@
 
 <script setup lang="ts">
 // PrimeVue 组件
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Dropdown from 'primevue/dropdown'
-import FileUpload from 'primevue/fileupload'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
-import Password from 'primevue/password'
-import Textarea from 'primevue/textarea'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-
+import Button from "primevue/button";
+import Card from "primevue/card";
+import Dropdown from "primevue/dropdown";
+import FileUpload from "primevue/fileupload";
+import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
+import MultiSelect from "primevue/multiselect";
+import Password from "primevue/password";
+import Textarea from "primevue/textarea";
+import ToggleSwitch from "primevue/toggleswitch";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface PaymentSettings {
 	alipay: {
-		enabled: boolean
-		appId: string
-		privateKey: string
-		publicKey: string
-		environment: string
-	}
+		enabled: boolean;
+		appId: string;
+		privateKey: string;
+		publicKey: string;
+		environment: string;
+	};
 	wechat: {
-		enabled: boolean
-		appId: string
-		mchId: string
-		apiKey: string
-		certificateFile?: string
-	}
+		enabled: boolean;
+		appId: string;
+		mchId: string;
+		apiKey: string;
+		certificateFile?: string;
+	};
 	paypal: {
-		enabled: boolean
-		clientId: string
-		clientSecret: string
-		environment: string
-		supportedCurrencies: string[]
-	}
+		enabled: boolean;
+		clientId: string;
+		clientSecret: string;
+		environment: string;
+		supportedCurrencies: string[];
+	};
 	bankCard: {
-		enabled: boolean
-		gateway: string
-		merchantId: string
-		apiKey: string
-		supportedCards: string[]
-	}
+		enabled: boolean;
+		gateway: string;
+		merchantId: string;
+		apiKey: string;
+		supportedCards: string[];
+	};
 	general: {
-		defaultCurrency: string
-		paymentTimeout: number
-		minAmount: number
-		maxAmount: number
-		feeRate: number
-		autoConfirm: boolean
-		successCallbackUrl: string
-		failureCallbackUrl: string
-	}
+		defaultCurrency: string;
+		paymentTimeout: number;
+		minAmount: number;
+		maxAmount: number;
+		feeRate: number;
+		autoConfirm: boolean;
+		successCallbackUrl: string;
+		failureCallbackUrl: string;
+	};
 }
 
-const confirm = useConfirm()
-const toast = useToast()
+const confirm = useConfirm();
+const toast = useToast();
 
 // 响应式数据
-const saving = ref(false)
+const saving = ref(false);
 const testing = reactive({
 	alipay: false,
 	wechat: false,
 	paypal: false,
-	bankCard: false
-})
+	bankCard: false,
+});
 
 // 支付设置数据
 const paymentSettings = reactive<PaymentSettings>({
 	alipay: {
 		enabled: false,
-		appId: '',
-		privateKey: '',
-		publicKey: '',
-		environment: 'sandbox'
+		appId: "",
+		privateKey: "",
+		publicKey: "",
+		environment: "sandbox",
 	},
 	wechat: {
 		enabled: false,
-		appId: '',
-		mchId: '',
-		apiKey: '',
-		certificateFile: ''
+		appId: "",
+		mchId: "",
+		apiKey: "",
+		certificateFile: "",
 	},
 	paypal: {
 		enabled: false,
-		clientId: '',
-		clientSecret: '',
-		environment: 'sandbox',
-		supportedCurrencies: ['USD', 'EUR']
+		clientId: "",
+		clientSecret: "",
+		environment: "sandbox",
+		supportedCurrencies: ["USD", "EUR"],
 	},
 	bankCard: {
 		enabled: false,
-		gateway: 'stripe',
-		merchantId: '',
-		apiKey: '',
-		supportedCards: ['visa', 'mastercard']
+		gateway: "stripe",
+		merchantId: "",
+		apiKey: "",
+		supportedCards: ["visa", "mastercard"],
 	},
 	general: {
-		defaultCurrency: 'CNY',
+		defaultCurrency: "CNY",
 		paymentTimeout: 30,
 		minAmount: 0.01,
 		maxAmount: 50000,
 		feeRate: 0.6,
 		autoConfirm: true,
-		successCallbackUrl: '',
-		failureCallbackUrl: ''
-	}
-})
+		successCallbackUrl: "",
+		failureCallbackUrl: "",
+	},
+});
 
 // 选项数据
 const environmentOptions = [
-	{ label: '沙箱环境', value: 'sandbox' },
-	{ label: '生产环境', value: 'production' }
-]
+	{ label: "沙箱环境", value: "sandbox" },
+	{ label: "生产环境", value: "production" },
+];
 
 const currencyOptions = [
-	{ label: '人民币 (CNY)', value: 'CNY' },
-	{ label: '美元 (USD)', value: 'USD' },
-	{ label: '欧元 (EUR)', value: 'EUR' },
-	{ label: '英镑 (GBP)', value: 'GBP' },
-	{ label: '日元 (JPY)', value: 'JPY' },
-	{ label: '港币 (HKD)', value: 'HKD' }
-]
+	{ label: "人民币 (CNY)", value: "CNY" },
+	{ label: "美元 (USD)", value: "USD" },
+	{ label: "欧元 (EUR)", value: "EUR" },
+	{ label: "英镑 (GBP)", value: "GBP" },
+	{ label: "日元 (JPY)", value: "JPY" },
+	{ label: "港币 (HKD)", value: "HKD" },
+];
 
 const gatewayOptions = [
-	{ label: 'Stripe', value: 'stripe' },
-	{ label: '银联', value: 'unionpay' },
-	{ label: 'Square', value: 'square' },
-	{ label: 'Adyen', value: 'adyen' }
-]
+	{ label: "Stripe", value: "stripe" },
+	{ label: "银联", value: "unionpay" },
+	{ label: "Square", value: "square" },
+	{ label: "Adyen", value: "adyen" },
+];
 
 const cardTypeOptions = [
-	{ label: 'Visa', value: 'visa' },
-	{ label: 'MasterCard', value: 'mastercard' },
-	{ label: '银联', value: 'unionpay' },
-	{ label: 'American Express', value: 'amex' },
-	{ label: 'Discover', value: 'discover' },
-	{ label: 'JCB', value: 'jcb' }
-]
+	{ label: "Visa", value: "visa" },
+	{ label: "MasterCard", value: "mastercard" },
+	{ label: "银联", value: "unionpay" },
+	{ label: "American Express", value: "amex" },
+	{ label: "Discover", value: "discover" },
+	{ label: "JCB", value: "jcb" },
+];
 
 // 加载支付设置
 const loadSettings = async () => {
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 1000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		// 这里应该从后端API加载实际的支付设置
-		console.log('支付设置加载完成')
-		
+		console.log("支付设置加载完成");
 	} catch (error) {
-		console.error('加载支付设置失败:', error)
+		console.error("加载支付设置失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '加载失败',
-			detail: '加载支付设置时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "加载失败",
+			detail: "加载支付设置时发生错误",
+			life: 3000,
+		});
 	}
-}
+};
 
 // 保存设置
 const saveSettings = async () => {
-	saving.value = true
+	saving.value = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 2000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+
 		// 这里应该调用后端API保存支付设置
-		console.log('保存支付设置:', paymentSettings)
-		
+		console.log("保存支付设置:", paymentSettings);
+
 		toast.add({
-			severity: 'success',
-			summary: '保存成功',
-			detail: '支付设置已成功保存',
-			life: 3000
-		})
-		
+			severity: "success",
+			summary: "保存成功",
+			detail: "支付设置已成功保存",
+			life: 3000,
+		});
 	} catch (error) {
-		console.error('保存支付设置失败:', error)
+		console.error("保存支付设置失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '保存失败',
-			detail: '保存支付设置时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "保存失败",
+			detail: "保存支付设置时发生错误",
+			life: 3000,
+		});
 	} finally {
-		saving.value = false
+		saving.value = false;
 	}
-}
+};
 
 // 重置设置
 const resetSettings = () => {
 	confirm.require({
-		message: '确定要重置所有支付设置吗？此操作不可撤销。',
-		header: '重置确认',
-		icon: 'pi pi-exclamation-triangle',
+		message: "确定要重置所有支付设置吗？此操作不可撤销。",
+		header: "重置确认",
+		icon: "pi pi-exclamation-triangle",
 		accept: () => {
 			// 重置为默认值
 			Object.assign(paymentSettings, {
 				alipay: {
 					enabled: false,
-					appId: '',
-					privateKey: '',
-					publicKey: '',
-					environment: 'sandbox'
+					appId: "",
+					privateKey: "",
+					publicKey: "",
+					environment: "sandbox",
 				},
 				wechat: {
 					enabled: false,
-					appId: '',
-					mchId: '',
-					apiKey: '',
-					certificateFile: ''
+					appId: "",
+					mchId: "",
+					apiKey: "",
+					certificateFile: "",
 				},
 				paypal: {
 					enabled: false,
-					clientId: '',
-					clientSecret: '',
-					environment: 'sandbox',
-					supportedCurrencies: ['USD', 'EUR']
+					clientId: "",
+					clientSecret: "",
+					environment: "sandbox",
+					supportedCurrencies: ["USD", "EUR"],
 				},
 				bankCard: {
 					enabled: false,
-					gateway: 'stripe',
-					merchantId: '',
-					apiKey: '',
-					supportedCards: ['visa', 'mastercard']
+					gateway: "stripe",
+					merchantId: "",
+					apiKey: "",
+					supportedCards: ["visa", "mastercard"],
 				},
 				general: {
-					defaultCurrency: 'CNY',
+					defaultCurrency: "CNY",
 					paymentTimeout: 30,
 					minAmount: 0.01,
 					maxAmount: 50000,
 					feeRate: 0.6,
 					autoConfirm: true,
-					successCallbackUrl: '',
-					failureCallbackUrl: ''
-				}
-			})
-			
+					successCallbackUrl: "",
+					failureCallbackUrl: "",
+				},
+			});
+
 			toast.add({
-				severity: 'info',
-				summary: '重置完成',
-				detail: '支付设置已重置为默认值',
-				life: 3000
-			})
-		}
-	})
-}
+				severity: "info",
+				summary: "重置完成",
+				detail: "支付设置已重置为默认值",
+				life: 3000,
+			});
+		},
+	});
+};
 
 // 测试连接
 const testConnection = async (provider: string) => {
-	testing[provider as keyof typeof testing] = true
+	testing[provider as keyof typeof testing] = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 2000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+
 		// 这里应该调用后端API测试支付连接
-		const success = Math.random() > 0.3 // 模拟70%成功率
-		
+		const success = Math.random() > 0.3; // 模拟70%成功率
+
 		if (success) {
 			toast.add({
-				severity: 'success',
-				summary: '连接成功',
+				severity: "success",
+				summary: "连接成功",
 				detail: `${getProviderName(provider)} 连接测试成功`,
-				life: 3000
-			})
+				life: 3000,
+			});
 		} else {
 			toast.add({
-				severity: 'error',
-				summary: '连接失败',
+				severity: "error",
+				summary: "连接失败",
 				detail: `${getProviderName(provider)} 连接测试失败，请检查配置`,
-				life: 3000
-			})
+				life: 3000,
+			});
 		}
-		
 	} catch (error) {
-		console.error('测试连接失败:', error)
+		console.error("测试连接失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '测试失败',
-			detail: '连接测试时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "测试失败",
+			detail: "连接测试时发生错误",
+			life: 3000,
+		});
 	} finally {
-		testing[provider as keyof typeof testing] = false
+		testing[provider as keyof typeof testing] = false;
 	}
-}
+};
 
 // 测试支付
 const testPayment = (provider: string) => {
 	toast.add({
-		severity: 'info',
-		summary: '测试支付',
+		severity: "info",
+		summary: "测试支付",
 		detail: `${getProviderName(provider)} 支付测试功能开发中...`,
-		life: 3000
-	})
-}
+		life: 3000,
+	});
+};
 
 // 证书文件选择
 const onCertificateSelect = (event: any) => {
-	const file = event.files[0]
+	const file = event.files[0];
 	if (file) {
-		paymentSettings.wechat.certificateFile = file.name
+		paymentSettings.wechat.certificateFile = file.name;
 		toast.add({
-			severity: 'success',
-			summary: '文件上传',
+			severity: "success",
+			summary: "文件上传",
 			detail: `证书文件 ${file.name} 已选择`,
-			life: 3000
-		})
+			life: 3000,
+		});
 	}
-}
+};
 
 // 获取支付提供商名称
 const getProviderName = (provider: string) => {
 	const names: Record<string, string> = {
-		alipay: '支付宝',
-		wechat: '微信支付',
-		paypal: 'PayPal',
-		bankCard: '银行卡支付'
-	}
-	return names[provider] || provider
-}
+		alipay: "支付宝",
+		wechat: "微信支付",
+		paypal: "PayPal",
+		bankCard: "银行卡支付",
+	};
+	return names[provider] || provider;
+};
 
 // 组件挂载时加载设置
 onMounted(() => {
-	loadSettings()
-})
+	loadSettings();
+});
 </script>
 
 <style scoped>

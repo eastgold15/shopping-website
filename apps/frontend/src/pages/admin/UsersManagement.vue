@@ -1,533 +1,599 @@
 <script setup lang="ts">
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { api } from '@frontend/utils/handleApi'
+import { api } from "@frontend/utils/handleApi";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface User {
-    id: number
-    username: string
-    email: string
-    phone: string
-    nickname: string
-    avatar: string
-    gender: 'male' | 'female' | 'unknown'
-    birthday: Date | null
-    status: UserStatus
-    level: UserLevel
-    points: number
-    balance: number
-    totalOrders: number
-    totalSpent: number
-    lastLoginAt: Date | null
-    lastLoginIp: string
-    registeredAt: Date
-    isEmailVerified: boolean
-    isPhoneVerified: boolean
-    remark: string
-    tags: string[]
+	id: number;
+	username: string;
+	email: string;
+	phone: string;
+	nickname: string;
+	avatar: string;
+	gender: "male" | "female" | "unknown";
+	birthday: Date | null;
+	status: UserStatus;
+	level: UserLevel;
+	points: number;
+	balance: number;
+	totalOrders: number;
+	totalSpent: number;
+	lastLoginAt: Date | null;
+	lastLoginIp: string;
+	registeredAt: Date;
+	isEmailVerified: boolean;
+	isPhoneVerified: boolean;
+	remark: string;
+	tags: string[];
 }
 
 interface UserForm {
-    username: string
-    email: string
-    phone: string
-    nickname: string
-    password?: string
-    gender: 'male' | 'female' | 'unknown'
-    birthday: Date | null
-    status: UserStatus
-    level: UserLevel
-    points: number
-    balance: number
-    remark: string
-    tags: string[]
+	username: string;
+	email: string;
+	phone: string;
+	nickname: string;
+	password?: string;
+	gender: "male" | "female" | "unknown";
+	birthday: Date | null;
+	status: UserStatus;
+	level: UserLevel;
+	points: number;
+	balance: number;
+	remark: string;
+	tags: string[];
 }
 
-type UserStatus = 'active' | 'inactive' | 'banned' | 'pending'
-type UserLevel = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'
+type UserStatus = "active" | "inactive" | "banned" | "pending";
+type UserLevel = "bronze" | "silver" | "gold" | "platinum" | "diamond";
 
 // 响应式数据
-const loading = ref(false)
-const saving = ref(false)
-const users = ref<User[]>([])
-const selectedUsers = ref<User[]>([])
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
-const sortField = ref('registeredAt')
-const sortOrder = ref(-1)
-const searchKeyword = ref('')
-const filterStatus = ref('all')
-const filterLevel = ref('all')
-const filterDateRange = ref<Date[]>([])
-const showCreateDialog = ref(false)
-const editingUser = ref<User | null>(null)
+const loading = ref(false);
+const saving = ref(false);
+const users = ref<User[]>([]);
+const selectedUsers = ref<User[]>([]);
+const total = ref(0);
+const page = ref(1);
+const pageSize = ref(10);
+const sortField = ref("registeredAt");
+const sortOrder = ref(-1);
+const searchKeyword = ref("");
+const filterStatus = ref("all");
+const filterLevel = ref("all");
+const filterDateRange = ref<Date[]>([]);
+const showCreateDialog = ref(false);
+const editingUser = ref<User | null>(null);
 
 // 表单数据
 const userForm = ref<UserForm>({
-    username: '',
-    email: '',
-    phone: '',
-    nickname: '',
-    password: '',
-    gender: 'unknown',
-    birthday: null,
-    status: 'active',
-    level: 'bronze',
-    points: 0,
-    balance: 0,
-    remark: '',
-    tags: []
-})
+	username: "",
+	email: "",
+	phone: "",
+	nickname: "",
+	password: "",
+	gender: "unknown",
+	birthday: null,
+	status: "active",
+	level: "bronze",
+	points: 0,
+	balance: 0,
+	remark: "",
+	tags: [],
+});
 
 // 选项数据
 const statusOptions = [
-    { label: '全部状态', value: 'all' },
-    { label: '正常', value: 'active' },
-    { label: '禁用', value: 'inactive' },
-    { label: '封禁', value: 'banned' },
-    { label: '待审核', value: 'pending' }
-]
+	{ label: "全部状态", value: "all" },
+	{ label: "正常", value: "active" },
+	{ label: "禁用", value: "inactive" },
+	{ label: "封禁", value: "banned" },
+	{ label: "待审核", value: "pending" },
+];
 
 const levelOptions = [
-    { label: '全部等级', value: 'all' },
-    { label: '青铜会员', value: 'bronze' },
-    { label: '白银会员', value: 'silver' },
-    { label: '黄金会员', value: 'gold' },
-    { label: '铂金会员', value: 'platinum' },
-    { label: '钻石会员', value: 'diamond' }
-]
+	{ label: "全部等级", value: "all" },
+	{ label: "青铜会员", value: "bronze" },
+	{ label: "白银会员", value: "silver" },
+	{ label: "黄金会员", value: "gold" },
+	{ label: "铂金会员", value: "platinum" },
+	{ label: "钻石会员", value: "diamond" },
+];
 
 const userStatusOptions = [
-    { label: '正常', value: 'active' },
-    { label: '禁用', value: 'inactive' },
-    { label: '封禁', value: 'banned' },
-    { label: '待审核', value: 'pending' }
-]
+	{ label: "正常", value: "active" },
+	{ label: "禁用", value: "inactive" },
+	{ label: "封禁", value: "banned" },
+	{ label: "待审核", value: "pending" },
+];
 
 const userLevelOptions = [
-    { label: '青铜会员', value: 'bronze' },
-    { label: '白银会员', value: 'silver' },
-    { label: '黄金会员', value: 'gold' },
-    { label: '铂金会员', value: 'platinum' },
-    { label: '钻石会员', value: 'diamond' }
-]
+	{ label: "青铜会员", value: "bronze" },
+	{ label: "白银会员", value: "silver" },
+	{ label: "黄金会员", value: "gold" },
+	{ label: "铂金会员", value: "platinum" },
+	{ label: "钻石会员", value: "diamond" },
+];
 
 const genderOptions = [
-    { label: '未知', value: 'unknown' },
-    { label: '男', value: 'male' },
-    { label: '女', value: 'female' }
-]
+	{ label: "未知", value: "unknown" },
+	{ label: "男", value: "male" },
+	{ label: "女", value: "female" },
+];
 
 const availableTags = ref([
-    'VIP客户', '活跃用户', '新用户', '老客户', '高价值客户', '潜在客户'
-])
+	"VIP客户",
+	"活跃用户",
+	"新用户",
+	"老客户",
+	"高价值客户",
+	"潜在客户",
+]);
 
 // 工具函数
-const router = useRouter()
-const confirm = useConfirm()
-const toast = useToast()
+const router = useRouter();
+const confirm = useConfirm();
+const toast = useToast();
 
 // 计算属性
 const isFormValid = computed(() => {
-    return userForm.value.username.trim() &&
-        userForm.value.email.trim() &&
-        userForm.value.nickname.trim() &&
-        (!editingUser.value ? userForm.value.password?.trim() : true)
-})
+	return (
+		userForm.value.username.trim() &&
+		userForm.value.email.trim() &&
+		userForm.value.nickname.trim() &&
+		(!editingUser.value ? userForm.value.password?.trim() : true)
+	);
+});
 
 const userStatistics = computed(() => {
-    const stats = {
-        total: users.value.length,
-        active: 0,
-        inactive: 0,
-        banned: 0,
-        pending: 0
-    }
-    
-    users.value.forEach(user => {
-        stats[user.status]++
-    })
-    
-    return stats
-})
+	const stats = {
+		total: users.value.length,
+		active: 0,
+		inactive: 0,
+		banned: 0,
+		pending: 0,
+	};
+
+	users.value.forEach((user) => {
+		stats[user.status]++;
+	});
+
+	return stats;
+});
 
 const tagOptions = computed(() => {
-    return availableTags.value.map(tag => ({
-        label: tag,
-        value: tag
-    }))
-})
+	return availableTags.value.map((tag) => ({
+		label: tag,
+		value: tag,
+	}));
+});
 
 // 方法
 const loadUsers = async () => {
-    try {
-        loading.value = true
-        const params = {
-            page: page.value,
-            pageSize: pageSize.value,
-            sortBy: sortField.value,
-            sortOrder: sortOrder.value === 1 ? 'asc' : 'desc',
-            search: searchKeyword.value || undefined,
-            status: filterStatus.value !== 'all' ? filterStatus.value : undefined,
-            level: filterLevel.value !== 'all' ? filterLevel.value : undefined,
-            startDate: filterDateRange.value?.[0],
-            endDate: filterDateRange.value?.[1]
-        }
+	try {
+		loading.value = true;
+		const params = {
+			page: page.value,
+			pageSize: pageSize.value,
+			sortBy: sortField.value,
+			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
+			search: searchKeyword.value || undefined,
+			status: filterStatus.value !== "all" ? filterStatus.value : undefined,
+			level: filterLevel.value !== "all" ? filterLevel.value : undefined,
+			startDate: filterDateRange.value?.[0],
+			endDate: filterDateRange.value?.[1],
+		};
 
-        // 实际API调用
-        const response = await api.users.list(params)
-        
-        if (response.code === 200) {
-            users.value = response.data.users || []
-            total.value = response.data.total || 0
-        } else {
-            throw new Error(response.message || '加载用户失败')
-        }
-        
-        // 临时模拟数据（如果API未实现）
-        const mockUsers: User[] = [
-            {
-                id: 1,
-                username: 'zhangsan',
-                email: 'zhangsan@example.com',
-                phone: '13800138000',
-                nickname: '张三',
-                avatar: '/uploads/avatar1.jpg',
-                gender: 'male',
-                birthday: new Date('1990-01-01'),
-                status: 'active',
-                level: 'gold',
-                points: 1500,
-                balance: 299.50,
-                totalOrders: 25,
-                totalSpent: 12580.00,
-                lastLoginAt: new Date(),
-                lastLoginIp: '192.168.1.100',
-                registeredAt: new Date(Date.now() - 86400000 * 30),
-                isEmailVerified: true,
-                isPhoneVerified: true,
-                remark: 'VIP客户，购买力强',
-                tags: ['VIP客户', '活跃用户']
-            },
-            {
-                id: 2,
-                username: 'lisi',
-                email: 'lisi@example.com',
-                phone: '13900139000',
-                nickname: '李四',
-                avatar: '/uploads/avatar2.jpg',
-                gender: 'female',
-                birthday: new Date('1995-05-15'),
-                status: 'active',
-                level: 'silver',
-                points: 800,
-                balance: 150.00,
-                totalOrders: 12,
-                totalSpent: 3200.00,
-                lastLoginAt: new Date(Date.now() - 3600000),
-                lastLoginIp: '192.168.1.101',
-                registeredAt: new Date(Date.now() - 86400000 * 60),
-                isEmailVerified: true,
-                isPhoneVerified: false,
-                remark: '',
-                tags: ['活跃用户']
-            },
-            {
-                id: 3,
-                username: 'wangwu',
-                email: 'wangwu@example.com',
-                phone: '13700137000',
-                nickname: '王五',
-                avatar: '',
-                gender: 'unknown',
-                birthday: null,
-                status: 'inactive',
-                level: 'bronze',
-                points: 100,
-                balance: 0,
-                totalOrders: 2,
-                totalSpent: 199.00,
-                lastLoginAt: new Date(Date.now() - 86400000 * 7),
-                lastLoginIp: '192.168.1.102',
-                registeredAt: new Date(Date.now() - 86400000 * 90),
-                isEmailVerified: false,
-                isPhoneVerified: true,
-                remark: '长期未登录',
-                tags: ['潜在客户']
-            }
-        ]
-        
-        users.value = mockUsers
-        total.value = mockUsers.length
-        
-    } catch (error) {
-        console.error('加载用户失败:', error)
-        users.value = []
-        total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载用户失败', life: 1000 })
-    } finally {
-        loading.value = false
-    }
-}
+		// 实际API调用
+		const response = await api.users.list(params);
+
+		if (response.code === 200) {
+			users.value = response.data.users || [];
+			total.value = response.data.total || 0;
+		} else {
+			throw new Error(response.message || "加载用户失败");
+		}
+
+		// 临时模拟数据（如果API未实现）
+		const mockUsers: User[] = [
+			{
+				id: 1,
+				username: "zhangsan",
+				email: "zhangsan@example.com",
+				phone: "13800138000",
+				nickname: "张三",
+				avatar: "/uploads/avatar1.jpg",
+				gender: "male",
+				birthday: new Date("1990-01-01"),
+				status: "active",
+				level: "gold",
+				points: 1500,
+				balance: 299.5,
+				totalOrders: 25,
+				totalSpent: 12580.0,
+				lastLoginAt: new Date(),
+				lastLoginIp: "192.168.1.100",
+				registeredAt: new Date(Date.now() - 86400000 * 30),
+				isEmailVerified: true,
+				isPhoneVerified: true,
+				remark: "VIP客户，购买力强",
+				tags: ["VIP客户", "活跃用户"],
+			},
+			{
+				id: 2,
+				username: "lisi",
+				email: "lisi@example.com",
+				phone: "13900139000",
+				nickname: "李四",
+				avatar: "/uploads/avatar2.jpg",
+				gender: "female",
+				birthday: new Date("1995-05-15"),
+				status: "active",
+				level: "silver",
+				points: 800,
+				balance: 150.0,
+				totalOrders: 12,
+				totalSpent: 3200.0,
+				lastLoginAt: new Date(Date.now() - 3600000),
+				lastLoginIp: "192.168.1.101",
+				registeredAt: new Date(Date.now() - 86400000 * 60),
+				isEmailVerified: true,
+				isPhoneVerified: false,
+				remark: "",
+				tags: ["活跃用户"],
+			},
+			{
+				id: 3,
+				username: "wangwu",
+				email: "wangwu@example.com",
+				phone: "13700137000",
+				nickname: "王五",
+				avatar: "",
+				gender: "unknown",
+				birthday: null,
+				status: "inactive",
+				level: "bronze",
+				points: 100,
+				balance: 0,
+				totalOrders: 2,
+				totalSpent: 199.0,
+				lastLoginAt: new Date(Date.now() - 86400000 * 7),
+				lastLoginIp: "192.168.1.102",
+				registeredAt: new Date(Date.now() - 86400000 * 90),
+				isEmailVerified: false,
+				isPhoneVerified: true,
+				remark: "长期未登录",
+				tags: ["潜在客户"],
+			},
+		];
+
+		users.value = mockUsers;
+		total.value = mockUsers.length;
+	} catch (error) {
+		console.error("加载用户失败:", error);
+		users.value = [];
+		total.value = 0;
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载用户失败",
+			life: 1000,
+		});
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 分页处理
 const onPage = (event: any) => {
-    page.value = event.page + 1
-    pageSize.value = event.rows
-    loadUsers()
-}
+	page.value = event.page + 1;
+	pageSize.value = event.rows;
+	loadUsers();
+};
 
 // 排序处理
 const onSort = (event: any) => {
-    sortField.value = event.sortField
-    sortOrder.value = event.sortOrder
-    loadUsers()
-}
+	sortField.value = event.sortField;
+	sortOrder.value = event.sortOrder;
+	loadUsers();
+};
 
 // 搜索处理
 const handleSearch = () => {
-    page.value = 1
-    loadUsers()
-}
+	page.value = 1;
+	loadUsers();
+};
 
 // 筛选处理
 const handleFilter = () => {
-    page.value = 1
-    loadUsers()
-}
+	page.value = 1;
+	loadUsers();
+};
 
 // 显示编辑对话框
 const showEditDialog = (user: User) => {
-    editingUser.value = user
-    userForm.value = {
-        username: user.username,
-        email: user.email,
-        phone: user.phone,
-        nickname: user.nickname,
-        password: '',
-        gender: user.gender,
-        birthday: user.birthday,
-        status: user.status,
-        level: user.level,
-        points: user.points,
-        balance: user.balance,
-        remark: user.remark,
-        tags: [...user.tags]
-    }
-    showCreateDialog.value = true
-}
+	editingUser.value = user;
+	userForm.value = {
+		username: user.username,
+		email: user.email,
+		phone: user.phone,
+		nickname: user.nickname,
+		password: "",
+		gender: user.gender,
+		birthday: user.birthday,
+		status: user.status,
+		level: user.level,
+		points: user.points,
+		balance: user.balance,
+		remark: user.remark,
+		tags: [...user.tags],
+	};
+	showCreateDialog.value = true;
+};
 
 // 关闭对话框
 const closeDialog = () => {
-    showCreateDialog.value = false
-    editingUser.value = null
-    userForm.value = {
-        username: '',
-        email: '',
-        phone: '',
-        nickname: '',
-        password: '',
-        gender: 'unknown',
-        birthday: null,
-        status: 'active',
-        level: 'bronze',
-        points: 0,
-        balance: 0,
-        remark: '',
-        tags: []
-    }
-}
+	showCreateDialog.value = false;
+	editingUser.value = null;
+	userForm.value = {
+		username: "",
+		email: "",
+		phone: "",
+		nickname: "",
+		password: "",
+		gender: "unknown",
+		birthday: null,
+		status: "active",
+		level: "bronze",
+		points: 0,
+		balance: 0,
+		remark: "",
+		tags: [],
+	};
+};
 
 // 保存用户
 const saveUser = async () => {
-    if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
-        return
-    }
+	if (!isFormValid.value) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请填写必填字段",
+			life: 1000,
+		});
+		return;
+	}
 
-    try {
-        saving.value = true
+	try {
+		saving.value = true;
 
-        if (editingUser.value) {
-            // 更新用户
-            const response = await api.users.update(editingUser.value.id.toString(), userForm.value)
-            if (response.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '更新用户成功', life: 1000 })
-            } else {
-                throw new Error(response.message || '更新用户失败')
-            }
-        } else {
-            // 创建用户
-            const response = await api.users.create(userForm.value)
-            if (response.code === 200) {
-                toast.add({ severity: 'success', summary: '成功', detail: '创建用户成功', life: 1000 })
-            } else {
-                throw new Error(response.message || '创建用户失败')
-            }
-        }
-        
-        closeDialog()
-        loadUsers()
-    } catch (error) {
-        console.error('保存用户失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '保存用户失败', life: 1000 })
-    } finally {
-        saving.value = false
-    }
-}
+		if (editingUser.value) {
+			// 更新用户
+			const response = await api.users.update(
+				editingUser.value.id.toString(),
+				userForm.value,
+			);
+			if (response.code === 200) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "更新用户成功",
+					life: 1000,
+				});
+			} else {
+				throw new Error(response.message || "更新用户失败");
+			}
+		} else {
+			// 创建用户
+			const response = await api.users.create(userForm.value);
+			if (response.code === 200) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "创建用户成功",
+					life: 1000,
+				});
+			} else {
+				throw new Error(response.message || "创建用户失败");
+			}
+		}
+
+		closeDialog();
+		loadUsers();
+	} catch (error) {
+		console.error("保存用户失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "保存用户失败",
+			life: 1000,
+		});
+	} finally {
+		saving.value = false;
+	}
+};
 
 // 确认删除
 const confirmDelete = (user: User) => {
-    confirm.require({
-        message: `确定要删除用户 "${user.nickname}" 吗？`,
-        header: '删除确认',
-        icon: 'pi pi-exclamation-triangle',
-        acceptClass: 'p-button-danger',
-        accept: () => deleteUser(user.id)
-    })
-}
+	confirm.require({
+		message: `确定要删除用户 "${user.nickname}" 吗？`,
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => deleteUser(user.id),
+	});
+};
 
 // 删除用户
 const deleteUser = async (id: number) => {
-    try {
-        const response = await api.users.delete(id.toString())
-        if (response.code === 200) {
-            toast.add({ severity: 'success', summary: '成功', detail: '删除用户成功', life: 1000 })
-            loadUsers()
-        } else {
-            throw new Error(response.message || '删除用户失败')
-        }
-    } catch (error) {
-        console.error('删除用户失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '删除用户失败', life: 1000 })
-    }
-}
+	try {
+		const response = await api.users.delete(id.toString());
+		if (response.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "删除用户成功",
+				life: 1000,
+			});
+			loadUsers();
+		} else {
+			throw new Error(response.message || "删除用户失败");
+		}
+	} catch (error) {
+		console.error("删除用户失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "删除用户失败",
+			life: 1000,
+		});
+	}
+};
 
 // 切换用户状态
 const toggleUserStatus = async (user: User) => {
-    try {
-        const newStatus = user.status === 'active' ? 'inactive' : 'active'
-        const response = await api.users.update(user.id.toString(), { status: newStatus })
-        
-        if (response.code === 200) {
-            user.status = newStatus
-            toast.add({
-                severity: 'success',
-                summary: '成功',
-                detail: `${newStatus === 'active' ? '启用' : '禁用'}用户成功`,
-                life: 1000
-            })
-            loadUsers()
-        } else {
-            throw new Error(response.message || '切换用户状态失败')
-        }
-    } catch (error) {
-        console.error('切换用户状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '切换用户状态失败', life: 1000 })
-    }
-}
+	try {
+		const newStatus = user.status === "active" ? "inactive" : "active";
+		const response = await api.users.update(user.id.toString(), {
+			status: newStatus,
+		});
+
+		if (response.code === 200) {
+			user.status = newStatus;
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: `${newStatus === "active" ? "启用" : "禁用"}用户成功`,
+				life: 1000,
+			});
+			loadUsers();
+		} else {
+			throw new Error(response.message || "切换用户状态失败");
+		}
+	} catch (error) {
+		console.error("切换用户状态失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "切换用户状态失败",
+			life: 1000,
+		});
+	}
+};
 
 // 重置密码
 const resetPassword = async (user: User) => {
-    confirm.require({
-        message: `确定要重置用户 "${user.nickname}" 的密码吗？`,
-        header: '重置密码确认',
-        icon: 'pi pi-exclamation-triangle',
-        accept: async () => {
-            try {
-                // 模拟API调用
-                await new Promise(resolve => setTimeout(resolve, 500))
-                toast.add({ severity: 'success', summary: '成功', detail: '密码重置成功，新密码已发送到用户邮箱', life: 1000 })
-            } catch (error) {
-                console.error('重置密码失败:', error)
-                toast.add({ severity: 'error', summary: '错误', detail: '重置密码失败', life: 1000 })
-            }
-        }
-    })
-}
+	confirm.require({
+		message: `确定要重置用户 "${user.nickname}" 的密码吗？`,
+		header: "重置密码确认",
+		icon: "pi pi-exclamation-triangle",
+		accept: async () => {
+			try {
+				// 模拟API调用
+				await new Promise((resolve) => setTimeout(resolve, 500));
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "密码重置成功，新密码已发送到用户邮箱",
+					life: 1000,
+				});
+			} catch (error) {
+				console.error("重置密码失败:", error);
+				toast.add({
+					severity: "error",
+					summary: "错误",
+					detail: "重置密码失败",
+					life: 1000,
+				});
+			}
+		},
+	});
+};
 
 // 获取状态标签样式
 const getStatusSeverity = (status: UserStatus) => {
-    const severityMap = {
-        active: 'success',
-        inactive: 'warning',
-        banned: 'danger',
-        pending: 'info'
-    }
-    return severityMap[status] || 'secondary'
-}
+	const severityMap = {
+		active: "success",
+		inactive: "warning",
+		banned: "danger",
+		pending: "info",
+	};
+	return severityMap[status] || "secondary";
+};
 
 const getLevelSeverity = (level: UserLevel) => {
-    const severityMap = {
-        bronze: 'secondary',
-        silver: 'info',
-        gold: 'warning',
-        platinum: 'primary',
-        diamond: 'success'
-    }
-    return severityMap[level] || 'secondary'
-}
+	const severityMap = {
+		bronze: "secondary",
+		silver: "info",
+		gold: "warning",
+		platinum: "primary",
+		diamond: "success",
+	};
+	return severityMap[level] || "secondary";
+};
 
 // 获取状态文本
 const getStatusText = (status: UserStatus) => {
-    const textMap = {
-        active: '正常',
-        inactive: '禁用',
-        banned: '封禁',
-        pending: '待审核'
-    }
-    return textMap[status] || status
-}
+	const textMap = {
+		active: "正常",
+		inactive: "禁用",
+		banned: "封禁",
+		pending: "待审核",
+	};
+	return textMap[status] || status;
+};
 
 const getLevelText = (level: UserLevel) => {
-    const textMap = {
-        bronze: '青铜',
-        silver: '白银',
-        gold: '黄金',
-        platinum: '铂金',
-        diamond: '钻石'
-    }
-    return textMap[level] || level
-}
+	const textMap = {
+		bronze: "青铜",
+		silver: "白银",
+		gold: "黄金",
+		platinum: "铂金",
+		diamond: "钻石",
+	};
+	return textMap[level] || level;
+};
 
-const getGenderText = (gender: 'male' | 'female' | 'unknown') => {
-    const textMap = {
-        male: '男',
-        female: '女',
-        unknown: '未知'
-    }
-    return textMap[gender] || gender
-}
+const getGenderText = (gender: "male" | "female" | "unknown") => {
+	const textMap = {
+		male: "男",
+		female: "女",
+		unknown: "未知",
+	};
+	return textMap[gender] || gender;
+};
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-    return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
-}
+	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+};
 
 // 格式化日期
 const formatDate = (date: Date | string | null) => {
-    if (!date) return '-'
-    const d = new Date(date)
-    return d.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
+	if (!date) return "-";
+	const d = new Date(date);
+	return d.toLocaleDateString("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 
 // 导出用户
 const exportUsers = () => {
-    toast.add({ severity: 'info', summary: '提示', detail: '导出功能开发中...', life: 1000 })
-}
+	toast.add({
+		severity: "info",
+		summary: "提示",
+		detail: "导出功能开发中...",
+		life: 1000,
+	});
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-    loadUsers()
-})
+	loadUsers();
+});
 </script>
 
 <template>

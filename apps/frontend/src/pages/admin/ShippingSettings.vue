@@ -530,69 +530,69 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface ShippingZone {
-	id: string
-	name: string
-	areas: string[]
-	baseFee: number
-	freeThreshold: number
-	enabled: boolean
+	id: string;
+	name: string;
+	areas: string[];
+	baseFee: number;
+	freeThreshold: number;
+	enabled: boolean;
 }
 
 interface ShippingSettings {
 	express: {
-		enabled: boolean
-		baseFee: number
-		freeThreshold: number
-		deliveryTime: string
-		weightUnit: number
-		weightFee: number
-	}
+		enabled: boolean;
+		baseFee: number;
+		freeThreshold: number;
+		deliveryTime: string;
+		weightUnit: number;
+		weightFee: number;
+	};
 	local: {
-		enabled: boolean
-		fee: number
-		range: number
-		deliveryTime: string
-		serviceStart: Date | null
-		serviceEnd: Date | null
-	}
+		enabled: boolean;
+		fee: number;
+		range: number;
+		deliveryTime: string;
+		serviceStart: Date | null;
+		serviceEnd: Date | null;
+	};
 	pickup: {
-		enabled: boolean
-		address: string
-		phone: string
-		businessHours: string
-		prepareTime: string
-	}
+		enabled: boolean;
+		address: string;
+		phone: string;
+		businessHours: string;
+		prepareTime: string;
+	};
 	international: {
-		enabled: boolean
-		baseFee: number
-		deliveryTime: string
-		supportedCountries: string[]
-		customsNote: string
-	}
-	zones: ShippingZone[]
+		enabled: boolean;
+		baseFee: number;
+		deliveryTime: string;
+		supportedCountries: string[];
+		customsNote: string;
+	};
+	zones: ShippingZone[];
 	general: {
-		weightUnit: string
-		dimensionUnit: string
-		packagingFee: number
-		processingTime: number
-		maxWeight: number
-		autoCalculate: boolean
-		trackingApiUrl: string
-		trackingApiKey: string
-		enableTracking: boolean
-	}
+		weightUnit: string;
+		dimensionUnit: string;
+		packagingFee: number;
+		processingTime: number;
+		maxWeight: number;
+		autoCalculate: boolean;
+		trackingApiUrl: string;
+		trackingApiKey: string;
+		enableTracking: boolean;
+	};
 }
 
-const confirm = useConfirm()
-const toast = useToast()
+const confirm = useConfirm();
+const toast = useToast();
 
 // 响应式数据
-const saving = ref(false)
+const saving = ref(false);
 
 // 物流设置数据
 const shippingSettings = reactive<ShippingSettings>({
@@ -600,184 +600,182 @@ const shippingSettings = reactive<ShippingSettings>({
 		enabled: true,
 		baseFee: 10,
 		freeThreshold: 99,
-		deliveryTime: '1-3个工作日',
+		deliveryTime: "1-3个工作日",
 		weightUnit: 1,
-		weightFee: 5
+		weightFee: 5,
 	},
 	local: {
 		enabled: false,
 		fee: 8,
 		range: 20,
-		deliveryTime: '2-4小时',
+		deliveryTime: "2-4小时",
 		serviceStart: null,
-		serviceEnd: null
+		serviceEnd: null,
 	},
 	pickup: {
 		enabled: true,
-		address: '',
-		phone: '',
-		businessHours: '周一至周日 9:00-18:00',
-		prepareTime: '下单后2小时可取'
+		address: "",
+		phone: "",
+		businessHours: "周一至周日 9:00-18:00",
+		prepareTime: "下单后2小时可取",
 	},
 	international: {
 		enabled: false,
 		baseFee: 25,
-		deliveryTime: '7-15个工作日',
+		deliveryTime: "7-15个工作日",
 		supportedCountries: [],
-		customsNote: ''
+		customsNote: "",
 	},
 	zones: [
 		{
-			id: '1',
-			name: '江浙沪地区',
-			areas: ['shanghai', 'jiangsu', 'zhejiang'],
+			id: "1",
+			name: "江浙沪地区",
+			areas: ["shanghai", "jiangsu", "zhejiang"],
 			baseFee: 8,
 			freeThreshold: 88,
-			enabled: true
+			enabled: true,
 		},
 		{
-			id: '2',
-			name: '偏远地区',
-			areas: ['xinjiang', 'tibet', 'qinghai'],
+			id: "2",
+			name: "偏远地区",
+			areas: ["xinjiang", "tibet", "qinghai"],
 			baseFee: 20,
 			freeThreshold: 200,
-			enabled: true
-		}
+			enabled: true,
+		},
 	],
 	general: {
-		weightUnit: 'kg',
-		dimensionUnit: 'cm',
+		weightUnit: "kg",
+		dimensionUnit: "cm",
 		packagingFee: 2,
 		processingTime: 24,
 		maxWeight: 30,
 		autoCalculate: true,
-		trackingApiUrl: '',
-		trackingApiKey: '',
-		enableTracking: false
-	}
-})
+		trackingApiUrl: "",
+		trackingApiKey: "",
+		enableTracking: false,
+	},
+});
 
 // 选项数据
 const countryOptions = [
-	{ label: '美国', value: 'US' },
-	{ label: '加拿大', value: 'CA' },
-	{ label: '英国', value: 'GB' },
-	{ label: '德国', value: 'DE' },
-	{ label: '法国', value: 'FR' },
-	{ label: '日本', value: 'JP' },
-	{ label: '韩国', value: 'KR' },
-	{ label: '澳大利亚', value: 'AU' },
-	{ label: '新西兰', value: 'NZ' },
-	{ label: '新加坡', value: 'SG' }
-]
+	{ label: "美国", value: "US" },
+	{ label: "加拿大", value: "CA" },
+	{ label: "英国", value: "GB" },
+	{ label: "德国", value: "DE" },
+	{ label: "法国", value: "FR" },
+	{ label: "日本", value: "JP" },
+	{ label: "韩国", value: "KR" },
+	{ label: "澳大利亚", value: "AU" },
+	{ label: "新西兰", value: "NZ" },
+	{ label: "新加坡", value: "SG" },
+];
 
 const areaOptions = [
-	{ label: '北京', value: 'beijing' },
-	{ label: '上海', value: 'shanghai' },
-	{ label: '天津', value: 'tianjin' },
-	{ label: '重庆', value: 'chongqing' },
-	{ label: '河北', value: 'hebei' },
-	{ label: '山西', value: 'shanxi' },
-	{ label: '辽宁', value: 'liaoning' },
-	{ label: '吉林', value: 'jilin' },
-	{ label: '黑龙江', value: 'heilongjiang' },
-	{ label: '江苏', value: 'jiangsu' },
-	{ label: '浙江', value: 'zhejiang' },
-	{ label: '安徽', value: 'anhui' },
-	{ label: '福建', value: 'fujian' },
-	{ label: '江西', value: 'jiangxi' },
-	{ label: '山东', value: 'shandong' },
-	{ label: '河南', value: 'henan' },
-	{ label: '湖北', value: 'hubei' },
-	{ label: '湖南', value: 'hunan' },
-	{ label: '广东', value: 'guangdong' },
-	{ label: '广西', value: 'guangxi' },
-	{ label: '海南', value: 'hainan' },
-	{ label: '四川', value: 'sichuan' },
-	{ label: '贵州', value: 'guizhou' },
-	{ label: '云南', value: 'yunnan' },
-	{ label: '西藏', value: 'tibet' },
-	{ label: '陕西', value: 'shaanxi' },
-	{ label: '甘肃', value: 'gansu' },
-	{ label: '青海', value: 'qinghai' },
-	{ label: '宁夏', value: 'ningxia' },
-	{ label: '新疆', value: 'xinjiang' },
-	{ label: '内蒙古', value: 'neimenggu' },
-	{ label: '香港', value: 'hongkong' },
-	{ label: '澳门', value: 'macao' },
-	{ label: '台湾', value: 'taiwan' }
-]
+	{ label: "北京", value: "beijing" },
+	{ label: "上海", value: "shanghai" },
+	{ label: "天津", value: "tianjin" },
+	{ label: "重庆", value: "chongqing" },
+	{ label: "河北", value: "hebei" },
+	{ label: "山西", value: "shanxi" },
+	{ label: "辽宁", value: "liaoning" },
+	{ label: "吉林", value: "jilin" },
+	{ label: "黑龙江", value: "heilongjiang" },
+	{ label: "江苏", value: "jiangsu" },
+	{ label: "浙江", value: "zhejiang" },
+	{ label: "安徽", value: "anhui" },
+	{ label: "福建", value: "fujian" },
+	{ label: "江西", value: "jiangxi" },
+	{ label: "山东", value: "shandong" },
+	{ label: "河南", value: "henan" },
+	{ label: "湖北", value: "hubei" },
+	{ label: "湖南", value: "hunan" },
+	{ label: "广东", value: "guangdong" },
+	{ label: "广西", value: "guangxi" },
+	{ label: "海南", value: "hainan" },
+	{ label: "四川", value: "sichuan" },
+	{ label: "贵州", value: "guizhou" },
+	{ label: "云南", value: "yunnan" },
+	{ label: "西藏", value: "tibet" },
+	{ label: "陕西", value: "shaanxi" },
+	{ label: "甘肃", value: "gansu" },
+	{ label: "青海", value: "qinghai" },
+	{ label: "宁夏", value: "ningxia" },
+	{ label: "新疆", value: "xinjiang" },
+	{ label: "内蒙古", value: "neimenggu" },
+	{ label: "香港", value: "hongkong" },
+	{ label: "澳门", value: "macao" },
+	{ label: "台湾", value: "taiwan" },
+];
 
 const weightUnitOptions = [
-	{ label: '千克 (kg)', value: 'kg' },
-	{ label: '克 (g)', value: 'g' },
-	{ label: '磅 (lb)', value: 'lb' },
-	{ label: '盎司 (oz)', value: 'oz' }
-]
+	{ label: "千克 (kg)", value: "kg" },
+	{ label: "克 (g)", value: "g" },
+	{ label: "磅 (lb)", value: "lb" },
+	{ label: "盎司 (oz)", value: "oz" },
+];
 
 const dimensionUnitOptions = [
-	{ label: '厘米 (cm)', value: 'cm' },
-	{ label: '米 (m)', value: 'm' },
-	{ label: '英寸 (in)', value: 'in' },
-	{ label: '英尺 (ft)', value: 'ft' }
-]
+	{ label: "厘米 (cm)", value: "cm" },
+	{ label: "米 (m)", value: "m" },
+	{ label: "英寸 (in)", value: "in" },
+	{ label: "英尺 (ft)", value: "ft" },
+];
 
 // 加载物流设置
 const loadSettings = async () => {
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 1000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		// 这里应该从后端API加载实际的物流设置
-		console.log('物流设置加载完成')
-		
+		console.log("物流设置加载完成");
 	} catch (error) {
-		console.error('加载物流设置失败:', error)
+		console.error("加载物流设置失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '加载失败',
-			detail: '加载物流设置时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "加载失败",
+			detail: "加载物流设置时发生错误",
+			life: 3000,
+		});
 	}
-}
+};
 
 // 保存设置
 const saveSettings = async () => {
-	saving.value = true
+	saving.value = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 2000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+
 		// 这里应该调用后端API保存物流设置
-		console.log('保存物流设置:', shippingSettings)
-		
+		console.log("保存物流设置:", shippingSettings);
+
 		toast.add({
-			severity: 'success',
-			summary: '保存成功',
-			detail: '物流设置已成功保存',
-			life: 3000
-		})
-		
+			severity: "success",
+			summary: "保存成功",
+			detail: "物流设置已成功保存",
+			life: 3000,
+		});
 	} catch (error) {
-		console.error('保存物流设置失败:', error)
+		console.error("保存物流设置失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '保存失败',
-			detail: '保存物流设置时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "保存失败",
+			detail: "保存物流设置时发生错误",
+			life: 3000,
+		});
 	} finally {
-		saving.value = false
+		saving.value = false;
 	}
-}
+};
 
 // 重置设置
 const resetSettings = () => {
 	confirm.require({
-		message: '确定要重置所有物流设置吗？此操作不可撤销。',
-		header: '重置确认',
-		icon: 'pi pi-exclamation-triangle',
+		message: "确定要重置所有物流设置吗？此操作不可撤销。",
+		header: "重置确认",
+		icon: "pi pi-exclamation-triangle",
 		accept: () => {
 			// 重置为默认值
 			Object.assign(shippingSettings, {
@@ -785,91 +783,91 @@ const resetSettings = () => {
 					enabled: true,
 					baseFee: 10,
 					freeThreshold: 99,
-					deliveryTime: '1-3个工作日',
+					deliveryTime: "1-3个工作日",
 					weightUnit: 1,
-					weightFee: 5
+					weightFee: 5,
 				},
 				local: {
 					enabled: false,
 					fee: 8,
 					range: 20,
-					deliveryTime: '2-4小时',
+					deliveryTime: "2-4小时",
 					serviceStart: null,
-					serviceEnd: null
+					serviceEnd: null,
 				},
 				pickup: {
 					enabled: true,
-					address: '',
-					phone: '',
-					businessHours: '周一至周日 9:00-18:00',
-					prepareTime: '下单后2小时可取'
+					address: "",
+					phone: "",
+					businessHours: "周一至周日 9:00-18:00",
+					prepareTime: "下单后2小时可取",
 				},
 				international: {
 					enabled: false,
 					baseFee: 25,
-					deliveryTime: '7-15个工作日',
+					deliveryTime: "7-15个工作日",
 					supportedCountries: [],
-					customsNote: ''
+					customsNote: "",
 				},
 				zones: [],
 				general: {
-					weightUnit: 'kg',
-					dimensionUnit: 'cm',
+					weightUnit: "kg",
+					dimensionUnit: "cm",
 					packagingFee: 2,
 					processingTime: 24,
 					maxWeight: 30,
 					autoCalculate: true,
-					trackingApiUrl: '',
-					trackingApiKey: '',
-					enableTracking: false
-				}
-			})
-			
+					trackingApiUrl: "",
+					trackingApiKey: "",
+					enableTracking: false,
+				},
+			});
+
 			toast.add({
-				severity: 'success',
-				summary: '重置成功',
-				detail: '物流设置已重置为默认值',
-				life: 3000
-			})
-		}
-	})
-}
+				severity: "success",
+				summary: "重置成功",
+				detail: "物流设置已重置为默认值",
+				life: 3000,
+			});
+		},
+	});
+};
 
 // 添加配送区域
 const addShippingZone = () => {
 	const newZone: ShippingZone = {
 		id: Date.now().toString(),
-		name: '',
+		name: "",
 		areas: [],
 		baseFee: 10,
 		freeThreshold: 99,
-		enabled: true
-	}
-	shippingSettings.zones.push(newZone)
-}
+		enabled: true,
+	};
+	shippingSettings.zones.push(newZone);
+};
 
 // 删除配送区域
 const removeShippingZone = (index: number) => {
 	confirm.require({
-		message: '确定要删除这个配送区域吗？',
-		header: '删除确认',
-		icon: 'pi pi-exclamation-triangle',
+		message: "确定要删除这个配送区域吗？",
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
 		accept: () => {
-			shippingSettings.zones.splice(index, 1)
+			shippingSettings.zones.splice(index, 1);
 			toast.add({
-				severity: 'success',
-				summary: '删除成功',
-				detail: '配送区域已删除',
-				life: 3000
-			})
-		}
-	})
-}
+				severity: "success",
+				summary: "删除成功",
+				detail: "配送区域已删除",
+				life: 3000,
+			});
+		},
+	});
+};
 
 // 组件挂载时加载设置
 onMounted(() => {
-	loadSettings()
-})
+	loadSettings();
+});
 </script>
 
 <style scoped>

@@ -3,297 +3,40 @@ name: CI/CD Pipeline
 # 触发条件：推送到main分支或创建PR
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 # 环境变量
 env:
   REGISTRY: registry.cn-chengdu.aliyuncs.com
   IMAGE_NAME: docker-tzd/mechanicendworld
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   PNPM_VERSION: '10.4.0'
   BUN_VERSION: '1.2.21'
 
 jobs:
-  # 检测变化的文件
-  detect-changes:
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    outputs:
-      frontend: ${{ steps.changes.outputs.frontend }}
-      backend: ${{ steps.changes.outputs.backend }}
-      packages: ${{ steps.changes.outputs.packages }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect changes
-        uses: dorny/paths-filter@v2
-        id: changes
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          filters: |
-            frontend:
-              - 'apps/frontend/**'
-            backend:
-              - 'apps/backend/**'
-            packages:
-              - 'packages/**'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-  # 前端CI/CD
-  frontend-ci-cd:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.packages == 'true'
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: setup install  bun
+        run: npm  install -g bun
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
+      - name: install dependencies
+        run: bun install
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: ${{ env.PNPM_VERSION }}
-
-    - name: Get pnpm store directory
-      shell: bash
-      run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-    - name: Setup pnpm cache
-      uses: actions/cache@v3
-      with:
-        path: ${{ env.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: ${{ runner.os }}-pnpm-store-
-
-    - name: Install frontend dependencies
-      run: |
-        cd apps/frontend
-        pnpm install --frozen-lockfile
-
-    - name: Frontend type check
-      run: |
-        cd apps/frontend
-        pnpm run type-check
-
-    - name: Frontend lint
-      run: |
-        cd apps/frontend
-        pnpm run lint
-
-    - name: Build frontend
-      run: |
-        cd apps/frontend
-        pnpm run build
-      env:
-        VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:3001' }}
-        VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
-
-    # 仅在推送到main分支时部署到Caddy
-    - name: Deploy frontend to Caddy
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: |
-        cd apps/frontend
-        tar -czf frontend-dist.tar.gz -C dist .
-
-    - name: Upload frontend to server
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: ${{ secrets.SERVER_PORT || 22 }}
-        source: "apps/frontend/frontend-dist.tar.gz"
-        target: "/tmp/"
-
-    - name: Deploy frontend to Caddy server
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: ${{ secrets.SERVER_PORT || 22 }}
-        script: |
-          DEPLOY_DIR="${{ secrets.FRONTEND_DEPLOY_PATH || '/1/MechanicEndWorld2/front' }}"
-          BACKUP_DIR="${DEPLOY_DIR}-backup-$(date +%Y%m%d-%H%M%S)"
-          
-          mkdir -p $DEPLOY_DIR
-          
-          if [ -d "$DEPLOY_DIR" ] && [ "$(ls -A $DEPLOY_DIR)" ]; then
-            cp -r $DEPLOY_DIR $BACKUP_DIR
-          fi
-          
-          rm -rf $DEPLOY_DIR/*
-          cd $DEPLOY_DIR
-          tar -xzf /tmp/apps/frontend/frontend-dist.tar.gz
-          chown -R $USER:$USER $DEPLOY_DIR
-          chmod -R 755 $DEPLOY_DIR
-          rm -f /tmp/apps/frontend/frontend-dist.tar.gz
-          
-          echo "✅ 前端部署完成，Caddy将自动提供新版本"
-          
-          ls -t ${DEPLOY_DIR%/*}/*-backup-* 2>/dev/null | tail -n +6 | xargs rm -rf || true
-
-  # 后端CI/CD
-  backend-ci-cd:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.packages == 'true'
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: ${{ env.BUN_VERSION }}
-
-    - name: Install backend dependencies
-      run: |
-        cd apps/backend
-        bun install
-
-    - name: Backend type check
-      run: |
-        cd apps/backend
-        bun run type-check
-
-    - name: Build backend
-      run: |
-        cd apps/backend
-        bun run build
-
-    - name: Set up Docker Buildx
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: docker/setup-buildx-action@v3
-
-    - name: Login to Alibaba Cloud Container Registry
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
-        password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
-
-    - name: Build and push Docker image
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: docker/build-push-action@v5
-      with:
-        context: apps/backend
-        file: apps/backend/.container/prod/Dockerfile
-        push: true
-        tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Deploy backend to server
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        port: ${{ secrets.SERVER_PORT || 22 }}
-        script: |
-          cd ${{ secrets.BACKEND_DEPLOY_PATH || '/path/to/your/project/backend' }}
-          
-          export IMAGE_TAG=${{ github.sha }}
-          
-          # 确保配置文件存在
-          if [ ! -f ".container/prod/docker-compose.prod.yml" ]; then
-            echo "❌ Docker Compose配置文件不存在"
-            exit 1
-          fi
-          
-          # 拉取最新镜像
-          docker-compose -f .container/prod/docker-compose.prod.yml pull
-          
-          # 重启服务（包括Caddy）
-          docker-compose -f .container/prod/docker-compose.prod.yml up -d
-          
-          # 等待服务启动
-          sleep 10
-          
-          # 检查服务状态
-          docker-compose -f .container/prod/docker-compose.prod.yml ps
-          
-          # 清理旧镜像
-          docker image prune -f
-          
-          echo "✅ 后端和Caddy服务部署完成"
-
-  # 健康检查和通知
-  health-check:
-    needs: [frontend-ci-cd, backend-ci-cd]
-    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Frontend health check
-      if: needs.frontend-ci-cd.result == 'success'
-      run: |
-        echo "🔍 检查前端服务健康状态..."
-        for i in {1..5}; do
-          if curl -f http://${{ secrets.SSH_HOST }}:9010/health; then
-            echo "✅ 前端服务健康检查通过"
-            break
-          fi
-          echo "⏳ 等待前端服务启动... ($i/5)"
-          sleep 10
-        done
-      continue-on-error: true
-
-    - name: Backend health check
-      if: needs.backend-ci-cd.result == 'success'
-      run: |
-        echo "🔍 检查后端API服务健康状态..."
-        for i in {1..5}; do
-          # 通过Caddy代理检查后端健康状态
-          if curl -f http://${{ secrets.SSH_HOST }}/api/health || curl -f http://${{ secrets.SSH_HOST }}:${{ secrets.APP_PORT || 3001 }}/health; then
-            echo "✅ 后端服务健康检查通过"
-            break
-          fi
-          echo "⏳ 等待后端服务启动... ($i/5)"
-          sleep 10
-        done
-      continue-on-error: true
-
-    - name: Deployment summary
-      run: |
-        echo "## 🚀 部署摘要" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ "${{ needs.frontend-ci-cd.result }}" == "success" ]; then
-          echo "✅ **前端部署**: 成功" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 **前端地址**: ${{ secrets.FRONTEND_URL }}" >> $GITHUB_STEP_SUMMARY
-        elif [ "${{ needs.frontend-ci-cd.result }}" == "skipped" ]; then
-          echo "⏭️ **前端部署**: 跳过（无变化）" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ **前端部署**: 失败" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ "${{ needs.backend-ci-cd.result }}" == "success" ]; then
-          echo "✅ **后端部署**: 成功" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **后端地址**: ${{ secrets.BACKEND_URL }}" >> $GITHUB_STEP_SUMMARY
-        elif [ "${{ needs.backend-ci-cd.result }}" == "skipped" ]; then
-          echo "⏭️ **后端部署**: 跳过（无变化）" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ **后端部署**: 失败" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📝 **提交**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "👤 **提交者**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+      - name: Build
+        run: |
+          bun run build

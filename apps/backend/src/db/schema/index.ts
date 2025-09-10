@@ -4,22 +4,33 @@
  * 生成时间: 2025-08-22T13:15:08.712Z
  */
 
-import { userSchema, tokenSchema } from './auth';
-import { categoriesSchema, productsSchema, reviewsSchema, siteConfigSchema, advertisementsSchema, imagesSchema, ordersSchema, orderItemsSchema, refundsSchema, partnersSchema } from './schema';
+import { tokenSchema, userSchema } from "./auth";
+import {
+	advertisementsSchema,
+	categoriesSchema,
+	imagesSchema,
+	orderItemsSchema,
+	ordersSchema,
+	partnersSchema,
+	productsSchema,
+	refundsSchema,
+	reviewsSchema,
+	siteConfigSchema,
+} from "./schema";
 
 export const dbSchema = {
-  userSchema,
-  tokenSchema,
-  categoriesSchema,
-  productsSchema,
-  reviewsSchema,
-  siteConfigSchema,
-  advertisementsSchema,
-  imagesSchema,
-  ordersSchema,
-  orderItemsSchema,
-  refundsSchema,
-  partnersSchema,
+	userSchema,
+	tokenSchema,
+	categoriesSchema,
+	productsSchema,
+	reviewsSchema,
+	siteConfigSchema,
+	advertisementsSchema,
+	imagesSchema,
+	ordersSchema,
+	orderItemsSchema,
+	refundsSchema,
+	partnersSchema,
 };
 // 导出所有扫描到的数据库模式文件
 export * from "./auth";
@@ -33,9 +44,22 @@ export type DbSchema = typeof dbSchema;
 /**
  * 所有表的名称列表
  */
-export const tableNames = ['userSchema', 'tokenSchema', 'categoriesSchema', 'productsSchema', 'reviewsSchema', 'siteConfigSchema', 'advertisementsSchema', 'imagesSchema', 'ordersSchema', 'orderItemsSchema', 'refundsSchema', 'partnersSchema'] as const;
+export const tableNames = [
+	"userSchema",
+	"tokenSchema",
+	"categoriesSchema",
+	"productsSchema",
+	"reviewsSchema",
+	"siteConfigSchema",
+	"advertisementsSchema",
+	"imagesSchema",
+	"ordersSchema",
+	"orderItemsSchema",
+	"refundsSchema",
+	"partnersSchema",
+] as const;
 
 /**
  * 表名称类型
  */
-export type TableName = typeof tableNames[number];
+export type TableName = (typeof tableNames)[number];

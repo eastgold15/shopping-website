@@ -343,64 +343,63 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from 'primevue/avatar'
-import Badge from 'primevue/badge'
+import Avatar from "primevue/avatar";
+import Badge from "primevue/badge";
 
 // PrimeVue 组件
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Chart from 'primevue/chart'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dropdown from 'primevue/dropdown'
-import MultiSelect from 'primevue/multiselect'
-import { useToast } from 'primevue/usetoast'
-
+import Button from "primevue/button";
+import Card from "primevue/card";
+import Chart from "primevue/chart";
+import Column from "primevue/column";
+import DataTable from "primevue/datatable";
+import Dropdown from "primevue/dropdown";
+import MultiSelect from "primevue/multiselect";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface KPIData {
-	totalUsers: number
-	newUsers: number
-	activeUsers: number
-	retentionRate: number
-	usersGrowth: number
-	newUsersGrowth: number
-	activeGrowth: number
-	retentionGrowth: number
+	totalUsers: number;
+	newUsers: number;
+	activeUsers: number;
+	retentionRate: number;
+	usersGrowth: number;
+	newUsersGrowth: number;
+	activeGrowth: number;
+	retentionGrowth: number;
 }
 
 interface UserBehavior {
-	name: string
-	email: string
-	avatar?: string
-	registerDate: string
-	lastLogin: string
-	orders: number
-	totalSpent: number
-	avgOrderValue: number
-	status: string
+	name: string;
+	email: string;
+	avatar?: string;
+	registerDate: string;
+	lastLogin: string;
+	orders: number;
+	totalSpent: number;
+	avgOrderValue: number;
+	status: string;
 }
 
 interface RegionData {
-	name: string
-	users: number
-	percentage: number
-	color: string
+	name: string;
+	users: number;
+	percentage: number;
+	color: string;
 }
 
-const toast = useToast()
+const toast = useToast();
 
 // 响应式数据
-const loading = ref(false)
-const behaviorType = ref('all')
+const loading = ref(false);
+const behaviorType = ref("all");
 
 // 筛选条件
 const filters = reactive({
-	timeRange: 'last30days',
-	userType: 'all',
+	timeRange: "last30days",
+	userType: "all",
 	regions: [] as string[],
-	source: 'all'
-})
+	source: "all",
+});
 
 // KPI数据
 const kpiData = reactive<KPIData>({
@@ -411,170 +410,201 @@ const kpiData = reactive<KPIData>({
 	usersGrowth: 15.2,
 	newUsersGrowth: 22.8,
 	activeGrowth: 8.7,
-	retentionGrowth: 3.2
-})
+	retentionGrowth: 3.2,
+});
 
 // 用户行为数据
 const behaviorData = ref<UserBehavior[]>([
 	{
-		name: '张三',
-		email: 'zhangsan@example.com',
-		avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face',
-		registerDate: '2024-01-15',
-		lastLogin: '2024-01-20',
+		name: "张三",
+		email: "zhangsan@example.com",
+		avatar:
+			"https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop&crop=face",
+		registerDate: "2024-01-15",
+		lastLogin: "2024-01-20",
 		orders: 12,
 		totalSpent: 3580,
 		avgOrderValue: 298,
-		status: '活跃'
+		status: "活跃",
 	},
 	{
-		name: '李四',
-		email: 'lisi@example.com',
-		registerDate: '2024-01-10',
-		lastLogin: '2024-01-18',
+		name: "李四",
+		email: "lisi@example.com",
+		registerDate: "2024-01-10",
+		lastLogin: "2024-01-18",
 		orders: 8,
 		totalSpent: 2150,
 		avgOrderValue: 269,
-		status: '活跃'
+		status: "活跃",
 	},
 	{
-		name: '王五',
-		email: 'wangwu@example.com',
-		registerDate: '2023-12-20',
-		lastLogin: '2024-01-05',
+		name: "王五",
+		email: "wangwu@example.com",
+		registerDate: "2023-12-20",
+		lastLogin: "2024-01-05",
 		orders: 3,
 		totalSpent: 890,
 		avgOrderValue: 297,
-		status: '沉睡'
+		status: "沉睡",
 	},
 	{
-		name: '赵六',
-		email: 'zhaoliu@example.com',
-		registerDate: '2023-11-15',
-		lastLogin: '2023-12-01',
+		name: "赵六",
+		email: "zhaoliu@example.com",
+		registerDate: "2023-11-15",
+		lastLogin: "2023-12-01",
 		orders: 1,
 		totalSpent: 156,
 		avgOrderValue: 156,
-		status: '流失'
+		status: "流失",
 	},
 	{
-		name: '孙七',
-		email: 'sunqi@example.com',
-		registerDate: '2024-01-12',
-		lastLogin: '2024-01-19',
+		name: "孙七",
+		email: "sunqi@example.com",
+		registerDate: "2024-01-12",
+		lastLogin: "2024-01-19",
 		orders: 15,
 		totalSpent: 4250,
 		avgOrderValue: 283,
-		status: '活跃'
-	}
-])
+		status: "活跃",
+	},
+]);
 
 // 地区分布数据
 const regionDistribution = ref<RegionData[]>([
-	{ name: '华东地区', users: 5420, percentage: 35, color: '#3B82F6' },
-	{ name: '华南地区', users: 3850, percentage: 25, color: '#10B981' },
-	{ name: '华北地区', users: 3080, percentage: 20, color: '#F59E0B' },
-	{ name: '西南地区', users: 1850, percentage: 12, color: '#EF4444' },
-	{ name: '其他地区', users: 1220, percentage: 8, color: '#8B5CF6' }
-])
+	{ name: "华东地区", users: 5420, percentage: 35, color: "#3B82F6" },
+	{ name: "华南地区", users: 3850, percentage: 25, color: "#10B981" },
+	{ name: "华北地区", users: 3080, percentage: 20, color: "#F59E0B" },
+	{ name: "西南地区", users: 1850, percentage: 12, color: "#EF4444" },
+	{ name: "其他地区", users: 1220, percentage: 8, color: "#8B5CF6" },
+]);
 
 // 选项数据
 const timeRangeOptions = [
-	{ label: '今天', value: 'today' },
-	{ label: '昨天', value: 'yesterday' },
-	{ label: '最近7天', value: 'last7days' },
-	{ label: '最近30天', value: 'last30days' },
-	{ label: '最近90天', value: 'last90days' },
-	{ label: '本月', value: 'thisMonth' },
-	{ label: '上月', value: 'lastMonth' },
-	{ label: '本年', value: 'thisYear' }
-]
+	{ label: "今天", value: "today" },
+	{ label: "昨天", value: "yesterday" },
+	{ label: "最近7天", value: "last7days" },
+	{ label: "最近30天", value: "last30days" },
+	{ label: "最近90天", value: "last90days" },
+	{ label: "本月", value: "thisMonth" },
+	{ label: "上月", value: "lastMonth" },
+	{ label: "本年", value: "thisYear" },
+];
 
 const userTypeOptions = [
-	{ label: '全部用户', value: 'all' },
-	{ label: '新用户', value: 'new' },
-	{ label: '活跃用户', value: 'active' },
-	{ label: '沉睡用户', value: 'inactive' },
-	{ label: '流失用户', value: 'churned' }
-]
+	{ label: "全部用户", value: "all" },
+	{ label: "新用户", value: "new" },
+	{ label: "活跃用户", value: "active" },
+	{ label: "沉睡用户", value: "inactive" },
+	{ label: "流失用户", value: "churned" },
+];
 
 const regionOptions = [
-	{ label: '华东地区', value: 'east' },
-	{ label: '华南地区', value: 'south' },
-	{ label: '华北地区', value: 'north' },
-	{ label: '西南地区', value: 'southwest' },
-	{ label: '其他地区', value: 'others' }
-]
+	{ label: "华东地区", value: "east" },
+	{ label: "华南地区", value: "south" },
+	{ label: "华北地区", value: "north" },
+	{ label: "西南地区", value: "southwest" },
+	{ label: "其他地区", value: "others" },
+];
 
 const sourceOptions = [
-	{ label: '全部来源', value: 'all' },
-	{ label: '搜索引擎', value: 'search' },
-	{ label: '社交媒体', value: 'social' },
-	{ label: '直接访问', value: 'direct' },
-	{ label: '推荐链接', value: 'referral' },
-	{ label: '广告投放', value: 'ads' }
-]
+	{ label: "全部来源", value: "all" },
+	{ label: "搜索引擎", value: "search" },
+	{ label: "社交媒体", value: "social" },
+	{ label: "直接访问", value: "direct" },
+	{ label: "推荐链接", value: "referral" },
+	{ label: "广告投放", value: "ads" },
+];
 
 const behaviorOptions = [
-	{ label: '全部用户', value: 'all' },
-	{ label: '高价值用户', value: 'high_value' },
-	{ label: '活跃用户', value: 'active' },
-	{ label: '新用户', value: 'new' }
-]
+	{ label: "全部用户", value: "all" },
+	{ label: "高价值用户", value: "high_value" },
+	{ label: "活跃用户", value: "active" },
+	{ label: "新用户", value: "new" },
+];
 
 // 图表数据
 const userGrowthData = computed(() => ({
-	labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+	labels: [
+		"1月",
+		"2月",
+		"3月",
+		"4月",
+		"5月",
+		"6月",
+		"7月",
+		"8月",
+		"9月",
+		"10月",
+		"11月",
+		"12月",
+	],
 	datasets: [
 		{
-			label: '新增用户',
-			data: [850, 920, 780, 1050, 980, 1120, 1250, 1180, 1350, 1420, 1580, 1650],
-			borderColor: '#3B82F6',
-			backgroundColor: 'rgba(59, 130, 246, 0.1)',
-			fill: true,
-			tension: 0.4
-		},
-		{
-			label: '总用户数',
-			data: [8500, 9420, 10200, 11250, 12230, 13350, 14600, 15780, 17130, 18550, 20130, 21780],
-			borderColor: '#10B981',
-			backgroundColor: 'rgba(16, 185, 129, 0.1)',
+			label: "新增用户",
+			data: [
+				850, 920, 780, 1050, 980, 1120, 1250, 1180, 1350, 1420, 1580, 1650,
+			],
+			borderColor: "#3B82F6",
+			backgroundColor: "rgba(59, 130, 246, 0.1)",
 			fill: true,
 			tension: 0.4,
-			yAxisID: 'y1'
-		}
-	]
-}))
+		},
+		{
+			label: "总用户数",
+			data: [
+				8500, 9420, 10200, 11250, 12230, 13350, 14600, 15780, 17130, 18550,
+				20130, 21780,
+			],
+			borderColor: "#10B981",
+			backgroundColor: "rgba(16, 185, 129, 0.1)",
+			fill: true,
+			tension: 0.4,
+			yAxisID: "y1",
+		},
+	],
+}));
 
 const sourceData = computed(() => ({
-	labels: ['搜索引擎', '社交媒体', '直接访问', '推荐链接', '广告投放'],
-	datasets: [{
-		data: [35, 25, 20, 12, 8],
-		backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
-		hoverBackgroundColor: ['#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED']
-	}]
-}))
+	labels: ["搜索引擎", "社交媒体", "直接访问", "推荐链接", "广告投放"],
+	datasets: [
+		{
+			data: [35, 25, 20, 12, 8],
+			backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"],
+			hoverBackgroundColor: [
+				"#2563EB",
+				"#059669",
+				"#D97706",
+				"#DC2626",
+				"#7C3AED",
+			],
+		},
+	],
+}));
 
 const activityData = computed(() => ({
-	labels: ['日活用户', '周活用户', '月活用户'],
-	datasets: [{
-		label: '用户数量',
-		data: [3200, 8960, 12500],
-		backgroundColor: ['#3B82F6', '#10B981', '#F59E0B']
-	}]
-}))
+	labels: ["日活用户", "周活用户", "月活用户"],
+	datasets: [
+		{
+			label: "用户数量",
+			data: [3200, 8960, 12500],
+			backgroundColor: ["#3B82F6", "#10B981", "#F59E0B"],
+		},
+	],
+}));
 
 const retentionData = computed(() => ({
-	labels: ['第1天', '第3天', '第7天', '第14天', '第30天', '第60天', '第90天'],
-	datasets: [{
-		label: '留存率 (%)',
-		data: [100, 85, 72, 65, 58, 52, 48],
-		borderColor: '#8B5CF6',
-		backgroundColor: 'rgba(139, 92, 246, 0.1)',
-		fill: true,
-		tension: 0.4
-	}]
-}))
+	labels: ["第1天", "第3天", "第7天", "第14天", "第30天", "第60天", "第90天"],
+	datasets: [
+		{
+			label: "留存率 (%)",
+			data: [100, 85, 72, 65, 58, 52, 48],
+			borderColor: "#8B5CF6",
+			backgroundColor: "rgba(139, 92, 246, 0.1)",
+			fill: true,
+			tension: 0.4,
+		},
+	],
+}));
 
 // 图表配置
 const chartOptions = {
@@ -583,48 +613,48 @@ const chartOptions = {
 	scales: {
 		y: {
 			beginAtZero: true,
-			position: 'left'
+			position: "left",
 		},
 		y1: {
-			type: 'linear',
+			type: "linear",
 			display: true,
-			position: 'right',
+			position: "right",
 			grid: {
-				drawOnChartArea: false
-			}
-		}
+				drawOnChartArea: false,
+			},
+		},
 	},
 	plugins: {
 		legend: {
-			position: 'top'
-		}
-	}
-}
+			position: "top",
+		},
+	},
+};
 
 const doughnutOptions = {
 	responsive: true,
 	maintainAspectRatio: false,
 	plugins: {
 		legend: {
-			position: 'bottom'
-		}
-	}
-}
+			position: "bottom",
+		},
+	},
+};
 
 const barOptions = {
 	responsive: true,
 	maintainAspectRatio: false,
 	scales: {
 		y: {
-			beginAtZero: true
-		}
+			beginAtZero: true,
+		},
 	},
 	plugins: {
 		legend: {
-			display: false
-		}
-	}
-}
+			display: false,
+		},
+	},
+};
 
 const retentionOptions = {
 	responsive: true,
@@ -632,91 +662,89 @@ const retentionOptions = {
 	scales: {
 		y: {
 			beginAtZero: true,
-			max: 100
-		}
+			max: 100,
+		},
 	},
 	plugins: {
 		legend: {
-			position: 'top'
-		}
-	}
-}
+			position: "top",
+		},
+	},
+};
 
 // 工具函数
 const formatNumber = (num: number): string => {
-	return new Intl.NumberFormat('zh-CN').format(num)
-}
+	return new Intl.NumberFormat("zh-CN").format(num);
+};
 
 const formatDate = (dateStr: string): string => {
-	return new Date(dateStr).toLocaleDateString('zh-CN')
-}
+	return new Date(dateStr).toLocaleDateString("zh-CN");
+};
 
 // 加载报表数据
 const loadReportData = async () => {
-	loading.value = true
+	loading.value = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 1000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		// 这里应该根据筛选条件调用后端API加载数据
-		console.log('加载用户报表数据:', filters)
-		
+		console.log("加载用户报表数据:", filters);
 	} catch (error) {
-		console.error('加载用户报表数据失败:', error)
+		console.error("加载用户报表数据失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '加载失败',
-			detail: '加载用户报表数据时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "加载失败",
+			detail: "加载用户报表数据时发生错误",
+			life: 3000,
+		});
 	} finally {
-		loading.value = false
+		loading.value = false;
 	}
-}
+};
 
 // 加载用户行为数据
 const loadBehaviorData = async () => {
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 500))
-		
+		await new Promise((resolve) => setTimeout(resolve, 500));
+
 		// 这里应该根据行为类型调用后端API
-		console.log('加载用户行为数据:', behaviorType.value)
-		
+		console.log("加载用户行为数据:", behaviorType.value);
 	} catch (error) {
-		console.error('加载用户行为数据失败:', error)
+		console.error("加载用户行为数据失败:", error);
 	}
-}
+};
 
 // 刷新数据
 const refreshData = async () => {
-	await loadReportData()
+	await loadReportData();
 	toast.add({
-		severity: 'success',
-		summary: '刷新成功',
-		detail: '数据已更新',
-		life: 3000
-	})
-}
+		severity: "success",
+		summary: "刷新成功",
+		detail: "数据已更新",
+		life: 3000,
+	});
+};
 
 // 导出报表
 const exportReport = () => {
 	// 模拟导出功能
 	toast.add({
-		severity: 'info',
-		summary: '导出中',
-		detail: '正在生成报表文件...',
-		life: 3000
-	})
-	
+		severity: "info",
+		summary: "导出中",
+		detail: "正在生成报表文件...",
+		life: 3000,
+	});
+
 	// 这里应该调用后端API生成并下载报表文件
-	console.log('导出用户报表')
-}
+	console.log("导出用户报表");
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-	loadReportData()
-})
+	loadReportData();
+});
 </script>
 
 <style scoped>

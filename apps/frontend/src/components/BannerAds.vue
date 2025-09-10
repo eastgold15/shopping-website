@@ -60,10 +60,9 @@
 </template>
 
 <script setup lang="ts">
-
-import { client } from '@frontend/utils/useTreaty';
-import type { Advertisement } from '../types/advertisement';
-import { handleApiRes } from '../utils/handleApi';
+import { client } from "@frontend/utils/useTreaty";
+import type { Advertisement } from "../types/advertisement";
+import { handleApiRes } from "../utils/handleApi";
 
 // Props
 interface Props {
@@ -82,7 +81,7 @@ interface Props {
 	/** 是否显示空状态 */
 	showEmpty?: boolean;
 	/** 布局方向 */
-	layout?: 'horizontal' | 'vertical' | 'grid';
+	layout?: "horizontal" | "vertical" | "grid";
 	/** 网格列数（仅在grid布局下有效） */
 	gridCols?: number;
 	/** 间距 */
@@ -90,16 +89,16 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-	position: '',
+	position: "",
 	showTitle: false,
-	height: 'auto',
-	width: '100%',
+	height: "auto",
+	width: "100%",
 	rounded: true,
 	shadow: false,
 	showEmpty: true,
-	layout: 'horizontal',
+	layout: "horizontal",
 	gridCols: 2,
-	gap: '1rem'
+	gap: "1rem",
 });
 
 // 响应式数据
@@ -110,29 +109,29 @@ const imageLoadErrors = ref<Set<string>>(new Set());
 // 计算属性
 const bannerStyle = computed(() => ({
 	height: props.height,
-	width: props.width
+	width: props.width,
 }));
 
 const containerClass = computed(() => {
-	const classes = ['banner-container'];
-	
+	const classes = ["banner-container"];
+
 	switch (props.layout) {
-		case 'vertical':
-			classes.push('banner-vertical');
+		case "vertical":
+			classes.push("banner-vertical");
 			break;
-		case 'grid':
-			classes.push('banner-grid');
+		case "grid":
+			classes.push("banner-grid");
 			break;
 		default:
-			classes.push('banner-horizontal');
+			classes.push("banner-horizontal");
 	}
-	
-	return classes.join(' ');
+
+	return classes.join(" ");
 });
 
 const containerStyle = computed(() => ({
 	gap: props.gap,
-	'--grid-cols': props.gridCols
+	"--grid-cols": props.gridCols,
 }));
 
 // 方法
@@ -143,17 +142,19 @@ const loadBannerAds = async () => {
 	loading.value = true;
 	try {
 		const query = props.position ? { position: props.position } : {};
-		
-		const { data, error } = await handleApiRes( client.api.advertisements.banner.get({ query }));
-		
+
+		const { data, error } = await handleApiRes(
+			client.api.advertisements.banner.get({ query }),
+		);
+
 		if (data) {
 			advertisements.value = data;
 		} else {
-			console.error('获取Banner广告失败:', error);
+			console.error("获取Banner广告失败:", error);
 			advertisements.value = [];
 		}
 	} catch (error) {
-		console.error('加载Banner广告失败:', error);
+		console.error("加载Banner广告失败:", error);
 		advertisements.value = [];
 	} finally {
 		loading.value = false;
@@ -165,7 +166,11 @@ const loadBannerAds = async () => {
  */
 const isExternalLink = (url: string): boolean => {
 	if (!url) return false;
-	return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
+	return (
+		url.startsWith("http://") ||
+		url.startsWith("https://") ||
+		url.startsWith("//")
+	);
 };
 
 /**
@@ -174,12 +179,12 @@ const isExternalLink = (url: string): boolean => {
 const handleImageError = (event: Event) => {
 	const img = event.target as HTMLImageElement;
 	const src = img.src;
-	
+
 	// 避免无限循环
 	if (!imageLoadErrors.value.has(src)) {
 		imageLoadErrors.value.add(src);
 		// 设置默认图片
-		img.src = '/placeholder-banner.png';
+		img.src = "/placeholder-banner.png";
 	}
 };
 
@@ -188,7 +193,7 @@ const handleImageError = (event: Event) => {
  */
 const handleImageLoad = (event: Event) => {
 	const img = event.target as HTMLImageElement;
-	img.classList.add('loaded');
+	img.classList.add("loaded");
 };
 
 /**
@@ -199,13 +204,16 @@ const refresh = () => {
 };
 
 // 监听position变化
-watch(() => props.position, () => {
-	loadBannerAds();
-});
+watch(
+	() => props.position,
+	() => {
+		loadBannerAds();
+	},
+);
 
 // 暴露方法给父组件
 defineExpose({
-	refresh
+	refresh,
 });
 
 // 生命周期

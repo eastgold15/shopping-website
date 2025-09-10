@@ -1,24 +1,20 @@
 {
-  "extends": "@repo/typescript-config/elysia.json",
-  "compilerOptions": {
-    /* 路径映射（必须与 vite.config.ts 中的 alias 匹配） */
-    "baseUrl": ".",
-    "paths": {
-      "@backend/*": [
-        "../backend/src/*"
-      ],
-      "@backend/types": [
-        "../backend/src/types/index.ts"
-      ],
-    },
-  },
-  "include": [
-    "src/**/*", // 包含 src 目录下所有文件
-    "test/**/*", // 包含测试文件
-    "types/**/*" // 包含自定义类型文件
-  ],
-  "exclude": [
-    "node_modules",
-    "dist" // 排除输出目录
-  ]
+	"extends": "@repo/typescript-config/elysia.json",
+	"compilerOptions": {
+		/* 路径映射（必须与 vite.config.ts 中的 alias 匹配） */
+		"baseUrl": ".",
+		"paths": {
+			"@backend/*": ["../backend/src/*"],
+			"@backend/types": ["../backend/src/types/index.ts"]
+		}
+	},
+	"include": [
+		"src/**/*", // 包含 src 目录下所有文件
+		"test/**/*", // 包含测试文件
+		"types/**/*" // 包含自定义类型文件
+	],
+	"exclude": [
+		"node_modules",
+		"dist" // 排除输出目录
+	]
 }

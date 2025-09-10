@@ -364,415 +364,423 @@
 </template>
 
 <script setup lang="ts">
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface Refund {
-	id: number
-	refundNo: string
-	orderNo: string
-	customerName: string
-	customerPhone: string
-	originalAmount: number
-	refundAmount: number
-	refundType: 'full' | 'partial' | 'return'
-	status: 'pending' | 'approved' | 'rejected' | 'processing' | 'completed'
-	reason: string
-	adminNote?: string
-	createdAt: Date
-	processedAt?: Date
-	processedBy?: string
+	id: number;
+	refundNo: string;
+	orderNo: string;
+	customerName: string;
+	customerPhone: string;
+	originalAmount: number;
+	refundAmount: number;
+	refundType: "full" | "partial" | "return";
+	status: "pending" | "approved" | "rejected" | "processing" | "completed";
+	reason: string;
+	adminNote?: string;
+	createdAt: Date;
+	processedAt?: Date;
+	processedBy?: string;
 }
 
-const confirm = useConfirm()
-const toast = useToast()
+const confirm = useConfirm();
+const toast = useToast();
 
 // 响应式数据
-const refunds = ref<Refund[]>([])
-const selectedRefunds = ref<Refund[]>([])
-const selectedRefund = ref<Refund | null>(null)
-const loading = ref(false)
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
-const sortField = ref('createdAt')
-const sortOrder = ref(-1)
+const refunds = ref<Refund[]>([]);
+const selectedRefunds = ref<Refund[]>([]);
+const selectedRefund = ref<Refund | null>(null);
+const loading = ref(false);
+const total = ref(0);
+const page = ref(1);
+const pageSize = ref(10);
+const sortField = ref("createdAt");
+const sortOrder = ref(-1);
 
 // 筛选条件
-const searchKeyword = ref('')
-const filterStatus = ref('')
-const filterType = ref('')
-const dateRange = ref<Date[]>([])
+const searchKeyword = ref("");
+const filterStatus = ref("");
+const filterType = ref("");
+const dateRange = ref<Date[]>([]);
 
 // 对话框状态
-const detailDialogVisible = ref(false)
-const processDialogVisible = ref(false)
-const processAction = ref<'approve' | 'reject'>('approve')
-const processNote = ref('')
-const processing = ref(false)
+const detailDialogVisible = ref(false);
+const processDialogVisible = ref(false);
+const processAction = ref<"approve" | "reject">("approve");
+const processNote = ref("");
+const processing = ref(false);
 
 // 选项数据
 const statusOptions = [
-	{ label: '待处理', value: 'pending' },
-	{ label: '已同意', value: 'approved' },
-	{ label: '已拒绝', value: 'rejected' },
-	{ label: '处理中', value: 'processing' },
-	{ label: '已完成', value: 'completed' }
-]
+	{ label: "待处理", value: "pending" },
+	{ label: "已同意", value: "approved" },
+	{ label: "已拒绝", value: "rejected" },
+	{ label: "处理中", value: "processing" },
+	{ label: "已完成", value: "completed" },
+];
 
 const typeOptions = [
-	{ label: '全额退款', value: 'full' },
-	{ label: '部分退款', value: 'partial' },
-	{ label: '退货退款', value: 'return' }
-]
+	{ label: "全额退款", value: "full" },
+	{ label: "部分退款", value: "partial" },
+	{ label: "退货退款", value: "return" },
+];
 
 // 模拟数据
 const mockRefunds: Refund[] = [
 	{
 		id: 1,
-		refundNo: 'RF202401001',
-		orderNo: 'ORD202401001',
-		customerName: '张三',
-		customerPhone: '13800138001',
-		originalAmount: 299.00,
-		refundAmount: 299.00,
-		refundType: 'full',
-		status: 'pending',
-		reason: '商品质量问题，要求全额退款',
-		createdAt: new Date('2024-01-15 10:30:00')
+		refundNo: "RF202401001",
+		orderNo: "ORD202401001",
+		customerName: "张三",
+		customerPhone: "13800138001",
+		originalAmount: 299.0,
+		refundAmount: 299.0,
+		refundType: "full",
+		status: "pending",
+		reason: "商品质量问题，要求全额退款",
+		createdAt: new Date("2024-01-15 10:30:00"),
 	},
 	{
 		id: 2,
-		refundNo: 'RF202401002',
-		orderNo: 'ORD202401002',
-		customerName: '李四',
-		customerPhone: '13800138002',
-		originalAmount: 599.00,
-		refundAmount: 200.00,
-		refundType: 'partial',
-		status: 'approved',
-		reason: '尺寸不合适，部分退款',
-		adminNote: '同意部分退款，已处理',
-		createdAt: new Date('2024-01-14 14:20:00'),
-		processedAt: new Date('2024-01-14 16:45:00'),
-		processedBy: 'admin'
+		refundNo: "RF202401002",
+		orderNo: "ORD202401002",
+		customerName: "李四",
+		customerPhone: "13800138002",
+		originalAmount: 599.0,
+		refundAmount: 200.0,
+		refundType: "partial",
+		status: "approved",
+		reason: "尺寸不合适，部分退款",
+		adminNote: "同意部分退款，已处理",
+		createdAt: new Date("2024-01-14 14:20:00"),
+		processedAt: new Date("2024-01-14 16:45:00"),
+		processedBy: "admin",
 	},
 	{
 		id: 3,
-		refundNo: 'RF202401003',
-		orderNo: 'ORD202401003',
-		customerName: '王五',
-		customerPhone: '13800138003',
-		originalAmount: 399.00,
-		refundAmount: 399.00,
-		refundType: 'return',
-		status: 'rejected',
-		reason: '不喜欢颜色，要求退货',
-		adminNote: '个人喜好原因，不符合退货政策',
-		createdAt: new Date('2024-01-13 09:15:00'),
-		processedAt: new Date('2024-01-13 11:30:00'),
-		processedBy: 'admin'
+		refundNo: "RF202401003",
+		orderNo: "ORD202401003",
+		customerName: "王五",
+		customerPhone: "13800138003",
+		originalAmount: 399.0,
+		refundAmount: 399.0,
+		refundType: "return",
+		status: "rejected",
+		reason: "不喜欢颜色，要求退货",
+		adminNote: "个人喜好原因，不符合退货政策",
+		createdAt: new Date("2024-01-13 09:15:00"),
+		processedAt: new Date("2024-01-13 11:30:00"),
+		processedBy: "admin",
 	},
 	{
 		id: 4,
-		refundNo: 'RF202401004',
-		orderNo: 'ORD202401004',
-		customerName: '赵六',
-		customerPhone: '13800138004',
-		originalAmount: 799.00,
-		refundAmount: 799.00,
-		refundType: 'full',
-		status: 'completed',
-		reason: '商品损坏，要求全额退款',
-		adminNote: '商品确实有质量问题，已全额退款',
-		createdAt: new Date('2024-01-12 16:45:00'),
-		processedAt: new Date('2024-01-12 18:20:00'),
-		processedBy: 'admin'
+		refundNo: "RF202401004",
+		orderNo: "ORD202401004",
+		customerName: "赵六",
+		customerPhone: "13800138004",
+		originalAmount: 799.0,
+		refundAmount: 799.0,
+		refundType: "full",
+		status: "completed",
+		reason: "商品损坏，要求全额退款",
+		adminNote: "商品确实有质量问题，已全额退款",
+		createdAt: new Date("2024-01-12 16:45:00"),
+		processedAt: new Date("2024-01-12 18:20:00"),
+		processedBy: "admin",
 	},
 	{
 		id: 5,
-		refundNo: 'RF202401005',
-		orderNo: 'ORD202401005',
-		customerName: '孙七',
-		customerPhone: '13800138005',
-		originalAmount: 199.00,
-		refundAmount: 199.00,
-		refundType: 'full',
-		status: 'processing',
-		reason: '收到商品与描述不符',
-		adminNote: '正在核实商品信息',
-		createdAt: new Date('2024-01-11 11:20:00'),
-		processedAt: new Date('2024-01-11 13:45:00'),
-		processedBy: 'admin'
-	}
-]
+		refundNo: "RF202401005",
+		orderNo: "ORD202401005",
+		customerName: "孙七",
+		customerPhone: "13800138005",
+		originalAmount: 199.0,
+		refundAmount: 199.0,
+		refundType: "full",
+		status: "processing",
+		reason: "收到商品与描述不符",
+		adminNote: "正在核实商品信息",
+		createdAt: new Date("2024-01-11 11:20:00"),
+		processedAt: new Date("2024-01-11 13:45:00"),
+		processedBy: "admin",
+	},
+];
 
 // 加载退款数据
 const loadRefunds = async () => {
-	loading.value = true
+	loading.value = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 1000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		// 应用筛选条件
-		let filteredRefunds = [...mockRefunds]
-		
+		let filteredRefunds = [...mockRefunds];
+
 		// 搜索筛选
 		if (searchKeyword.value) {
-			const keyword = searchKeyword.value.toLowerCase()
-			filteredRefunds = filteredRefunds.filter(refund => 
-				refund.refundNo.toLowerCase().includes(keyword) ||
-				refund.orderNo.toLowerCase().includes(keyword) ||
-				refund.customerName.toLowerCase().includes(keyword)
-			)
+			const keyword = searchKeyword.value.toLowerCase();
+			filteredRefunds = filteredRefunds.filter(
+				(refund) =>
+					refund.refundNo.toLowerCase().includes(keyword) ||
+					refund.orderNo.toLowerCase().includes(keyword) ||
+					refund.customerName.toLowerCase().includes(keyword),
+			);
 		}
-		
+
 		// 状态筛选
 		if (filterStatus.value) {
-			filteredRefunds = filteredRefunds.filter(refund => refund.status === filterStatus.value)
+			filteredRefunds = filteredRefunds.filter(
+				(refund) => refund.status === filterStatus.value,
+			);
 		}
-		
+
 		// 类型筛选
 		if (filterType.value) {
-			filteredRefunds = filteredRefunds.filter(refund => refund.refundType === filterType.value)
+			filteredRefunds = filteredRefunds.filter(
+				(refund) => refund.refundType === filterType.value,
+			);
 		}
-		
+
 		// 日期筛选
 		if (dateRange.value && dateRange.value.length === 2) {
-			const [startDate, endDate] = dateRange.value
-			filteredRefunds = filteredRefunds.filter(refund => {
-				const refundDate = new Date(refund.createdAt)
-				return refundDate >= startDate && refundDate <= endDate
-			})
+			const [startDate, endDate] = dateRange.value;
+			filteredRefunds = filteredRefunds.filter((refund) => {
+				const refundDate = new Date(refund.createdAt);
+				return refundDate >= startDate && refundDate <= endDate;
+			});
 		}
-		
+
 		// 排序
 		if (sortField.value) {
 			filteredRefunds.sort((a, b) => {
-				const aValue = a[sortField.value as keyof Refund]
-				const bValue = b[sortField.value as keyof Refund]
-				if (aValue < bValue) return sortOrder.value === 1 ? -1 : 1
-				if (aValue > bValue) return sortOrder.value === 1 ? 1 : -1
-				return 0
-			})
+				const aValue = a[sortField.value as keyof Refund];
+				const bValue = b[sortField.value as keyof Refund];
+				if (aValue < bValue) return sortOrder.value === 1 ? -1 : 1;
+				if (aValue > bValue) return sortOrder.value === 1 ? 1 : -1;
+				return 0;
+			});
 		}
-		
-		total.value = filteredRefunds.length
-		
+
+		total.value = filteredRefunds.length;
+
 		// 分页
-		const start = (page.value - 1) * pageSize.value
-		const end = start + pageSize.value
-		refunds.value = filteredRefunds.slice(start, end)
-		
+		const start = (page.value - 1) * pageSize.value;
+		const end = start + pageSize.value;
+		refunds.value = filteredRefunds.slice(start, end);
 	} catch (error) {
-		console.error('加载退款数据失败:', error)
-		refunds.value = []
-		total.value = 0
-		toast.add({ severity: 'error', summary: '错误', detail: '加载退款数据失败', life: 1000 })
+		console.error("加载退款数据失败:", error);
+		refunds.value = [];
+		total.value = 0;
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载退款数据失败",
+			life: 1000,
+		});
 	} finally {
-		loading.value = false
+		loading.value = false;
 	}
-}
+};
 
 // 分页处理
 const onPage = (event: any) => {
-	page.value = event.page + 1
-	pageSize.value = event.rows
-	loadRefunds()
-}
+	page.value = event.page + 1;
+	pageSize.value = event.rows;
+	loadRefunds();
+};
 
 // 排序处理
 const onSort = (event: any) => {
-	sortField.value = event.sortField
-	sortOrder.value = event.sortOrder
-	loadRefunds()
-}
+	sortField.value = event.sortField;
+	sortOrder.value = event.sortOrder;
+	loadRefunds();
+};
 
 // 搜索处理
 const handleSearch = () => {
-	page.value = 1
-	loadRefunds()
-}
+	page.value = 1;
+	loadRefunds();
+};
 
 // 筛选处理
 const handleFilter = () => {
-	page.value = 1
-	loadRefunds()
-}
+	page.value = 1;
+	loadRefunds();
+};
 
 // 查看退款详情
 const viewRefund = (refund: Refund) => {
-	selectedRefund.value = refund
-	detailDialogVisible.value = true
-}
+	selectedRefund.value = refund;
+	detailDialogVisible.value = true;
+};
 
 // 同意退款
 const approveRefund = (refund: Refund) => {
-	selectedRefund.value = refund
-	processAction.value = 'approve'
-	processNote.value = ''
-	processDialogVisible.value = true
-}
+	selectedRefund.value = refund;
+	processAction.value = "approve";
+	processNote.value = "";
+	processDialogVisible.value = true;
+};
 
 // 拒绝退款
 const rejectRefund = (refund: Refund) => {
-	selectedRefund.value = refund
-	processAction.value = 'reject'
-	processNote.value = ''
-	processDialogVisible.value = true
-}
+	selectedRefund.value = refund;
+	processAction.value = "reject";
+	processNote.value = "";
+	processDialogVisible.value = true;
+};
 
 // 确认处理
 const confirmProcess = async () => {
-	if (!selectedRefund.value) return
-	
-	processing.value = true
+	if (!selectedRefund.value) return;
+
+	processing.value = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 1000))
-		
-		const action = processAction.value === 'approve' ? '同意' : '拒绝'
-		const newStatus = processAction.value === 'approve' ? 'approved' : 'rejected'
-		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
+		const action = processAction.value === "approve" ? "同意" : "拒绝";
+		const newStatus =
+			processAction.value === "approve" ? "approved" : "rejected";
+
 		// 更新退款状态
-		selectedRefund.value.status = newStatus
-		selectedRefund.value.adminNote = processNote.value
-		selectedRefund.value.processedAt = new Date()
-		selectedRefund.value.processedBy = 'admin'
-		
+		selectedRefund.value.status = newStatus;
+		selectedRefund.value.adminNote = processNote.value;
+		selectedRefund.value.processedAt = new Date();
+		selectedRefund.value.processedBy = "admin";
+
 		toast.add({
-			severity: 'success',
-			summary: '处理成功',
+			severity: "success",
+			summary: "处理成功",
 			detail: `已${action}退款申请`,
-			life: 3000
-		})
-		
-		processDialogVisible.value = false
-		detailDialogVisible.value = false
-		loadRefunds()
-		
+			life: 3000,
+		});
+
+		processDialogVisible.value = false;
+		detailDialogVisible.value = false;
+		loadRefunds();
 	} catch (error) {
-		console.error('处理退款失败:', error)
+		console.error("处理退款失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '处理失败',
-			detail: '处理退款时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "处理失败",
+			detail: "处理退款时发生错误",
+			life: 3000,
+		});
 	} finally {
-		processing.value = false
+		processing.value = false;
 	}
-}
+};
 
 // 批量处理
 const batchProcess = () => {
 	confirm.require({
 		message: `确定要批量处理选中的 ${selectedRefunds.value.length} 个退款申请吗？`,
-		header: '批量处理确认',
-		icon: 'pi pi-exclamation-triangle',
+		header: "批量处理确认",
+		icon: "pi pi-exclamation-triangle",
 		accept: async () => {
 			try {
 				// 模拟批量处理API调用
-				await new Promise(resolve => setTimeout(resolve, 1500))
-				
+				await new Promise((resolve) => setTimeout(resolve, 1500));
+
 				toast.add({
-					severity: 'success',
-					summary: '批量处理成功',
+					severity: "success",
+					summary: "批量处理成功",
 					detail: `已处理 ${selectedRefunds.value.length} 个退款申请`,
-					life: 3000
-				})
-				
-				selectedRefunds.value = []
-				loadRefunds()
+					life: 3000,
+				});
+
+				selectedRefunds.value = [];
+				loadRefunds();
 			} catch (error) {
 				toast.add({
-					severity: 'error',
-					summary: '批量处理失败',
-					detail: '批量处理时发生错误',
-					life: 3000
-				})
+					severity: "error",
+					summary: "批量处理失败",
+					detail: "批量处理时发生错误",
+					life: 3000,
+				});
 			}
-		}
-	})
-}
+		},
+	});
+};
 
 // 导出数据
 const exportData = () => {
 	toast.add({
-		severity: 'info',
-		summary: '导出功能',
-		detail: '导出功能开发中...',
-		life: 3000
-	})
-}
+		severity: "info",
+		summary: "导出功能",
+		detail: "导出功能开发中...",
+		life: 3000,
+	});
+};
 
 // 获取退款类型标签
 const getRefundTypeLabel = (type: string) => {
 	const typeMap: Record<string, string> = {
-		full: '全额退款',
-		partial: '部分退款',
-		return: '退货退款'
-	}
-	return typeMap[type] || type
-}
+		full: "全额退款",
+		partial: "部分退款",
+		return: "退货退款",
+	};
+	return typeMap[type] || type;
+};
 
 // 获取退款类型严重程度
 const getRefundTypeSeverity = (type: string) => {
 	const severityMap: Record<string, string> = {
-		full: 'danger',
-		partial: 'warning',
-		return: 'info'
-	}
-	return severityMap[type] || 'info'
-}
+		full: "danger",
+		partial: "warning",
+		return: "info",
+	};
+	return severityMap[type] || "info";
+};
 
 // 获取状态标签
 const getStatusLabel = (status: string) => {
 	const statusMap: Record<string, string> = {
-		pending: '待处理',
-		approved: '已同意',
-		rejected: '已拒绝',
-		processing: '处理中',
-		completed: '已完成'
-	}
-	return statusMap[status] || status
-}
+		pending: "待处理",
+		approved: "已同意",
+		rejected: "已拒绝",
+		processing: "处理中",
+		completed: "已完成",
+	};
+	return statusMap[status] || status;
+};
 
 // 获取状态严重程度
 const getStatusSeverity = (status: string) => {
 	const severityMap: Record<string, string> = {
-		pending: 'warning',
-		approved: 'success',
-		rejected: 'danger',
-		processing: 'info',
-		completed: 'success'
-	}
-	return severityMap[status] || 'info'
-}
+		pending: "warning",
+		approved: "success",
+		rejected: "danger",
+		processing: "info",
+		completed: "success",
+	};
+	return severityMap[status] || "info";
+};
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-	return '¥' + amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
-}
+	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+};
 
 // 格式化日期
 const formatDate = (date: Date | string) => {
-	const d = new Date(date)
-	return d.toLocaleDateString('zh-CN', {
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit'
-	})
-}
+	const d = new Date(date);
+	return d.toLocaleDateString("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-	loadRefunds()
-})
+	loadRefunds();
+});
 </script>
 
 <style scoped>

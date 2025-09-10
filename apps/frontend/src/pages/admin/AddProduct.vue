@@ -1,390 +1,478 @@
 <script setup lang="ts">
 // PrimeVue 组件
-import ImageSelector from '@frontend/components/ImageSelector.vue'
-import { client } from '@frontend/utils/useTreaty'
-import { Form, FormField } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Checkbox from 'primevue/checkbox'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Textarea from 'primevue/textarea'
-import Toast from 'primevue/toast'
-import TreeSelect from 'primevue/treeselect'
-import { useToast } from 'primevue/usetoast'
-import { z } from 'zod'
+import ImageSelector from "@frontend/components/ImageSelector.vue";
+import { client } from "@frontend/utils/useTreaty";
+import { Form, FormField } from "@primevue/forms";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+import Button from "primevue/button";
+import Card from "primevue/card";
+import Checkbox from "primevue/checkbox";
+import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Textarea from "primevue/textarea";
+import Toast from "primevue/toast";
+import TreeSelect from "primevue/treeselect";
+import { useToast } from "primevue/usetoast";
+import { z } from "zod";
 
-const router = useRouter()
-const toast = useToast()
+const router = useRouter();
+const toast = useToast();
 
 // 表单初始值
 const initialValues = reactive({
-  name: '',
-  slug: '',
-  sku: '',
-  barcode: '',
-  categoryId: null,
-  description: '',
-  shortDescription: '',
-  images: [] as string[],
-  videos: [] as string[],
-  colors: [] as string[],
-  sizes: [] as string[],
-  materials: [] as string[],
-  careInstructions: '',
-  features: [] as string[],
-  specifications: '',
-  price: 0,
-  comparePrice: 0,
-  cost: 0,
-  stock: 0,
-  minStock: 0,
-  weight: 0,
-  dimensions: '',
-  trackInventory: false,
-  isActive: true,
-  isFeatured: false,
-  metaTitle: '',
-  metaDescription: '',
-  metaKeywords: ''
-})
+	name: "",
+	slug: "",
+	sku: "",
+	barcode: "",
+	categoryId: null,
+	description: "",
+	shortDescription: "",
+	images: [] as string[],
+	videos: [] as string[],
+	colors: [] as string[],
+	sizes: [] as string[],
+	materials: [] as string[],
+	careInstructions: "",
+	features: [] as string[],
+	specifications: "",
+	price: 0,
+	comparePrice: 0,
+	cost: 0,
+	stock: 0,
+	minStock: 0,
+	weight: 0,
+	dimensions: "",
+	trackInventory: false,
+	isActive: true,
+	isFeatured: false,
+	metaTitle: "",
+	metaDescription: "",
+	metaKeywords: "",
+});
 
 // 表单验证器
 const formResolver = zodResolver(
-  z.object({
-    name: z.string().min(1, { message: '商品名称不能为空' }).max(100, { message: '商品名称不能超过100个字符' }),
-    slug: z.string().min(1, { message: 'URL标识符不能为空' }).regex(/^[a-z0-9-]+$/, { message: 'URL标识符只能包含小写字母、数字和连字符' }),
-    sku: z.string().optional(),
-    barcode: z.string().optional(),
-    categoryId: z.any(),
-    description: z.string().optional(),
-    shortDescription: z.string().max(200, { message: '简短描述不能超过200个字符' }).optional(),
-    images: z.array(z.string()).min(1, { message: '至少需要上传一张商品图片' }),
-    videos: z.array(z.string()).optional(),
-    colors: z.array(z.string()).optional(),
-    sizes: z.array(z.string()).optional(),
-    materials: z.array(z.string()).optional(),
-    careInstructions: z.string().optional(),
-    features: z.array(z.string()).optional(),
-    specifications: z.string().optional(),
-    price: z.number().min(0.01, { message: '商品价格必须大于0' }),
-    comparePrice: z.number().min(0, { message: '对比价格不能为负数' }).optional(),
-    cost: z.number().min(0, { message: '成本价格不能为负数' }).optional(),
-    stock: z.number().min(0, { message: '库存数量不能为负数' }),
-    minStock: z.number().min(0, { message: '最低库存不能为负数' }).optional(),
-    weight: z.number().min(0, { message: '重量不能为负数' }).optional(),
-    dimensions: z.string().optional(),
-    isActive: z.boolean(),
-    isFeatured: z.boolean(),
-    metaTitle: z.string().max(60, { message: 'SEO标题不能超过60个字符' }).optional(),
-    metaDescription: z.string().max(160, { message: 'SEO描述不能超过160个字符' }).optional(),
-    metaKeywords: z.string().optional()
-  }).refine((data) => {
-    // 对比价格应该大于等于销售价格
-    if (data.comparePrice && data.comparePrice > 0 && data.comparePrice < data.price) {
-      return false
-    }
-    return true
-  }, {
-    message: '对比价格应该大于等于销售价格',
-    path: ['comparePrice']
-  })
-)
+	z
+		.object({
+			name: z
+				.string()
+				.min(1, { message: "商品名称不能为空" })
+				.max(100, { message: "商品名称不能超过100个字符" }),
+			slug: z
+				.string()
+				.min(1, { message: "URL标识符不能为空" })
+				.regex(/^[a-z0-9-]+$/, {
+					message: "URL标识符只能包含小写字母、数字和连字符",
+				}),
+			sku: z.string().optional(),
+			barcode: z.string().optional(),
+			categoryId: z.any(),
+			description: z.string().optional(),
+			shortDescription: z
+				.string()
+				.max(200, { message: "简短描述不能超过200个字符" })
+				.optional(),
+			images: z
+				.array(z.string())
+				.min(1, { message: "至少需要上传一张商品图片" }),
+			videos: z.array(z.string()).optional(),
+			colors: z.array(z.string()).optional(),
+			sizes: z.array(z.string()).optional(),
+			materials: z.array(z.string()).optional(),
+			careInstructions: z.string().optional(),
+			features: z.array(z.string()).optional(),
+			specifications: z.string().optional(),
+			price: z.number().min(0.01, { message: "商品价格必须大于0" }),
+			comparePrice: z
+				.number()
+				.min(0, { message: "对比价格不能为负数" })
+				.optional(),
+			cost: z.number().min(0, { message: "成本价格不能为负数" }).optional(),
+			stock: z.number().min(0, { message: "库存数量不能为负数" }),
+			minStock: z.number().min(0, { message: "最低库存不能为负数" }).optional(),
+			weight: z.number().min(0, { message: "重量不能为负数" }).optional(),
+			dimensions: z.string().optional(),
+			isActive: z.boolean(),
+			isFeatured: z.boolean(),
+			metaTitle: z
+				.string()
+				.max(60, { message: "SEO标题不能超过60个字符" })
+				.optional(),
+			metaDescription: z
+				.string()
+				.max(160, { message: "SEO描述不能超过160个字符" })
+				.optional(),
+			metaKeywords: z.string().optional(),
+		})
+		.refine(
+			(data) => {
+				// 对比价格应该大于等于销售价格
+				if (
+					data.comparePrice &&
+					data.comparePrice > 0 &&
+					data.comparePrice < data.price
+				) {
+					return false;
+				}
+				return true;
+			},
+			{
+				message: "对比价格应该大于等于销售价格",
+				path: ["comparePrice"],
+			},
+		),
+);
 
 // 单独的字段验证器
-const nameResolver = zodResolver(z.string().min(1, { message: '商品名称不能为空' }).max(100, { message: '商品名称不能超过100个字符' }))
-const slugResolver = zodResolver(z.string().min(1, { message: 'URL标识符不能为空' }).regex(/^[a-z0-9-]+$/, { message: 'URL标识符只能包含小写字母、数字和连字符' }))
+const nameResolver = zodResolver(
+	z
+		.string()
+		.min(1, { message: "商品名称不能为空" })
+		.max(100, { message: "商品名称不能超过100个字符" }),
+);
+const slugResolver = zodResolver(
+	z
+		.string()
+		.min(1, { message: "URL标识符不能为空" })
+		.regex(/^[a-z0-9-]+$/, {
+			message: "URL标识符只能包含小写字母、数字和连字符",
+		}),
+);
 
-const priceResolver = zodResolver(z.number().min(0.01, { message: '商品价格必须大于0' }))
+const priceResolver = zodResolver(
+	z.number().min(0.01, { message: "商品价格必须大于0" }),
+);
 
-const stockResolver = zodResolver(z.number().min(0, { message: '库存数量不能为负数' }))
-
+const stockResolver = zodResolver(
+	z.number().min(0, { message: "库存数量不能为负数" }),
+);
 
 // 新增规格
-const newColor = ref('')
-const newSize = ref('')
-const newMaterial = ref('')
-const newFeature = ref('')
+const newColor = ref("");
+const newSize = ref("");
+const newMaterial = ref("");
+const newFeature = ref("");
 
 // 商品分类
-const categories = ref<any[]>([])
+const categories = ref<any[]>([]);
 
 // 计算属性 - 用于TreeSelect的数据源
 const treeData = computed(() => {
-  // TreeSelect使用标准的TreeNode格式，key作为选中值，label作为显示文本
-  const convertToTreeSelectFormat = (nodes: any[]): any[] => {
-    return nodes.map(node => ({
-      key: node.id, // TreeSelect的key就是选中时返回的值
-      label: node.name,
-      data: node,
-      children: node.children && node.children.length > 0 ? convertToTreeSelectFormat(node.children) : undefined
-    }))
-  }
+	// TreeSelect使用标准的TreeNode格式，key作为选中值，label作为显示文本
+	const convertToTreeSelectFormat = (nodes: any[]): any[] => {
+		return nodes.map((node) => ({
+			key: node.id, // TreeSelect的key就是选中时返回的值
+			label: node.name,
+			data: node,
+			children:
+				node.children && node.children.length > 0
+					? convertToTreeSelectFormat(node.children)
+					: undefined,
+		}));
+	};
 
-  return convertToTreeSelectFormat(categories.value)
-})
+	return convertToTreeSelectFormat(categories.value);
+});
 
 // 加载状态
-const saving = ref(false)
-const publishing = ref(false)
+const saving = ref(false);
+const publishing = ref(false);
 
 // 当前操作类型
-const currentAction = ref<'publish' | 'draft' | 'submit'>('submit')
+const currentAction = ref<"publish" | "draft" | "submit">("submit");
 
 // 表单引用
-const formRef = ref<any>(null)
+const formRef = ref<any>(null);
 
 // 触发保存草稿
 const triggerSaveDraft = () => {
-  currentAction.value = 'draft'
-  formRef.value?.submit()
-}
+	currentAction.value = "draft";
+	formRef.value?.submit();
+};
 
 // 触发发布商品
 const triggerPublishProduct = () => {
-  currentAction.value = 'publish'
-  formRef.value?.submit()
-}
+	currentAction.value = "publish";
+	formRef.value?.submit();
+};
 
 // 表单提交处理
-const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) => {
-  console.log('表单数据:', values)
-  if (!valid) {
-    toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入', life: 1000 })
-    return
-  }
+const onFormSubmit = async ({
+	valid,
+	values,
+}: {
+	valid: boolean;
+	values: any;
+}) => {
+	console.log("表单数据:", values);
+	if (!valid) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请检查表单输入",
+			life: 1000,
+		});
+		return;
+	}
 
-  // 根据当前操作类型调用相应的处理函数
-  if (currentAction.value === 'draft') {
-    await saveDraft({ valid, values })
-  } else if (currentAction.value === 'publish') {
-    await publishProduct({ valid, values })
-  } else {
-    // 默认提交行为
-    try {
-      saving.value = true
+	// 根据当前操作类型调用相应的处理函数
+	if (currentAction.value === "draft") {
+		await saveDraft({ valid, values });
+	} else if (currentAction.value === "publish") {
+		await publishProduct({ valid, values });
+	} else {
+		// 默认提交行为
+		try {
+			saving.value = true;
 
-      // 调用API创建商品
-      const data = await handleApiRes(client.api.products.post(values))
+			// 调用API创建商品
+			const data = await handleApiRes(client.api.products.post(values));
 
-      if (data) {
-        toast.add({
-          severity: 'success',
-          summary: '成功',
-          detail: '商品保存成功',
-          life: 1000
-        })
+			if (data) {
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "商品保存成功",
+					life: 1000,
+				});
 
-        // 跳转到商品列表页面
-        // router.push('/admin/products')
-      } else {
-        throw new Error(error || '保存失败')
-      }
-    } catch (error) {
-      console.error('保存商品失败:', error)
-      toast.add({
-        severity: 'error',
-        summary: '错误',
-        detail: '保存商品失败，请重试',
-        life: 1000
-      })
-    } finally {
-      saving.value = false
-    }
-  }
+				// 跳转到商品列表页面
+				// router.push('/admin/products')
+			} else {
+				throw new Error(error || "保存失败");
+			}
+		} catch (error) {
+			console.error("保存商品失败:", error);
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: "保存商品失败，请重试",
+				life: 1000,
+			});
+		} finally {
+			saving.value = false;
+		}
+	}
 
-  // 重置操作类型
-  currentAction.value = 'submit'
-}
+	// 重置操作类型
+	currentAction.value = "submit";
+};
 
 // 保存草稿
-const saveDraft = async ({ valid, values }: { valid: boolean; values: any }) => {
-  if (!valid) {
-    toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入', life: 1000 })
-    return
-  }
+const saveDraft = async ({
+	valid,
+	values,
+}: {
+	valid: boolean;
+	values: any;
+}) => {
+	if (!valid) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请检查表单输入",
+			life: 1000,
+		});
+		return;
+	}
 
-  try {
-    saving.value = true
+	try {
+		saving.value = true;
 
-    // 准备商品数据
-    const productData = {
-      ...values,
-      isActive: false // 草稿状态设为不激活
-    }
+		// 准备商品数据
+		const productData = {
+			...values,
+			isActive: false, // 草稿状态设为不激活
+		};
 
-    // 调用API创建商品
-    const data = await handleApiRes(client.api.products.post(productData))
+		// 调用API创建商品
+		const data = await handleApiRes(client.api.products.post(productData));
 
-    if (data) {
-      toast.add({
-        severity: 'success',
-        summary: '成功',
-        detail: '草稿保存成功',
-        life: 1000
-      })
+		if (data) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "草稿保存成功",
+				life: 1000,
+			});
 
-      // 跳转到商品列表页面
-      router.push('/admin/products')
-    } else {
-      throw new Error(error || '保存失败')
-    }
-  } catch (error) {
-    console.error('保存草稿失败:', error)
-    toast.add({
-      severity: 'error',
-      summary: '错误',
-      detail: '保存草稿失败，请重试',
-      life: 1000
-    })
-  } finally {
-    saving.value = false
-  }
-}
+			// 跳转到商品列表页面
+			router.push("/admin/products");
+		} else {
+			throw new Error(error || "保存失败");
+		}
+	} catch (error) {
+		console.error("保存草稿失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "保存草稿失败，请重试",
+			life: 1000,
+		});
+	} finally {
+		saving.value = false;
+	}
+};
 
 // 发布商品
-const publishProduct = async ({ valid, values }: { valid: boolean; values: any }) => {
-  if (!valid) {
-    toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入', life: 1000 })
-    return
-  }
+const publishProduct = async ({
+	valid,
+	values,
+}: {
+	valid: boolean;
+	values: any;
+}) => {
+	if (!valid) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请检查表单输入",
+			life: 1000,
+		});
+		return;
+	}
 
-  try {
-    publishing.value = true
+	try {
+		publishing.value = true;
 
-    // 准备商品数据
-    const productData = {
-      ...values,
-      isActive: true // 发布状态设为激活
-    }
+		// 准备商品数据
+		const productData = {
+			...values,
+			isActive: true, // 发布状态设为激活
+		};
 
-    // 调用API创建商品
-    const data = await handleApiRes(client.api.products.post(productData))
+		// 调用API创建商品
+		const data = await handleApiRes(client.api.products.post(productData));
 
-    if (data) {
-      toast.add({
-        severity: 'success',
-        summary: '成功',
-        detail: '商品发布成功',
-        life: 1000
-      })
+		if (data) {
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "商品发布成功",
+				life: 1000,
+			});
 
-      // 跳转到商品列表页面
-      router.push('/admin/products')
-    } else {
-      throw new Error(error || '保存失败')
-    }
-  } catch (error) {
-    console.error('发布商品失败:', error)
-    toast.add({
-      severity: 'error',
-      summary: '错误',
-      detail: '发布商品失败，请重试',
-      life: 1000
-    })
-  } finally {
-    publishing.value = false
-  }
-}
-
-
+			// 跳转到商品列表页面
+			router.push("/admin/products");
+		} else {
+			throw new Error(error || "保存失败");
+		}
+	} catch (error) {
+		console.error("发布商品失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "发布商品失败，请重试",
+			life: 1000,
+		});
+	} finally {
+		publishing.value = false;
+	}
+};
 
 // 规格管理 - 已移除旧的函数，使用FormField版本
 
 const addVideo = () => {
-  initialValues.videos.push('')
-}
+	initialValues.videos.push("");
+};
 
 const removeVideo = (index: number) => {
-  initialValues.videos.splice(index, 1)
-}
-
-
+	initialValues.videos.splice(index, 1);
+};
 
 // 图片选择器相关
-const showImageSelector = ref(false)
+const showImageSelector = ref(false);
 // 打开图片选择器
 const openImageSelector = () => {
-  showImageSelector.value = true
-}
+	showImageSelector.value = true;
+};
 
 // 图片选择事件
 const onImageSelected = (imageUrl: string) => {
-  if (!initialValues.images.includes(imageUrl)) {
-    initialValues.images.push(imageUrl)
-    toast.add({
-      severity: 'success',
-      summary: '成功',
-      detail: '图片添加成功',
-      life: 1000
-    })
-  } else {
-    toast.add({
-      severity: 'warn',
-      summary: '提示',
-      detail: '图片已存在',
-      life: 1000
-    })
-  }
-  showImageSelector.value = false
-}
-
-
+	if (!initialValues.images.includes(imageUrl)) {
+		initialValues.images.push(imageUrl);
+		toast.add({
+			severity: "success",
+			summary: "成功",
+			detail: "图片添加成功",
+			life: 1000,
+		});
+	} else {
+		toast.add({
+			severity: "warn",
+			summary: "提示",
+			detail: "图片已存在",
+			life: 1000,
+		});
+	}
+	showImageSelector.value = false;
+};
 
 // 新的字段处理函数
 const addColor = () => {
-  if (newColor.value.trim() && !initialValues.colors.includes(newColor.value.trim())) {
-    initialValues.colors.push(newColor.value.trim())
-    newColor.value = ''
-  }
-}
+	if (
+		newColor.value.trim() &&
+		!initialValues.colors.includes(newColor.value.trim())
+	) {
+		initialValues.colors.push(newColor.value.trim());
+		newColor.value = "";
+	}
+};
 
 const addSize = () => {
-  if (newSize.value.trim() && !initialValues.sizes.includes(newSize.value.trim())) {
-    initialValues.sizes.push(newSize.value.trim())
-    newSize.value = ''
-  }
-}
+	if (
+		newSize.value.trim() &&
+		!initialValues.sizes.includes(newSize.value.trim())
+	) {
+		initialValues.sizes.push(newSize.value.trim());
+		newSize.value = "";
+	}
+};
 
 const addMaterial = () => {
-  if (newMaterial.value.trim() && !initialValues.materials.includes(newMaterial.value.trim())) {
-    initialValues.materials.push(newMaterial.value.trim())
-    newMaterial.value = ''
-  }
-}
+	if (
+		newMaterial.value.trim() &&
+		!initialValues.materials.includes(newMaterial.value.trim())
+	) {
+		initialValues.materials.push(newMaterial.value.trim());
+		newMaterial.value = "";
+	}
+};
 
 const addFeature = () => {
-  if (newFeature.value.trim() && !initialValues.features.includes(newFeature.value.trim())) {
-    initialValues.features.push(newFeature.value.trim())
-    newFeature.value = ''
-  }
-}
+	if (
+		newFeature.value.trim() &&
+		!initialValues.features.includes(newFeature.value.trim())
+	) {
+		initialValues.features.push(newFeature.value.trim());
+		newFeature.value = "";
+	}
+};
 
 const removeImage = (index: number) => {
-  initialValues.images.splice(index, 1)
-}
+	initialValues.images.splice(index, 1);
+};
 
 // 加载商品分类
 const loadCategories = async () => {
-  try {
-    const data = await handleApiRes(client.api.categories.tree.get())
-    if (data && data.code === 200) {
-      categories.value = data.data || []
-    } else {
-      categories.value = []
-    }
-  } catch (error) {
-    console.error('加载分类失败:', error)
-    categories.value = []
-  }
-}
+	try {
+		const data = await handleApiRes(client.api.categories.tree.get());
+		if (data && data.code === 200) {
+			categories.value = data.data || [];
+		} else {
+			categories.value = [];
+		}
+	} catch (error) {
+		console.error("加载分类失败:", error);
+		categories.value = [];
+	}
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-  loadCategories()
-})
+	loadCategories();
+});
 </script>
 
 <template>

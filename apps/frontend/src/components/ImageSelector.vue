@@ -1,29 +1,28 @@
 <script setup lang="ts">
-import type { ImageEntity } from '@backend/modules/image/images.model';
-import { formatDate, formatSize, getImageUrl } from '@frontend/utils/formatUtils';
+import type { ImageEntity } from "@backend/modules/image/images.model";
+import {
+	formatDate,
+	formatSize,
+	getImageUrl,
+} from "@frontend/utils/formatUtils";
+import { api } from "@frontend/utils/handleApi";
+import { useToast } from "primevue/usetoast";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 
-import { computed, onMounted, reactive, ref, watch } from 'vue';
-
-import { api } from '@frontend/utils/handleApi';
-import { useToast } from 'primevue/usetoast';
 // Toast
 const toast = useToast();
 // Props
 interface Props {
-  category?: string; // 可选的分类过滤
+	category?: string; // 可选的分类过滤
 }
 
-const visible = defineModel('visible', { default: false })
-
+const visible = defineModel("visible", { default: false });
 
 // Emits
-interface Emits {
-
-  (e: 'select', imageUrl: string, imageData: ImageEntity): void;
-}
+type Emits = (e: "select", imageUrl: string, imageData: ImageEntity) => void;
 
 const props = withDefaults(defineProps<Props>(), {
-  category: 'all'
+	category: "all",
 });
 
 const emit = defineEmits<Emits>();
@@ -31,21 +30,21 @@ const emit = defineEmits<Emits>();
 // 响应式数据
 const loading = ref(false);
 const images = ref<ImageEntity[]>([]);
-const searchQuery = ref('');
+const searchQuery = ref("");
 const selectedCategory = ref(props.category);
 const hoveredImage = ref<number | undefined>(undefined);
 
 const meta = reactive({
-  page: 1,
-  pageSize: 10
-})
+	page: 1,
+	pageSize: 10,
+});
 // 分类选项
 const categoryOptions = [
-  { label: '全部', value: 'all' },
-  { label: '轮播图', value: 'carousel' },
-  { label: '商品图片', value: 'product' },
-  { label: '分类图片', value: 'category' },
-  { label: '其他', value: 'general' }
+	{ label: "全部", value: "all" },
+	{ label: "轮播图", value: "carousel" },
+	{ label: "商品图片", value: "product" },
+	{ label: "分类图片", value: "category" },
+	{ label: "其他", value: "general" },
 ];
 
 // 计算属性
@@ -54,34 +53,34 @@ const categoryOptions = [
  * 过滤后的图片列表
  */
 const filteredImages = computed(() => {
-  let result = images.value;
+	let result = images.value;
 
-  // 按分类过滤
-  if (selectedCategory.value !== 'all') {
-    result = result!.filter(img => img.category === selectedCategory.value);
-  }
+	// 按分类过滤
+	if (selectedCategory.value !== "all") {
+		result = result!.filter((img) => img.category === selectedCategory.value);
+	}
 
-  // 按搜索关键词过滤
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(img =>
-      img.fileName.toLowerCase().includes(query) ||
-      img.altText?.toLowerCase().includes(query)
-    );
-  }
+	// 按搜索关键词过滤
+	if (searchQuery.value.trim()) {
+		const query = searchQuery.value.toLowerCase();
+		result = result.filter(
+			(img) =>
+				img.fileName.toLowerCase().includes(query) ||
+				img.altText?.toLowerCase().includes(query),
+		);
+	}
 
-  return result;
+	return result;
 });
 
 /**
  * 分页后的图片列表
  */
 const paginatedImages = computed(() => {
-  const start = meta.page;
-  const end = start + meta.pageSize
-  return filteredImages.value.slice(start, end);
+	const start = meta.page;
+	const end = start + meta.pageSize;
+	return filteredImages.value.slice(start, end);
 });
-
 
 // 方法
 
@@ -89,79 +88,77 @@ const paginatedImages = computed(() => {
  * 加载图片列表
  */
 const loadImages = async () => {
-  loading.value = true;
-  try {
-    const { code, data, message } = await api.images.list() as any
-    if (code !== 200) {
-      toast.add({
-        severity: 'error',
-        summary: '加载失败',
-        detail: message,
-        life: 3000
-      });
-    }
-    images.value = data.items
-    // @ts-ignore
-    meta = data.meta
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: '加载失败',
-      detail: (error as Error).message,
-      life: 3000
-    });
-  } finally {
-    loading.value = false;
-  }
+	loading.value = true;
+	try {
+		const { code, data, message } = (await api.images.list()) as any;
+		if (code !== 200) {
+			toast.add({
+				severity: "error",
+				summary: "加载失败",
+				detail: message,
+				life: 3000,
+			});
+		}
+		images.value = data.items;
+		// @ts-ignore
+		meta = data.meta;
+	} catch (error) {
+		toast.add({
+			severity: "error",
+			summary: "加载失败",
+			detail: (error as Error).message,
+			life: 3000,
+		});
+	} finally {
+		loading.value = false;
+	}
 };
 
 /**
  * 按分类过滤
  */
 const filterByCategory = () => {
-  meta.page = 0; // 重置到第一页
+	meta.page = 0; // 重置到第一页
 };
 
 /**
  * 搜索图片
  */
 const searchImages = () => {
-  meta.page = 0;  // 重置到第一页
+	meta.page = 0; // 重置到第一页
 };
-
-
 
 /**
  * 选择图片
  */
 const selectImage = (image: ImageEntity) => {
-  const imageUrl = getImageUrl(image.url);
-  emit('select', imageUrl, image);
-
+	const imageUrl = getImageUrl(image.url);
+	emit("select", imageUrl, image);
 };
-
-
 
 /**
  * 获取分类标签
  */
 const getCategoryLabel = (category: string): string => {
-  const option = categoryOptions.find(opt => opt.value === category);
-  return option?.label || category;
+	const option = categoryOptions.find((opt) => opt.value === category);
+	return option?.label || category;
 };
 
 // 监听visible变化，当对话框打开时加载图片
-watch(() => visible.value, (newVisible) => {
-  if (newVisible) {
-    loadImages();
-  }
-});
+watch(
+	() => visible.value,
+	(newVisible) => {
+		if (newVisible) {
+			loadImages();
+		}
+	},
+);
 
 // 生命周期
 onMounted(() => {
-  if (visible.value) {
-    loadImages();
-  }
+	if (visible.value) {
+		loadImages();
+	}
 });
 </script>
 

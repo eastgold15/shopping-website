@@ -1,19 +1,18 @@
-import HomeLayout from '@frontend/layouts/IndexLayout.vue'
-import { redirect } from 'elysia'
+import HomeLayout from "@frontend/layouts/IndexLayout.vue";
 
 const IndexRoutes = [
   {
-    path: '/',
+    path: "/",
     component: HomeLayout,
-    redirect: 'index',
+
     children: [
       {
-        path: '',
-        name: 'index',
-        component: () => import('@frontend/pages/index.vue'),
+        path: "",
+        name: "index",
+        component: () => import("@frontend/pages/index.vue"),
       },
-    ]
-  }
-]
+    ],
+  },
+];
 
-export default IndexRoutes
+export default IndexRoutes;

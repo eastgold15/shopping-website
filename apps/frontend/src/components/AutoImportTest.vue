@@ -16,38 +16,38 @@
 <script setup lang="ts">
 // 这些都是自动导入的，无需手动 import
 // Vue API 自动导入
-const count = ref(0)
-const message = ref('Hello Auto Import!')
+const count = ref(0);
+const message = ref("Hello Auto Import!");
 
 // VueUse 自动导入
-const { x, y } = useMouse()
-const { width, height } = useWindowSize()
+const { x, y } = useMouse();
+const { width, height } = useWindowSize();
 
 // 计算属性自动导入
-const doubleCount = computed(() => count.value * 2)
+const doubleCount = computed(() => count.value * 2);
 
 // 方法定义
 const increment = () => {
-  count.value++
-}
+	count.value++;
+};
 
 const decrement = () => {
-  count.value--
-}
+	count.value--;
+};
 
 const reset = () => {
-  count.value = 0
-}
+	count.value = 0;
+};
 
 // 生命周期钩子自动导入
 onMounted(() => {
-  console.log('AutoImportTest 组件已挂载')
-})
+	console.log("AutoImportTest 组件已挂载");
+});
 
 // 监听器自动导入
 watch(count, (newVal) => {
-  console.log('计数器变化:', newVal)
-})
+	console.log("计数器变化:", newVal);
+});
 </script>
 
 <style scoped>

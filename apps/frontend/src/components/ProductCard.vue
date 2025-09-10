@@ -155,36 +155,32 @@
 </template>
 
 <script setup lang="ts">
-
-
-
-
 interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  salePrice?: number;
-  images: string[];
-  colors?: string[];
-  sizes?: string[];
-  stock: number;
-  isActive: boolean;
-  isFeatured: boolean;
-  averageRating?: number;
-  totalReviews?: number;
+	id: string;
+	name: string;
+	slug: string;
+	price: number;
+	salePrice?: number;
+	images: string[];
+	colors?: string[];
+	sizes?: string[];
+	stock: number;
+	isActive: boolean;
+	isFeatured: boolean;
+	averageRating?: number;
+	totalReviews?: number;
 }
 
 interface Props {
-  product: Product;
+	product: Product;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-  click: [];
-  addToCart: [product: Product];
-  toggleFavorite: [product: Product];
-  quickView: [product: Product];
+	click: [];
+	addToCart: [product: Product];
+	toggleFavorite: [product: Product];
+	quickView: [product: Product];
 }>();
 
 // 响应式数据
@@ -192,50 +188,52 @@ const isFavorited = ref(false);
 
 // 计算属性
 const discountPercentage = computed(() => {
-  if (!props.product.salePrice) return null;
-  const discount = ((props.product.price - props.product.salePrice) / props.product.price) * 100;
-  return Math.round(discount);
+	if (!props.product.salePrice) return null;
+	const discount =
+		((props.product.price - props.product.salePrice) / props.product.price) *
+		100;
+	return Math.round(discount);
 });
 
 const installmentPrice = computed(() => {
-  const price = props.product.salePrice || props.product.price;
-  return price / 4;
+	const price = props.product.salePrice || props.product.price;
+	return price / 4;
 });
 
 // 方法
 const getColorCode = (colorName: string): string => {
-  const colorMap: Record<string, string> = {
-    'BLACK': '#000000',
-    'WHITE': '#FFFFFF',
-    'RED': '#FF0000',
-    'BLUE': '#0000FF',
-    'GREEN': '#008000',
-    'YELLOW': '#FFFF00',
-    'PINK': '#FFC0CB',
-    'PURPLE': '#800080',
-    'ORANGE': '#FFA500',
-    'BROWN': '#A52A2A',
-    'GRAY': '#808080',
-    'GREY': '#808080',
-    'NAVY': '#000080',
-    'BEIGE': '#F5F5DC',
-    'KHAKI': '#F0E68C'
-  };
-  
-  return colorMap[colorName.toUpperCase()] || '#CCCCCC';
+	const colorMap: Record<string, string> = {
+		BLACK: "#000000",
+		WHITE: "#FFFFFF",
+		RED: "#FF0000",
+		BLUE: "#0000FF",
+		GREEN: "#008000",
+		YELLOW: "#FFFF00",
+		PINK: "#FFC0CB",
+		PURPLE: "#800080",
+		ORANGE: "#FFA500",
+		BROWN: "#A52A2A",
+		GRAY: "#808080",
+		GREY: "#808080",
+		NAVY: "#000080",
+		BEIGE: "#F5F5DC",
+		KHAKI: "#F0E68C",
+	};
+
+	return colorMap[colorName.toUpperCase()] || "#CCCCCC";
 };
 
 const addToCart = () => {
-  emit('addToCart', props.product);
+	emit("addToCart", props.product);
 };
 
 const toggleFavorite = () => {
-  isFavorited.value = !isFavorited.value;
-  emit('toggleFavorite', props.product);
+	isFavorited.value = !isFavorited.value;
+	emit("toggleFavorite", props.product);
 };
 
 const quickView = () => {
-  emit('quickView', props.product);
+	emit("quickView", props.product);
 };
 </script>
 

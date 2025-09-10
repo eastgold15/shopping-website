@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
-import { Project, type SourceFile, VariableDeclaration } from "ts-morph";
+import { dirname, relative } from "node:path";
+import { Project, type SourceFile } from "ts-morph";
 import {
 	getConfig,
 	type SchemaGeneratorConfig,
@@ -156,10 +156,11 @@ class SchemaGenerator {
 		const schemaObject = `export const dbSchema = {\n${tableNames.map((name) => `  ${name},`).join("\n")}\n};`;
 
 		// 动态生成所有扫描到的文件的导出语句
-		const uniqueFiles = Array.from(new Set(tables.map(t => t.relativePath)));
-		const dynamicExports = uniqueFiles.length > 0 
-			? `\n// 导出所有扫描到的数据库模式文件\n${uniqueFiles.map(path => `export * from "${path}.ts";`).join('\n')}`
-			: '';
+		const uniqueFiles = Array.from(new Set(tables.map((t) => t.relativePath)));
+		const dynamicExports =
+			uniqueFiles.length > 0
+				? `\n// 导出所有扫描到的数据库模式文件\n${uniqueFiles.map((path) => `export * from "${path}.ts";`).join("\n")}`
+				: "";
 
 		let content = `/**
  * 自动生成的数据库 Schema 文件

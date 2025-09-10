@@ -123,253 +123,253 @@
 </template>
 
 <script setup lang="ts">
-
-
-
-
-
-
-
-
-import { useRouter } from 'vue-router';
-import { client } from '@frontend/utils/useTreaty';
-import { handleApiRes } from '../utils/handleApiRes';
+import { client } from "@frontend/utils/useTreaty";
+import { useRouter } from "vue-router";
+import { handleApiRes } from "../utils/handleApiRes";
 
 interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  shortDescription: string;
-  price: number;
-  comparePrice?: number;
-  sku: string;
-  stock: number;
-  images: string[];
-  colors: string[];
-  sizes: string[];
-  features: string[];
-  categoryId?: string;
-  categoryName?: string;
-  isActive: boolean;
-  isFeatured: boolean;
-  weight: string;
-  dimensions: string;
-  materials: string[];
-  metaTitle: string;
-  metaDescription: string;
-  metaKeywords: string;
-  createdAt: string;
-  updatedAt: string;
+	id: string;
+	name: string;
+	slug: string;
+	description: string;
+	shortDescription: string;
+	price: number;
+	comparePrice?: number;
+	sku: string;
+	stock: number;
+	images: string[];
+	colors: string[];
+	sizes: string[];
+	features: string[];
+	categoryId?: string;
+	categoryName?: string;
+	isActive: boolean;
+	isFeatured: boolean;
+	weight: string;
+	dimensions: string;
+	materials: string[];
+	metaTitle: string;
+	metaDescription: string;
+	metaKeywords: string;
+	createdAt: string;
+	updatedAt: string;
 }
 
 interface SearchResult {
-  products: Product[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
+	products: Product[];
+	total: number;
+	page: number;
+	pageSize: number;
+	hasMore: boolean;
 }
 
 interface FilterOptions {
-  colors: string[];
-  sizes: string[];
-  priceRange: { min: number; max: number };
-  tags: string[];
+	colors: string[];
+	sizes: string[];
+	priceRange: { min: number; max: number };
+	tags: string[];
 }
 
 interface Category {
-  id: string;
-  name: string;
+	id: string;
+	name: string;
 }
 
 const router = useRouter();
 
 // 响应式数据
-const searchQuery = ref('');
+const searchQuery = ref("");
 const loading = ref(false);
 const showFilters = ref(false);
 const searchResults = ref<SearchResult | null>(null);
 const popularTerms = ref<string[]>([]);
 const categories = ref<Category[]>([]);
 const filterOptions = ref<FilterOptions>({
-  colors: [],
-  sizes: [],
-  priceRange: { min: 0, max: 1000 },
-  tags: []
+	colors: [],
+	sizes: [],
+	priceRange: { min: 0, max: 1000 },
+	tags: [],
 });
 
 // 筛选条件
 const filters = reactive({
-  categoryId: null as string | null,
-  minPrice: null as number | null,
-  maxPrice: null as number | null,
-  colors: [] as string[],
-  sizes: [] as string[],
-  tags: [] as string[]
+	categoryId: null as string | null,
+	minPrice: null as number | null,
+	maxPrice: null as number | null,
+	colors: [] as string[],
+	sizes: [] as string[],
+	tags: [] as string[],
 });
 
 // 排序选项
 const sortOptions = [
-  { label: '最新上架', value: 'createdAt-desc' },
-  { label: '最早上架', value: 'createdAt-asc' },
-  { label: '价格从低到高', value: 'price-asc' },
-  { label: '价格从高到低', value: 'price-desc' },
-  { label: '名称A-Z', value: 'name-asc' },
-  { label: '名称Z-A', value: 'name-desc' }
+	{ label: "最新上架", value: "createdAt-desc" },
+	{ label: "最早上架", value: "createdAt-asc" },
+	{ label: "价格从低到高", value: "price-asc" },
+	{ label: "价格从高到低", value: "price-desc" },
+	{ label: "名称A-Z", value: "name-asc" },
+	{ label: "名称Z-A", value: "name-desc" },
 ];
 
-const sortOption = ref('createdAt-desc');
+const sortOption = ref("createdAt-desc");
 
 // 方法
 const handleSearch = async () => {
-  if (!searchQuery.value.trim()) return;
+	if (!searchQuery.value.trim()) return;
 
-  loading.value = true;
-  try {
-    const [sortBy, sortOrder] = sortOption.value.split('-');
-    const params = {
-      q: searchQuery.value,
-      sortBy,
-      sortOrder,
-      page: 1,
-      pageSize: 20
-    };
+	loading.value = true;
+	try {
+		const [sortBy, sortOrder] = sortOption.value.split("-");
+		const params = {
+			q: searchQuery.value,
+			sortBy,
+			sortOrder,
+			page: 1,
+			pageSize: 20,
+		};
 
-    // 添加筛选条件
-    if (filters.categoryId) params.categoryId = filters.categoryId;
-    if (filters.minPrice) params.minPrice = filters.minPrice;
-    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-    if (filters.colors.length) params.colors = filters.colors;
-    if (filters.sizes.length) params.sizes = filters.sizes;
-    if (filters.tags.length) params.tags = filters.tags;
+		// 添加筛选条件
+		if (filters.categoryId) params.categoryId = filters.categoryId;
+		if (filters.minPrice) params.minPrice = filters.minPrice;
+		if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+		if (filters.colors.length) params.colors = filters.colors;
+		if (filters.sizes.length) params.sizes = filters.sizes;
+		if (filters.tags.length) params.tags = filters.tags;
 
-    const data = await handleApiRes(client.api.products.search.get({ query: params }));
-    if (data) {
-      searchResults.value = data;
-    }
-  } catch (error) {
-    console.error('搜索失败:', error);
-  } finally {
-    loading.value = false;
-  }
+		const data = await handleApiRes(
+			client.api.products.search.get({ query: params }),
+		);
+		if (data) {
+			searchResults.value = data;
+		}
+	} catch (error) {
+		console.error("搜索失败:", error);
+	} finally {
+		loading.value = false;
+	}
 };
 
 const handleFilterChange = () => {
-  // 延迟执行搜索，避免频繁请求
-  setTimeout(() => {
-    if (searchQuery.value.trim()) {
-      handleSearch();
-    }
-  }, 300);
+	// 延迟执行搜索，避免频繁请求
+	setTimeout(() => {
+		if (searchQuery.value.trim()) {
+			handleSearch();
+		}
+	}, 300);
 };
 
 const handleSortChange = () => {
-  if (searchQuery.value.trim()) {
-    handleSearch();
-  }
+	if (searchQuery.value.trim()) {
+		handleSearch();
+	}
 };
 
 const handlePageChange = (event: any) => {
-  const page = Math.floor(event.first / event.rows) + 1;
-  searchWithPage(page);
+	const page = Math.floor(event.first / event.rows) + 1;
+	searchWithPage(page);
 };
 
 const searchWithPage = async (page: number) => {
-  loading.value = true;
-  try {
-    const [sortBy, sortOrder] = sortOption.value.split('-');
-    const params = {
-      q: searchQuery.value,
-      sortBy,
-      sortOrder,
-      page,
-      pageSize: 20
-    };
+	loading.value = true;
+	try {
+		const [sortBy, sortOrder] = sortOption.value.split("-");
+		const params = {
+			q: searchQuery.value,
+			sortBy,
+			sortOrder,
+			page,
+			pageSize: 20,
+		};
 
-    // 添加筛选条件
-    if (filters.categoryId) params.categoryId = filters.categoryId;
-    if (filters.minPrice) params.minPrice = filters.minPrice;
-    if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-    if (filters.colors.length) params.colors = filters.colors;
-    if (filters.sizes.length) params.sizes = filters.sizes;
-    if (filters.tags.length) params.tags = filters.tags;
+		// 添加筛选条件
+		if (filters.categoryId) params.categoryId = filters.categoryId;
+		if (filters.minPrice) params.minPrice = filters.minPrice;
+		if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+		if (filters.colors.length) params.colors = filters.colors;
+		if (filters.sizes.length) params.sizes = filters.sizes;
+		if (filters.tags.length) params.tags = filters.tags;
 
-    const data = await handleApiRes(client.api.products.search.get({ query: params }));
-    if (data) {
-      searchResults.value = data;
-    }
-  } catch (error) {
-    console.error('搜索失败:', error);
-  } finally {
-    loading.value = false;
-  }
+		const data = await handleApiRes(
+			client.api.products.search.get({ query: params }),
+		);
+		if (data) {
+			searchResults.value = data;
+		}
+	} catch (error) {
+		console.error("搜索失败:", error);
+	} finally {
+		loading.value = false;
+	}
 };
 
 const toggleFilters = () => {
-  showFilters.value = !showFilters.value;
+	showFilters.value = !showFilters.value;
 };
 
 const clearFilters = () => {
-  filters.categoryId = null;
-  filters.minPrice = null;
-  filters.maxPrice = null;
-  filters.colors = [];
-  filters.sizes = [];
-  filters.tags = [];
-  sortOption.value = 'createdAt-desc';
+	filters.categoryId = null;
+	filters.minPrice = null;
+	filters.maxPrice = null;
+	filters.colors = [];
+	filters.sizes = [];
+	filters.tags = [];
+	sortOption.value = "createdAt-desc";
 
-  if (searchQuery.value.trim()) {
-    handleSearch();
-  }
+	if (searchQuery.value.trim()) {
+		handleSearch();
+	}
 };
 
 const applyFilters = () => {
-  if (searchQuery.value.trim()) {
-    handleSearch();
-  }
+	if (searchQuery.value.trim()) {
+		handleSearch();
+	}
 };
 
 const searchByTerm = (term: string) => {
-  searchQuery.value = term;
-  handleSearch();
+	searchQuery.value = term;
+	handleSearch();
 };
 
 const goToProduct = (product: Product) => {
-  router.push(`/products/${product.slug}`);
+	router.push(`/products/${product.slug}`);
 };
 
 const viewAllProducts = () => {
-  router.push('/products');
+	router.push("/products");
 };
 
 // 加载初始数据
 const loadInitialData = async () => {
-  try {
-    // 加载热门搜索关键词
-    const termsData = await handleApiRes(client.api.products.search['popular-terms'].get());
-    if (termsData) {
-      popularTerms.value = termsData;
-    }
+	try {
+		// 加载热门搜索关键词
+		const termsData = await handleApiRes(
+			client.api.products.search["popular-terms"].get(),
+		);
+		if (termsData) {
+			popularTerms.value = termsData;
+		}
 
-    // 加载分类列表
-    const categoriesData = await handleApiRes(client.api.categories.get());
-    if (categoriesData) {
-      categories.value = categoriesData;
-    }
+		// 加载分类列表
+		const categoriesData = await handleApiRes(client.api.categories.get());
+		if (categoriesData) {
+			categories.value = categoriesData;
+		}
 
-    // 加载筛选选项
-    const optionsData = await handleApiRes(client.api.products['filter-options'].get());
-    if (optionsData) {
-      filterOptions.value = optionsData;
-    }
-  } catch (error) {
-    console.error('加载初始数据失败:', error);
-  }
+		// 加载筛选选项
+		const optionsData = await handleApiRes(
+			client.api.products["filter-options"].get(),
+		);
+		if (optionsData) {
+			filterOptions.value = optionsData;
+		}
+	} catch (error) {
+		console.error("加载初始数据失败:", error);
+	}
 };
 
 onMounted(() => {
-  loadInitialData();
+	loadInitialData();
 });
 </script>
 

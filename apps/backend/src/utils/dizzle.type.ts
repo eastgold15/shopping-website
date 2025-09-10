@@ -85,7 +85,8 @@ export const spreads = <
 	const newSchema: Record<string, unknown> = {};
 	const keys = Object.keys(models);
 
-	for (const key of keys) newSchema[key] = spread(models[key] as TObject | Table, mode);
+	for (const key of keys)
+		newSchema[key] = spread(models[key] as TObject | Table, mode);
 
 	return newSchema as any;
 };

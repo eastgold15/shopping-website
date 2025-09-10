@@ -20,26 +20,25 @@
 </template>
 
 <script setup lang="ts">
-
-
-const loading = ref(false)
+const loading = ref(false);
 
 const handleGoogleLogin = async () => {
- if (loading.value) return
- 
- loading.value = true
- 
- try {
-  // 获取后端API基础URL
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-  
-  // 重定向到后端的谷歌登录端点
-  window.location.href = `${apiBaseUrl}/api/auth/google`
- } catch (error) {
-  console.error('Google login error:', error)
-  loading.value = false
- }
-}
+	if (loading.value) return;
+
+	loading.value = true;
+
+	try {
+		// 获取后端API基础URL
+		const apiBaseUrl =
+			import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
+		// 重定向到后端的谷歌登录端点
+		window.location.href = `${apiBaseUrl}/api/auth/google`;
+	} catch (error) {
+		console.error("Google login error:", error);
+		loading.value = false;
+	}
+};
 
 // 组件销毁时重置loading状态
 // onUnmounted(() => {

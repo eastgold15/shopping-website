@@ -97,47 +97,47 @@
 </template>
 
 <script setup lang="ts">
-import GoogleLoginButton from '@frontend/components/GoogleLoginButton.vue'
+import GoogleLoginButton from "@frontend/components/GoogleLoginButton.vue";
 
 // 路由
-const router = useRouter()
+const router = useRouter();
 
 // 响应式数据
-const loading = ref(false)
-const errorMessage = ref('')
+const loading = ref(false);
+const errorMessage = ref("");
 
 // 注册表单数据
 const registerForm = ref({
-	username: '',
-	email: '',
-	password: '',
-	confirmPassword: ''
-})
+	username: "",
+	email: "",
+	password: "",
+	confirmPassword: "",
+});
 
 // 注册处理
 const handleRegister = async () => {
 	// 清除之前的错误信息
-	errorMessage.value = ''
+	errorMessage.value = "";
 
 	// 验证密码匹配
 	if (registerForm.value.password !== registerForm.value.confirmPassword) {
-		errorMessage.value = '两次输入的密码不一致'
-		return
+		errorMessage.value = "两次输入的密码不一致";
+		return;
 	}
 
 	// 验证密码长度
 	if (registerForm.value.password.length < 6) {
-		errorMessage.value = '密码长度至少6位'
-		return
+		errorMessage.value = "密码长度至少6位";
+		return;
 	}
 
-	loading.value = true
+	loading.value = true;
 
 	try {
 		// 这里应该调用注册API
 		// 目前显示提示信息，因为还没有实现注册API
-		errorMessage.value = '注册功能正在开发中，请使用Google登录或联系管理员'
-		
+		errorMessage.value = "注册功能正在开发中，请使用Google登录或联系管理员";
+
 		// 示例代码：
 		// const response = await fetch('/api/auth/register', {
 		// 	method: 'POST',
@@ -160,12 +160,12 @@ const handleRegister = async () => {
 		// 	errorMessage.value = result.message || '注册失败，请重试'
 		// }
 	} catch (error) {
-		console.error('注册错误:', error)
-		errorMessage.value = '网络错误，请检查网络连接'
+		console.error("注册错误:", error);
+		errorMessage.value = "网络错误，请检查网络连接";
 	} finally {
-		loading.value = false
+		loading.value = false;
 	}
-}
+};
 </script>
 
 <style scoped>

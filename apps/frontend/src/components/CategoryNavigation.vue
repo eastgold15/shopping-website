@@ -91,10 +91,9 @@
 </template>
 
 <script setup lang="ts">
-
-import { useRoute } from 'vue-router';
-import { client } from '@frontend/utils/useTreaty';
-import type { Category } from '../types/category';
+import { client } from "@frontend/utils/useTreaty";
+import { useRoute } from "vue-router";
+import type { Category } from "../types/category";
 
 // Props
 interface Props {
@@ -103,7 +102,7 @@ interface Props {
 	/** 最大显示分类数量 */
 	maxVisibleCategories?: number;
 	/** 布局模式 */
-	layout?: 'horizontal' | 'vertical' | 'grid';
+	layout?: "horizontal" | "vertical" | "grid";
 	/** 是否显示图标 */
 	showIcons?: boolean;
 	/** 是否显示商品数量 */
@@ -113,9 +112,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
 	showAllCategories: false,
 	maxVisibleCategories: 8,
-	layout: 'horizontal',
+	layout: "horizontal",
 	showIcons: true,
-	showProductCount: true
+	showProductCount: true,
 });
 
 // 路由
@@ -150,7 +149,7 @@ const loadCategories = async () => {
 			categories.value = [];
 		}
 	} catch (error) {
-		console.error('加载分类失败:', error);
+		console.error("加载分类失败:", error);
 		categories.value = [];
 	} finally {
 		loading.value = false;
@@ -211,7 +210,7 @@ const refresh = () => {
 
 // 暴露方法给父组件
 defineExpose({
-	refresh
+	refresh,
 });
 
 // 生命周期
@@ -220,9 +219,12 @@ onMounted(() => {
 });
 
 // 监听路由变化
-watch(() => route.path, () => {
-	// 路由变化时可以重新加载分类或更新激活状态
-});
+watch(
+	() => route.path,
+	() => {
+		// 路由变化时可以重新加载分类或更新激活状态
+	},
+);
 </script>
 
 <style scoped>

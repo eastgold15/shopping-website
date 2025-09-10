@@ -333,62 +333,61 @@
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
+import Badge from "primevue/badge";
 // PrimeVue 组件
-import Button from 'primevue/button'
-import Calendar from 'primevue/calendar'
-import Card from 'primevue/card'
-import Chart from 'primevue/chart'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dropdown from 'primevue/dropdown'
-import MultiSelect from 'primevue/multiselect'
-import { useToast } from 'primevue/usetoast'
-
+import Button from "primevue/button";
+import Calendar from "primevue/calendar";
+import Card from "primevue/card";
+import Chart from "primevue/chart";
+import Column from "primevue/column";
+import DataTable from "primevue/datatable";
+import Dropdown from "primevue/dropdown";
+import MultiSelect from "primevue/multiselect";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface KPIData {
-	totalRevenue: number
-	totalOrders: number
-	avgOrderValue: number
-	conversionRate: number
-	revenueGrowth: number
-	ordersGrowth: number
-	aovGrowth: number
-	conversionGrowth: number
+	totalRevenue: number;
+	totalOrders: number;
+	avgOrderValue: number;
+	conversionRate: number;
+	revenueGrowth: number;
+	ordersGrowth: number;
+	aovGrowth: number;
+	conversionGrowth: number;
 }
 
 interface TopProduct {
-	rank: number
-	name: string
-	category: string
-	image: string
-	sales: number
-	revenue: number
-	growth: number
-	stock: number
+	rank: number;
+	name: string;
+	category: string;
+	image: string;
+	sales: number;
+	revenue: number;
+	growth: number;
+	stock: number;
 }
 
 interface RegionData {
-	name: string
-	revenue: number
-	percentage: number
-	color: string
+	name: string;
+	revenue: number;
+	percentage: number;
+	color: string;
 }
 
-const toast = useToast()
+const toast = useToast();
 
 // 响应式数据
-const loading = ref(false)
-const topProductsType = ref('sales')
+const loading = ref(false);
+const topProductsType = ref("sales");
 
 // 筛选条件
 const filters = reactive({
-	timeRange: 'last30days',
+	timeRange: "last30days",
 	dateRange: null as Date[] | null,
 	categories: [] as string[],
-	channel: 'all'
-})
+	channel: "all",
+});
 
 // KPI数据
 const kpiData = reactive<KPIData>({
@@ -399,148 +398,176 @@ const kpiData = reactive<KPIData>({
 	revenueGrowth: 12.5,
 	ordersGrowth: 8.3,
 	aovGrowth: 4.2,
-	conversionGrowth: -1.5
-})
+	conversionGrowth: -1.5,
+});
 
 // 热销商品数据
 const topProducts = ref<TopProduct[]>([
 	{
 		rank: 1,
-		name: '时尚休闲T恤',
-		category: '服装',
-		image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop',
+		name: "时尚休闲T恤",
+		category: "服装",
+		image:
+			"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop",
 		sales: 1250,
 		revenue: 125000,
 		growth: 15.2,
-		stock: 85
+		stock: 85,
 	},
 	{
 		rank: 2,
-		name: '运动鞋',
-		category: '鞋类',
-		image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop',
+		name: "运动鞋",
+		category: "鞋类",
+		image:
+			"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop",
 		sales: 980,
 		revenue: 98000,
 		growth: 8.7,
-		stock: 42
+		stock: 42,
 	},
 	{
 		rank: 3,
-		name: '牛仔裤',
-		category: '服装',
-		image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=100&h=100&fit=crop',
+		name: "牛仔裤",
+		category: "服装",
+		image:
+			"https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=100&h=100&fit=crop",
 		sales: 756,
 		revenue: 75600,
 		growth: -2.1,
-		stock: 23
+		stock: 23,
 	},
 	{
 		rank: 4,
-		name: '手提包',
-		category: '配饰',
-		image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100&h=100&fit=crop',
+		name: "手提包",
+		category: "配饰",
+		image:
+			"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100&h=100&fit=crop",
 		sales: 642,
 		revenue: 64200,
 		growth: 22.3,
-		stock: 67
+		stock: 67,
 	},
 	{
 		rank: 5,
-		name: '连衣裙',
-		category: '服装',
-		image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=100&h=100&fit=crop',
+		name: "连衣裙",
+		category: "服装",
+		image:
+			"https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=100&h=100&fit=crop",
 		sales: 534,
 		revenue: 53400,
 		growth: 5.8,
-		stock: 156
-	}
-])
+		stock: 156,
+	},
+]);
 
 // 地区销售数据
 const regionData = ref<RegionData[]>([
-	{ name: '华东地区', revenue: 450000, percentage: 36, color: '#3B82F6' },
-	{ name: '华南地区', revenue: 325000, percentage: 26, color: '#10B981' },
-	{ name: '华北地区', revenue: 275000, percentage: 22, color: '#F59E0B' },
-	{ name: '西南地区', revenue: 125000, percentage: 10, color: '#EF4444' },
-	{ name: '其他地区', revenue: 75000, percentage: 6, color: '#8B5CF6' }
-])
+	{ name: "华东地区", revenue: 450000, percentage: 36, color: "#3B82F6" },
+	{ name: "华南地区", revenue: 325000, percentage: 26, color: "#10B981" },
+	{ name: "华北地区", revenue: 275000, percentage: 22, color: "#F59E0B" },
+	{ name: "西南地区", revenue: 125000, percentage: 10, color: "#EF4444" },
+	{ name: "其他地区", revenue: 75000, percentage: 6, color: "#8B5CF6" },
+]);
 
 // 选项数据
 const timeRangeOptions = [
-	{ label: '今天', value: 'today' },
-	{ label: '昨天', value: 'yesterday' },
-	{ label: '最近7天', value: 'last7days' },
-	{ label: '最近30天', value: 'last30days' },
-	{ label: '最近90天', value: 'last90days' },
-	{ label: '本月', value: 'thisMonth' },
-	{ label: '上月', value: 'lastMonth' },
-	{ label: '本年', value: 'thisYear' },
-	{ label: '自定义', value: 'custom' }
-]
+	{ label: "今天", value: "today" },
+	{ label: "昨天", value: "yesterday" },
+	{ label: "最近7天", value: "last7days" },
+	{ label: "最近30天", value: "last30days" },
+	{ label: "最近90天", value: "last90days" },
+	{ label: "本月", value: "thisMonth" },
+	{ label: "上月", value: "lastMonth" },
+	{ label: "本年", value: "thisYear" },
+	{ label: "自定义", value: "custom" },
+];
 
 const categoryOptions = [
-	{ label: '服装', value: 'clothing' },
-	{ label: '鞋类', value: 'shoes' },
-	{ label: '配饰', value: 'accessories' },
-	{ label: '包包', value: 'bags' },
-	{ label: '运动装', value: 'sportswear' }
-]
+	{ label: "服装", value: "clothing" },
+	{ label: "鞋类", value: "shoes" },
+	{ label: "配饰", value: "accessories" },
+	{ label: "包包", value: "bags" },
+	{ label: "运动装", value: "sportswear" },
+];
 
 const channelOptions = [
-	{ label: '全部渠道', value: 'all' },
-	{ label: '官网', value: 'website' },
-	{ label: '移动端', value: 'mobile' },
-	{ label: '微信小程序', value: 'wechat' },
-	{ label: '第三方平台', value: 'thirdparty' }
-]
+	{ label: "全部渠道", value: "all" },
+	{ label: "官网", value: "website" },
+	{ label: "移动端", value: "mobile" },
+	{ label: "微信小程序", value: "wechat" },
+	{ label: "第三方平台", value: "thirdparty" },
+];
 
 const topProductsOptions = [
-	{ label: '按销量排序', value: 'sales' },
-	{ label: '按销售额排序', value: 'revenue' },
-	{ label: '按增长率排序', value: 'growth' }
-]
+	{ label: "按销量排序", value: "sales" },
+	{ label: "按销售额排序", value: "revenue" },
+	{ label: "按增长率排序", value: "growth" },
+];
 
 // 图表数据
 const salesTrendData = computed(() => ({
-	labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+	labels: [
+		"1月",
+		"2月",
+		"3月",
+		"4月",
+		"5月",
+		"6月",
+		"7月",
+		"8月",
+		"9月",
+		"10月",
+		"11月",
+		"12月",
+	],
 	datasets: [
 		{
-			label: '销售额 (万元)',
+			label: "销售额 (万元)",
 			data: [85, 92, 78, 105, 98, 112, 125, 118, 135, 142, 158, 165],
-			borderColor: '#3B82F6',
-			backgroundColor: 'rgba(59, 130, 246, 0.1)',
-			fill: true,
-			tension: 0.4
-		},
-		{
-			label: '订单数量',
-			data: [320, 350, 280, 420, 380, 450, 480, 460, 520, 550, 580, 620],
-			borderColor: '#10B981',
-			backgroundColor: 'rgba(16, 185, 129, 0.1)',
+			borderColor: "#3B82F6",
+			backgroundColor: "rgba(59, 130, 246, 0.1)",
 			fill: true,
 			tension: 0.4,
-			yAxisID: 'y1'
-		}
-	]
-}))
+		},
+		{
+			label: "订单数量",
+			data: [320, 350, 280, 420, 380, 450, 480, 460, 520, 550, 580, 620],
+			borderColor: "#10B981",
+			backgroundColor: "rgba(16, 185, 129, 0.1)",
+			fill: true,
+			tension: 0.4,
+			yAxisID: "y1",
+		},
+	],
+}));
 
 const categoryData = computed(() => ({
-	labels: ['服装', '鞋类', '配饰', '包包', '运动装'],
-	datasets: [{
-		data: [35, 25, 20, 12, 8],
-		backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
-		hoverBackgroundColor: ['#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED']
-	}]
-}))
+	labels: ["服装", "鞋类", "配饰", "包包", "运动装"],
+	datasets: [
+		{
+			data: [35, 25, 20, 12, 8],
+			backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"],
+			hoverBackgroundColor: [
+				"#2563EB",
+				"#059669",
+				"#D97706",
+				"#DC2626",
+				"#7C3AED",
+			],
+		},
+	],
+}));
 
 const channelData = computed(() => ({
-	labels: ['官网', '移动端', '微信小程序', '第三方平台'],
-	datasets: [{
-		label: '销售额 (万元)',
-		data: [450, 320, 180, 125],
-		backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
-	}]
-}))
+	labels: ["官网", "移动端", "微信小程序", "第三方平台"],
+	datasets: [
+		{
+			label: "销售额 (万元)",
+			data: [450, 320, 180, 125],
+			backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"],
+		},
+	],
+}));
 
 // 图表配置
 const chartOptions = {
@@ -549,120 +576,118 @@ const chartOptions = {
 	scales: {
 		y: {
 			beginAtZero: true,
-			position: 'left'
+			position: "left",
 		},
 		y1: {
-			type: 'linear',
+			type: "linear",
 			display: true,
-			position: 'right',
+			position: "right",
 			grid: {
-				drawOnChartArea: false
-			}
-		}
+				drawOnChartArea: false,
+			},
+		},
 	},
 	plugins: {
 		legend: {
-			position: 'top'
-		}
-	}
-}
+			position: "top",
+		},
+	},
+};
 
 const doughnutOptions = {
 	responsive: true,
 	maintainAspectRatio: false,
 	plugins: {
 		legend: {
-			position: 'bottom'
-		}
-	}
-}
+			position: "bottom",
+		},
+	},
+};
 
 const barOptions = {
 	responsive: true,
 	maintainAspectRatio: false,
 	scales: {
 		y: {
-			beginAtZero: true
-		}
+			beginAtZero: true,
+		},
 	},
 	plugins: {
 		legend: {
-			display: false
-		}
-	}
-}
+			display: false,
+		},
+	},
+};
 
 // 工具函数
 const formatNumber = (num: number): string => {
-	return new Intl.NumberFormat('zh-CN').format(num)
-}
+	return new Intl.NumberFormat("zh-CN").format(num);
+};
 
 // 加载报表数据
 const loadReportData = async () => {
-	loading.value = true
+	loading.value = true;
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 1000))
-		
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		// 这里应该根据筛选条件调用后端API加载数据
-		console.log('加载报表数据:', filters)
-		
+		console.log("加载报表数据:", filters);
 	} catch (error) {
-		console.error('加载报表数据失败:', error)
+		console.error("加载报表数据失败:", error);
 		toast.add({
-			severity: 'error',
-			summary: '加载失败',
-			detail: '加载报表数据时发生错误',
-			life: 3000
-		})
+			severity: "error",
+			summary: "加载失败",
+			detail: "加载报表数据时发生错误",
+			life: 3000,
+		});
 	} finally {
-		loading.value = false
+		loading.value = false;
 	}
-}
+};
 
 // 加载热销商品
 const loadTopProducts = async () => {
 	try {
 		// 模拟API调用
-		await new Promise(resolve => setTimeout(resolve, 500))
-		
+		await new Promise((resolve) => setTimeout(resolve, 500));
+
 		// 这里应该根据排序类型调用后端API
-		console.log('加载热销商品:', topProductsType.value)
-		
+		console.log("加载热销商品:", topProductsType.value);
 	} catch (error) {
-		console.error('加载热销商品失败:', error)
+		console.error("加载热销商品失败:", error);
 	}
-}
+};
 
 // 刷新数据
 const refreshData = async () => {
-	await loadReportData()
+	await loadReportData();
 	toast.add({
-		severity: 'success',
-		summary: '刷新成功',
-		detail: '数据已更新',
-		life: 3000
-	})
-}
+		severity: "success",
+		summary: "刷新成功",
+		detail: "数据已更新",
+		life: 3000,
+	});
+};
 
 // 导出报表
 const exportReport = () => {
 	// 模拟导出功能
 	toast.add({
-		severity: 'info',
-		summary: '导出中',
-		detail: '正在生成报表文件...',
-		life: 3000
-	})
-	
+		severity: "info",
+		summary: "导出中",
+		detail: "正在生成报表文件...",
+		life: 3000,
+	});
+
 	// 这里应该调用后端API生成并下载报表文件
-	console.log('导出销售报表')
-}
+	console.log("导出销售报表");
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-	loadReportData()
-})
+	loadReportData();
+});
 </script>
 
 <style scoped>

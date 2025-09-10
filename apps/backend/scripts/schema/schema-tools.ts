@@ -60,7 +60,7 @@ class SchemaTools {
 	 * 解析环境参数
 	 */
 	private parseEnv(): "dev" | "prod" | "default" {
-		const envIndex = this.args.findIndex((arg) => arg === "--env");
+		const envIndex = this.args.indexOf("--env");
 		if (envIndex !== -1 && this.args[envIndex + 1]) {
 			const env = this.args[envIndex + 1];
 			if (["dev", "prod", "default"].includes(env)) {
@@ -68,13 +68,6 @@ class SchemaTools {
 			}
 		}
 		return "default";
-	}
-
-	/**
-	 * 检查是否为详细模式
-	 */
-	private isVerbose(): boolean {
-		return this.args.includes("--verbose") || this.args.includes("-v");
 	}
 
 	/**
@@ -94,12 +87,12 @@ class SchemaTools {
 		// 解析生成特定选项
 		const customConfig = { ...config };
 
-		const schemaDirIndex = this.args.findIndex((arg) => arg === "--schema-dir");
+		const schemaDirIndex = this.args.indexOf("--schema-dir");
 		if (schemaDirIndex !== -1 && this.args[schemaDirIndex + 1]) {
 			customConfig.schemaDir = this.args[schemaDirIndex + 1];
 		}
 
-		const outputIndex = this.args.findIndex((arg) => arg === "--output");
+		const outputIndex = this.args.indexOf("--output");
 		if (outputIndex !== -1 && this.args[outputIndex + 1]) {
 			customConfig.outputFile = this.args[outputIndex + 1];
 		}

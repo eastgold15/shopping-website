@@ -1,104 +1,122 @@
-import { Elysia } from 'elysia';
-
-import { ossModel } from './oss.model';
-import { ossService } from './oss.service';
-import { commonRes } from '@backend/utils/Res';
+import { commonRes } from "@backend/utils/Res";
+import { Elysia } from "elysia";
+import { ossModel } from "./oss.model";
+import { ossService } from "./oss.service";
 
 /**
  * OSS 控制器
  * 处理 OSS 相关的HTTP请求
  */
-export const ossController = new Elysia({ prefix: '/oss' })
-  .model(ossModel)
-  .decorate('ossService', ossService)
-  .guard({
-    detail: {
-      tags: ['OSS']
-    }
-  })
+export const ossController = new Elysia({ prefix: "/oss" })
+	.model(ossModel)
+	.decorate("ossService", ossService)
+	.guard({
+		detail: {
+			tags: ["OSS"],
+		},
+	})
 
-  // // 获取预签名上传URL
-  // .post('/presigned-url', async ({ body, ossService }) => {
-  //   const result = await ossService.getPresignedUrl(body.key, body.contentType, body.expires);
+	// // 获取预签名上传URL
+	// .post('/presigned-url', async ({ body, ossService }) => {
+	//   const result = await ossService.getPresignedUrl(body.key, body.contentType, body.expires);
 
-  //   if (!result.success) {
-  //     return {
-  //       success: false,
-  //       error: result.error?.message || '获取预签名URL失败'
-  //     };
-  //   }
+	//   if (!result.success) {
+	//     return {
+	//       success: false,
+	//       error: result.error?.message || '获取预签名URL失败'
+	//     };
+	//   }
 
-  //   return commonRes(result.data);
-  // }, {
-  //   body: 'uploadParams',
-  //   detail: {
-  //     summary: '获取预签名上传URL',
-  //     description: '获取用于直接上传到OSS的预签名URL'
-  //   }
-  // })
+	//   return commonRes(result.data);
+	// }, {
+	//   body: 'uploadParams',
+	//   detail: {
+	//     summary: '获取预签名上传URL',
+	//     description: '获取用于直接上传到OSS的预签名URL'
+	//   }
+	// })
 
-  // 删除文件
-  .delete('/file', async ({ body, ossService }) => {
-    const result = await ossService.deleteFile(body.key);
+	// 删除文件
+	.delete(
+		"/file",
+		async ({ body, ossService }) => {
+			const result = await ossService.deleteFile(body.key);
 
+			return commonRes(result);
+		},
+		{
+			body: "deleteParams",
+			detail: {
+				summary: "删除文件",
+				description: "从OSS中删除指定文件",
+			},
+		},
+	)
 
-    return commonRes({ success: true });
-  }, {
-    body: 'deleteParams',
-    detail: {
-      summary: '删除文件',
-      description: '从OSS中删除指定文件'
-    }
-  })
+	// 批量删除文件
+	.delete(
+		"/files",
+		async ({ body, ossService }) => {
+			await ossService.deleteFiles(body.keys);
 
-  // 批量删除文件
-  .delete('/files', async ({ body, ossService }) => {
-    await ossService.deleteFiles(body.keys);
+			return commonRes({ success: true });
+		},
+		{
+			body: "batchDeleteParams",
+			detail: {
+				summary: "批量删除文件",
+				description: "从OSS中批量删除多个文件",
+			},
+		},
+	)
 
-    return commonRes({ success: true });
-  }, {
-    body: 'batchDeleteParams',
-    detail: {
-      summary: '批量删除文件',
-      description: '从OSS中批量删除多个文件'
-    }
-  })
+	// 检查文件是否存在
+	.post(
+		"/file/exists",
+		async ({ body, ossService }) => {
+			const exists = await ossService.fileExists(body.key);
 
-  // 检查文件是否存在
-  .post('/file/exists', async ({ body, ossService }) => {
-    const exists = await ossService.fileExists(body.key);
+			return commonRes({ exists });
+		},
+		{
+			body: "existsParams",
+			detail: {
+				summary: "检查文件是否存在",
+				description: "检查OSS中指定文件是否存在",
+			},
+		},
+	)
 
-    return commonRes({ exists });
-  }, {
-    body: 'existsParams',
-    detail: {
-      summary: '检查文件是否存在',
-      description: '检查OSS中指定文件是否存在'
-    }
-  })
+	// 获取文件信息
+	.post(
+		"/file/info",
+		async ({ body, ossService }) => {
+			const fileInfo = await ossService.getFileStats(body.key);
 
-  // 获取文件信息
-  .post('/file/info', async ({ body, ossService }) => {
-    const fileInfo = await ossService.getFileStats(body.key);
+			return commonRes(fileInfo);
+		},
+		{
+			body: "existsParams",
+			detail: {
+				summary: "获取文件信息",
+				description: "获取OSS中指定文件的详细信息",
+			},
+		},
+	)
 
-    return commonRes(fileInfo);
-  }, {
-    body: 'existsParams',
-    detail: {
-      summary: '获取文件信息',
-      description: '获取OSS中指定文件的详细信息'
-    }
-  })
+	// 列出文件
+	.post(
+		"/files/list",
+		async ({ body, ossService }) => {
+			const files = await ossService.listFiles(body.prefix, body.maxKeys);
 
-  // 列出文件
-  .post('/files/list', async ({ body, ossService }) => {
-    const files = await ossService.listFiles(body.prefix, body.maxKeys);
-
-    return commonRes(files);
-  }, {
-    body: 'listParams',
-    detail: {
-      summary: '列出文件',
-      description: '获取OSS中指定前缀的文件列表'
-    }
-  });
+			return commonRes(files);
+		},
+		{
+			body: "listParams",
+			detail: {
+				summary: "列出文件",
+				description: "获取OSS中指定前缀的文件列表",
+			},
+		},
+	);

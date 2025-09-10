@@ -80,70 +80,65 @@
 </template>
 
 <script setup lang="ts">
-
-import { api } from '@frontend/utils/handleApi'
-
+import { api } from "@frontend/utils/handleApi";
 
 // 合作伙伴数据
-const partners = ref([])
+const partners = ref([]);
 
 // 当前界面配置数据
-const viewConfig = ref({})
+const viewConfig = ref({});
 // 默认介绍段落
 const defaultIntroParagraphs = [
-    '我们通过化妆品牌，现在，我们正在工作7个不同的品牌的客户，具有各种性质',
-    '和对成功的大胆愿景。',
-    '正如科学中的催化剂能够不断改变汽车上工作一样，作为一个团队，我们大胆的方法',
-    '作为，我们的客户"催化剂"区域了我们加速制造和制造的能力307万。',
-    '我们团队为美国各地的客户带来市场系统，专业知识和化妆品"公司改进力"',
-]
+	"我们通过化妆品牌，现在，我们正在工作7个不同的品牌的客户，具有各种性质",
+	"和对成功的大胆愿景。",
+	"正如科学中的催化剂能够不断改变汽车上工作一样，作为一个团队，我们大胆的方法",
+	'作为，我们的客户"催化剂"区域了我们加速制造和制造的能力307万。',
+	'我们团队为美国各地的客户带来市场系统，专业知识和化妆品"公司改进力"',
+];
 
-console.log(JSON.stringify(defaultIntroParagraphs))
+console.log(JSON.stringify(defaultIntroParagraphs));
 // 加载合作伙伴数据
 const loadPartners = async () => {
-    try {
-        const { data: response } = await api.partners.list()
-        if (response.code == 200 && response.data) {
-            partners.value = response.data
-            console.log('合作伙伴数据:', response.data)
-        }
-    } catch (error) {
-        console.error('获取合作伙伴数据失败:', error)
-    }
-}
+	try {
+		const { data: response } = await api.partners.list();
+		if (response.code == 200 && response.data) {
+			partners.value = response.data;
+			console.log("合作伙伴数据:", response.data);
+		}
+	} catch (error) {
+		console.error("获取合作伙伴数据失败:", error);
+	}
+};
 
 // 加载当前界面配置数据
 const loadViewConfig = async () => {
-    try {
-        const { data: response } = await api.siteConfigs.getByCategory('partners')
-        if (response.code == 200 && response.data) {
-            // 将配置数组转换为对象，便于模板使用
-            const configObj = {}
-            response.data.forEach(config => {
-                configObj[config.key] = config.value
-            })
+	try {
+		const { data: response } = await api.siteConfigs.getByCategory("partners");
+		if (response.code == 200 && response.data) {
+			// 将配置数组转换为对象，便于模板使用
+			const configObj = {};
+			response.data.forEach((config) => {
+				configObj[config.key] = config.value;
+			});
 
-            viewConfig.value = {
-                ...configObj,
-                partners_intro_paragraphs: JSON.parse(configObj.partners_intro_paragraphs)
-            }
-            console.log('当前界面配置对象:', viewConfig.value)
-        }
-    } catch (error) {
-        console.error('获取当前界面配置失败:', error)
-    }
-}
-
-
+			viewConfig.value = {
+				...configObj,
+				partners_intro_paragraphs: JSON.parse(
+					configObj.partners_intro_paragraphs,
+				),
+			};
+			console.log("当前界面配置对象:", viewConfig.value);
+		}
+	} catch (error) {
+		console.error("获取当前界面配置失败:", error);
+	}
+};
 
 // 页面加载时的初始化
 onMounted(async () => {
-    console.log('首页已加载')
-    await Promise.all([
-        loadPartners(),
-        loadViewConfig(),
-    ])
-})
+	console.log("首页已加载");
+	await Promise.all([loadPartners(), loadViewConfig()]);
+});
 </script>
 
 <style scoped>

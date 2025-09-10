@@ -268,60 +268,58 @@
 </template>
 
 <script setup lang="ts">
-import BannerAds from '../components/BannerAds.vue'
-import type { Products } from '../types/product'
-import { api, handleApiRes } from '../utils/handleApi'
-
+import BannerAds from "../components/BannerAds.vue";
+import type { Products } from "../types/product";
+import { api, handleApiRes } from "../utils/handleApi";
 
 // 路由相关
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 // 响应式数据
-const product = ref<Products | null>(null)
-const relatedProducts = ref<Products[]>([])
-const loading = ref(true)
-
+const product = ref<Products | null>(null);
+const relatedProducts = ref<Products[]>([]);
+const loading = ref(true);
 
 // 商品选择状态
-const selectedColor = ref<string | null>(null)
-const selectedSize = ref<string | null>(null)
-const currentImage = ref<string>('')
-const currentVideo = ref<string>('')
-const isVideoMode = ref(false)
-const currentSizeType = ref<'uk' | 'eu' | 'us'>('uk')
-const sizeTypes = ['uk', 'eu', 'us'] as const
+const selectedColor = ref<string | null>(null);
+const selectedSize = ref<string | null>(null);
+const currentImage = ref<string>("");
+const currentVideo = ref<string>("");
+const isVideoMode = ref(false);
+const currentSizeType = ref<"uk" | "eu" | "us">("uk");
+const sizeTypes = ["uk", "eu", "us"] as const;
 
 // UI状态
-const showFullDescription = ref(false)
-const showImageModal = ref(false)
-const isFavorited = ref(false)
+const showFullDescription = ref(false);
+const showImageModal = ref(false);
+const isFavorited = ref(false);
 
 // 计算属性
 const canAddToCart = computed(() => {
-  if (!product.value) return false
+	if (!product.value) return false;
 
-  // 如果有颜色选项，必须选择颜色
-  if (product.value.colors?.length && !selectedColor.value) return false
+	// 如果有颜色选项，必须选择颜色
+	if (product.value.colors?.length && !selectedColor.value) return false;
 
-  // 如果有尺寸选项，必须选择尺寸
-  if (product.value.sizes?.length && !selectedSize.value) return false
+	// 如果有尺寸选项，必须选择尺寸
+	if (product.value.sizes?.length && !selectedSize.value) return false;
 
-  return true
-})
+	return true;
+});
 
 // 方法
 const setCurrentImage = (imageUrl: string) => {
-  currentImage.value = imageUrl
-  // currentVideo.value = ''
-  isVideoMode.value = false
-}
+	currentImage.value = imageUrl;
+	// currentVideo.value = ''
+	isVideoMode.value = false;
+};
 
 const setCurrentVideo = (videoUrl: string, thumbnailUrl: string) => {
-  currentVideo.value = videoUrl
-  currentImage.value = thumbnailUrl
-  isVideoMode.value = true
-}
+	currentVideo.value = videoUrl;
+	currentImage.value = thumbnailUrl;
+	isVideoMode.value = true;
+};
 // const selectColor = (color: string) => {
 //   selectedColor.value = color
 //   // 如果该颜色有对应的图片，切换到该图片
@@ -350,195 +348,192 @@ const setCurrentVideo = (videoUrl: string, thumbnailUrl: string) => {
 // }
 
 const addToCart = () => {
-  if (!canAddToCart.value) return
+	if (!canAddToCart.value) return;
 
-  // TODO: 实现加入购物车逻辑
-  console.log('Adding to cart:', {
-    productId: product.value?.id,
-    colorId: selectedColor.value?.id,
-    sizeId: selectedSize.value?.id,
-    quantity: 1
-  })
+	// TODO: 实现加入购物车逻辑
+	console.log("Adding to cart:", {
+		productId: product.value?.id,
+		colorId: selectedColor.value?.id,
+		sizeId: selectedSize.value?.id,
+		quantity: 1,
+	});
 
-  // 显示成功提示
-  alert('Product added to cart!')
-}
+	// 显示成功提示
+	alert("Product added to cart!");
+};
 
 const toggleFavorite = () => {
-  isFavorited.value = !isFavorited.value
-  // TODO: 实现收藏逻辑
-  console.log('Toggle favorite:', isFavorited.value)
-}
+	isFavorited.value = !isFavorited.value;
+	// TODO: 实现收藏逻辑
+	console.log("Toggle favorite:", isFavorited.value);
+};
 
 const shareProduct = () => {
-  // TODO: 实现分享逻辑
-  if (navigator.share) {
-    navigator.share({
-      title: product.value?.title,
-      text: product.value?.shortDescription,
-      url: window.location.href
-    })
-  } else {
-    // 复制链接到剪贴板
-    navigator.clipboard.writeText(window.location.href)
-    alert('Product link copied to clipboard!')
-  }
-}
+	// TODO: 实现分享逻辑
+	if (navigator.share) {
+		navigator.share({
+			title: product.value?.title,
+			text: product.value?.shortDescription,
+			url: window.location.href,
+		});
+	} else {
+		// 复制链接到剪贴板
+		navigator.clipboard.writeText(window.location.href);
+		alert("Product link copied to clipboard!");
+	}
+};
 
 const openImageModal = () => {
-  showImageModal.value = true
-}
+	showImageModal.value = true;
+};
 
 const closeImageModal = () => {
-  showImageModal.value = false
-}
+	showImageModal.value = false;
+};
 
 const navigateToProduct = (productId: string) => {
-  router.push(`/product/${productId}`)
-}
+	router.push(`/product/${productId}`);
+};
 
 // 获取商品数据
 const fetchProduct = async (productId: string) => {
-  try {
-    loading.value = true
-    // 使用Eden Treaty调用API
-    const res = await handleApiRes(api.products.getById(productId))
-    if (!res) {
-      return
-    }
+	try {
+		loading.value = true;
+		// 使用Eden Treaty调用API
+		const res = await handleApiRes(api.products.getById(productId));
+		if (!res) {
+			return;
+		}
 
-    if (res.code == 200) {
-      product.value = res.data as any
+		if (res.code == 200) {
+			product.value = res.data as any;
 
-      // 设置默认图片
-      //@ts-ignore
-      if (product.value?.images.length > 0) {
-        currentImage.value = product?.value?.images[0] as any
-        isVideoMode.value = false
-        currentVideo.value = ''
-      }
+			// 设置默认图片
+			//@ts-ignore
+			if (product.value?.images.length > 0) {
+				currentImage.value = product?.value?.images[0] as any;
+				isVideoMode.value = false;
+				currentVideo.value = "";
+			}
+		} else {
+			// 如果API调用失败，使用模拟数据作为后备
+			console.warn("API调用失败，使用模拟数据:");
+		}
 
-    } else {
-      // 如果API调用失败，使用模拟数据作为后备
-      console.warn('API调用失败，使用模拟数据:')
-    }
-
-
-
-    // 获取相关商品
-    // await fetchRelatedProducts()
-
-  } catch (err) {
-
-    console.error('Error fetching product:', err)
-  } finally {
-    loading.value = false
-  }
-}
+		// 获取相关商品
+		// await fetchRelatedProducts()
+	} catch (err) {
+		console.error("Error fetching product:", err);
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 获取相关商品
 const fetchRelatedProducts = async () => {
-  try {
-    // 使用Eden Treaty调用API
-    if (product.value?.id) {
-      const { data, error: apiError } = await client.api.products.related({ id: product.value.id }).get()
+	try {
+		// 使用Eden Treaty调用API
+		if (product.value?.id) {
+			const { data, error: apiError } = await client.api.products
+				.related({ id: product.value.id })
+				.get();
 
-      if (data) {
-        relatedProducts.value = data
-        return
-      } else {
-        console.warn('获取相关产品失败，使用模拟数据:', apiError)
-      }
-    }
+			if (data) {
+				relatedProducts.value = data;
+				return;
+			} else {
+				console.warn("获取相关产品失败，使用模拟数据:", apiError);
+			}
+		}
 
-    // 如果API调用失败或没有产品ID，使用模拟数据作为后备
-    // 模拟数据
-    relatedProducts.value = [
-      {
-        id: '2',
-        title: 'Classic Cotton T-Shirt',
-        price: {
-          currentPrice: 29.99,
-          originalPrice: 39.99,
-          currency: 'USD'
-        },
-        images: [
-          {
-            id: '1',
-            url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800',
-            alt: 'Cotton T-Shirt',
-            isMain: true,
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: '3',
-        title: 'Casual Denim Jacket',
-        price: {
-          currentPrice: 89.99,
-          originalPrice: 119.99,
-          currency: 'USD'
-        },
-        images: [
-          {
-            id: '1',
-            url: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800',
-            alt: 'Denim Jacket',
-            isMain: true,
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: '4',
-        title: 'Slim Fit Chinos',
-        price: {
-          currentPrice: 49.99,
-          originalPrice: 69.99,
-          currency: 'USD'
-        },
-        images: [
-          {
-            id: '1',
-            url: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800',
-            alt: 'Chinos',
-            isMain: true,
-            sortOrder: 1
-          }
-        ]
-      },
-      {
-        id: '5',
-        title: 'Knit Sweater',
-        price: {
-          currentPrice: 64.99,
-          originalPrice: 84.99,
-          currency: 'USD'
-        },
-        images: [
-          {
-            id: '1',
-            url: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800',
-            alt: 'Knit Sweater',
-            isMain: true,
-            sortOrder: 1
-          }
-        ]
-      }
-    ] as Product[]
-  } catch (err) {
-    console.error('Error fetching related products:', err)
-  }
-}
+		// 如果API调用失败或没有产品ID，使用模拟数据作为后备
+		// 模拟数据
+		relatedProducts.value = [
+			{
+				id: "2",
+				title: "Classic Cotton T-Shirt",
+				price: {
+					currentPrice: 29.99,
+					originalPrice: 39.99,
+					currency: "USD",
+				},
+				images: [
+					{
+						id: "1",
+						url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800",
+						alt: "Cotton T-Shirt",
+						isMain: true,
+						sortOrder: 1,
+					},
+				],
+			},
+			{
+				id: "3",
+				title: "Casual Denim Jacket",
+				price: {
+					currentPrice: 89.99,
+					originalPrice: 119.99,
+					currency: "USD",
+				},
+				images: [
+					{
+						id: "1",
+						url: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800",
+						alt: "Denim Jacket",
+						isMain: true,
+						sortOrder: 1,
+					},
+				],
+			},
+			{
+				id: "4",
+				title: "Slim Fit Chinos",
+				price: {
+					currentPrice: 49.99,
+					originalPrice: 69.99,
+					currency: "USD",
+				},
+				images: [
+					{
+						id: "1",
+						url: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800",
+						alt: "Chinos",
+						isMain: true,
+						sortOrder: 1,
+					},
+				],
+			},
+			{
+				id: "5",
+				title: "Knit Sweater",
+				price: {
+					currentPrice: 64.99,
+					originalPrice: 84.99,
+					currency: "USD",
+				},
+				images: [
+					{
+						id: "1",
+						url: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800",
+						alt: "Knit Sweater",
+						isMain: true,
+						sortOrder: 1,
+					},
+				],
+			},
+		] as Product[];
+	} catch (err) {
+		console.error("Error fetching related products:", err);
+	}
+};
 
 // 组件挂载时获取商品数据
 onMounted(() => {
-  const productId = route.params.id as string
-  if (productId) {
-    fetchProduct(productId)
-  }
-})
+	const productId = route.params.id as string;
+	if (productId) {
+		fetchProduct(productId);
+	}
+});
 </script>
 
 <style scoped>

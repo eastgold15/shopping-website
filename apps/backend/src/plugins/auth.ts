@@ -1,6 +1,4 @@
-import { elysiaAuthDrizzlePlugin } from "@pori15/elysia-auth-drizzle";
 import { Elysia } from "elysia";
-import { db } from "../db/connection";
 
 export const authPlugin = new Elysia({ name: "authPlugin" })
 	// .use(

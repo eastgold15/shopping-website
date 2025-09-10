@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import ImageSelector from "@frontend/components/ImageSelector.vue";
-import { handleApiRes } from '@frontend/utils/handleApi';
+import { handleApiRes } from "@frontend/utils/handleApi";
 import { client } from "@frontend/utils/useTreaty";
-import { Form, FormField } from '@primevue/forms';
-import { zodResolver } from '@primevue/forms/resolvers/zod';
+import { Form, FormField } from "@primevue/forms";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { onMounted, reactive, ref } from "vue";
-import { z } from 'zod';
+import { z } from "zod";
 import type {
 	Advertisement,
-	AdvertisementQuery
+	AdvertisementQuery,
 } from "../../types/advertisement";
-
-
-
 
 // 组合式API
 const toast = useToast();
@@ -57,45 +54,47 @@ const initialValues = reactive({
 // 表单验证器
 const formResolver = zodResolver(
 	z.object({
-		title: z.string().min(1, { message: '广告标题不能为空' }),
-		type: z.string().min(1, { message: '请选择广告类型' }),
-		image: z.string().min(1, { message: '请上传广告图片' }),
+		title: z.string().min(1, { message: "广告标题不能为空" }),
+		type: z.string().min(1, { message: "请选择广告类型" }),
+		image: z.string().min(1, { message: "请上传广告图片" }),
 		link: z.string().optional(),
 		position: z.string().optional(),
-		sortOrder: z.number().min(0, { message: '排序值不能小于0' }),
+		sortOrder: z.number().min(0, { message: "排序值不能小于0" }),
 		isActive: z.boolean(),
 		startDate: z.date().nullable().optional(),
 		endDate: z.date().nullable().optional(),
-	})
-)
+	}),
+);
 
 // 单独的字段验证器
-const titleResolver = zodResolver(z.string().min(1, { message: '广告标题不能为空' }))
-const typeResolver = zodResolver(z.string().min(1, { message: '请选择广告类型' }))
-const imageResolver = zodResolver(z.string().min(1, { message: '请上传广告图片' }))
-const sortOrderResolver = zodResolver(z.number().min(0, { message: '排序值不能小于0' }))
+const titleResolver = zodResolver(
+	z.string().min(1, { message: "广告标题不能为空" }),
+);
+const typeResolver = zodResolver(
+	z.string().min(1, { message: "请选择广告类型" }),
+);
+const imageResolver = zodResolver(
+	z.string().min(1, { message: "请上传广告图片" }),
+);
+const sortOrderResolver = zodResolver(
+	z.number().min(0, { message: "排序值不能小于0" }),
+);
 
 // 选项数据
-const typeOptions = ref([
-	{ label: "轮播图", value: "carousel" },
-]);
+const typeOptions = ref([{ label: "轮播图", value: "carousel" }]);
 const positionOptions = ref([
 	{ label: "首页轮播", value: "home-hero" },
-	{ label: "分类页顶部", value: "category-top" }
-])
-	;
+	{ label: "分类页顶部", value: "category-top" },
+]);
 const statusOptions = [
 	{ label: "启用", value: true },
 	{ label: "禁用", value: false },
 ];
 
 const removeImage = () => {
-	initialValues.image = ''; // 直接清空
-	formRef.value.setFieldValue('image', '');
-}
-
-
-
+	initialValues.image = ""; // 直接清空
+	formRef.value.setFieldValue("image", "");
+};
 
 // 方法
 /**
@@ -109,18 +108,25 @@ const loadAdvertisements = async () => {
 			pageSize: pageSize.value,
 			type: filters.type || undefined,
 			position: filters.position || undefined,
-			isActive: filters.isActive !== undefined ? filters.isActive : undefined
+			isActive: filters.isActive !== undefined ? filters.isActive : undefined,
 		};
 
-		console.log('Loading advertisements with params:', params);
-		const res = await handleApiRes(client.api.advertisements.get({ query: params }))
-		console.log('API response:', res);
+		console.log("Loading advertisements with params:", params);
+		const res = await handleApiRes(
+			client.api.advertisements.get({ query: params }),
+		);
+		console.log("API response:", res);
 		if (!res) {
 			advertisements.value = [];
 			total.value = 0;
-			toast.add({ severity: 'error', summary: '错误', detail: '加载广告列表失败', life: 1000 });
-			return
-		};
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: "加载广告列表失败",
+				life: 1000,
+			});
+			return;
+		}
 
 		const resData: any = res.data;
 		if (res.code === 200) {
@@ -128,24 +134,31 @@ const loadAdvertisements = async () => {
 			if (Array.isArray(resData.items)) {
 				advertisements.value = resData.items;
 				total.value = resData.meta?.total || 0;
-			}
-			else {
+			} else {
 				advertisements.value = [];
 				total.value = 0;
-				toast.add({ severity: 'error', summary: '错误', detail: '数据格式错误', life: 1000 });
+				toast.add({
+					severity: "error",
+					summary: "错误",
+					detail: "数据格式错误",
+					life: 1000,
+				});
 			}
 		}
-
 	} catch (error) {
-		console.error('加载广告列表失败:', error);
+		console.error("加载广告列表失败:", error);
 		advertisements.value = [];
 		total.value = 0;
-		toast.add({ severity: 'error', summary: '错误', detail: '加载广告列表失败', life: 1000 });
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载广告列表失败",
+			life: 1000,
+		});
 	} finally {
 		loading.value = false;
 	}
-}
-
+};
 
 /**
  * 页面变化处理
@@ -171,7 +184,9 @@ const resetFilters = () => {
  * 获取类型标签
  */
 const getTypeLabel = (type: string) => {
-	return typeOptions.value.find((option) => option.value === type)?.label || type;
+	return (
+		typeOptions.value.find((option) => option.value === type)?.label || type
+	);
 };
 
 /**
@@ -184,8 +199,6 @@ const getPositionLabel = (position?: string) => {
 		position
 	);
 };
-
-
 
 /**
  * 关闭对话框
@@ -221,10 +234,12 @@ const editAdvertisement = (advertisement: Advertisement) => {
 		position: advertisement.position || "",
 		sortOrder: Number(advertisement.sortOrder) || 0,
 		isActive: Boolean(advertisement.isActive),
-		startDate: advertisement.startDate ? new Date(advertisement.startDate) : null,
+		startDate: advertisement.startDate
+			? new Date(advertisement.startDate)
+			: null,
 		endDate: advertisement.endDate ? new Date(advertisement.endDate) : null,
 	});
-	console.log("aaaa", initialValues)
+	console.log("aaaa", initialValues);
 	showCreateDialog.value = true;
 };
 
@@ -233,9 +248,11 @@ const editAdvertisement = (advertisement: Advertisement) => {
  */
 const toggleStatus = async (advertisement: Advertisement) => {
 	try {
-		const res = await handleApiRes(client.api
-			.advertisements({ id: advertisement.id })
-			.toggle.patch({ isActive: !advertisement.isActive }))
+		const res = await handleApiRes(
+			client.api
+				.advertisements({ id: advertisement.id })
+				.toggle.patch({ isActive: !advertisement.isActive }),
+		);
 
 		if (res && res.code === 200) {
 			toast.add({
@@ -245,8 +262,7 @@ const toggleStatus = async (advertisement: Advertisement) => {
 				life: 3000,
 			});
 			loadAdvertisements();
-		}
-		else {
+		} else {
 			throw new Error(res?.message || "操作失败");
 		}
 	} catch (error) {
@@ -273,10 +289,9 @@ const deleteAdvertisement = (advertisement: Advertisement) => {
 		acceptLabel: "删除",
 		accept: async () => {
 			try {
-				const res = await handleApiRes(client.api
-					.advertisements({ id: advertisement.id })
-					.delete())
-
+				const res = await handleApiRes(
+					client.api.advertisements({ id: advertisement.id }).delete(),
+				);
 
 				if (res && res.code === 200) {
 					toast.add({
@@ -316,7 +331,7 @@ const onImageSelected = (imageUrl: string) => {
 	initialValues.image = imageUrl;
 	// 如果表单已经初始化，也更新表单字段值
 	if (formRef.value) {
-		formRef.value.setFieldValue('image', imageUrl);
+		formRef.value.setFieldValue("image", imageUrl);
 	}
 	showImageSelector.value = false;
 };
@@ -332,56 +347,66 @@ const onImageSelected = (imageUrl: string) => {
 /**
  * 表单提交处理
  */
-const onFormSubmit = async ({ valid, values }: { valid: boolean; values: any }) => {
+const onFormSubmit = async ({
+	valid,
+	values,
+}: {
+	valid: boolean;
+	values: any;
+}) => {
 	if (!valid) {
-		toast.add({ severity: 'warn', summary: '警告', detail: '请检查表单输入' })
-		return
+		toast.add({ severity: "warn", summary: "警告", detail: "请检查表单输入" });
+		return;
 	}
 
 	try {
-		saving.value = true
+		saving.value = true;
 
 		const requestData = {
-			title: values.title?.trim() || '',
-			type: values.type || 'carousel',
-			image: values.image?.trim() || '',
+			title: values.title?.trim() || "",
+			type: values.type || "carousel",
+			image: values.image?.trim() || "",
 			link: values.link?.trim() || undefined,
 			position: values.position?.trim() || undefined,
 			sortOrder: Number(values.sortOrder) || 0,
 			isActive: Boolean(values.isActive),
 			startDate: values.startDate || undefined,
 			endDate: values.endDate || undefined,
-		}
+		};
 
-		let result
+		let result;
 		if (editingAdvertisement.value) {
 			// 更新广告
-			result = await handleApiRes(client.api.advertisements({ id: editingAdvertisement.value.id }).put(requestData))
+			result = await handleApiRes(
+				client.api
+					.advertisements({ id: editingAdvertisement.value.id })
+					.put(requestData),
+			);
 		} else {
 			// 创建广告
-			result = await handleApiRes(client.api.advertisements.post(requestData))
+			result = await handleApiRes(client.api.advertisements.post(requestData));
 		}
 
 		if (result && result.code === 200) {
 			toast.add({
-				severity: 'success',
-				summary: '成功',
-				detail: editingAdvertisement.value ? '广告更新成功' : '广告创建成功'
-			})
-			closeDialog()
-			await loadAdvertisements()
+				severity: "success",
+				summary: "成功",
+				detail: editingAdvertisement.value ? "广告更新成功" : "广告创建成功",
+			});
+			closeDialog();
+			await loadAdvertisements();
 		} else {
 			toast.add({
-				severity: 'error',
-				summary: '错误',
-				detail: result?.message || '操作失败'
-			})
+				severity: "error",
+				summary: "错误",
+				detail: result?.message || "操作失败",
+			});
 		}
 	} catch (error) {
-		console.error('保存广告失败:', error)
-		toast.add({ severity: 'error', summary: '错误', detail: '保存广告失败' })
+		console.error("保存广告失败:", error);
+		toast.add({ severity: "error", summary: "错误", detail: "保存广告失败" });
 	} finally {
-		saving.value = false
+		saving.value = false;
 	}
 };
 
@@ -404,9 +429,6 @@ const showCreateDialogHandler = () => {
 	});
 	showCreateDialog.value = true;
 };
-
-
-
 
 // 生命周期
 onMounted(() => {

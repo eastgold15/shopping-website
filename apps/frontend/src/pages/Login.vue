@@ -83,61 +83,61 @@
 </template>
 
 <script setup lang="ts">
-import GoogleLoginButton from '@frontend/components/GoogleLoginButton.vue'
+import GoogleLoginButton from "@frontend/components/GoogleLoginButton.vue";
 
 // 路由
-const router = useRouter()
+const router = useRouter();
 
 // 响应式数据
-const loading = ref(false)
-const errorMessage = ref('')
+const loading = ref(false);
+const errorMessage = ref("");
 
 // 登录表单数据
 const loginForm = ref({
-	username: '',
-	password: '',
-	remember: false
-})
+	username: "",
+	password: "",
+	remember: false,
+});
 
 // 登录处理
 const handleLogin = async () => {
 	// 清除之前的错误信息
-	errorMessage.value = ''
-	loading.value = true
+	errorMessage.value = "";
+	loading.value = true;
 
 	try {
 		// 调用登录API
-		const response = await fetch('/api/auth/login', {
-			method: 'POST',
+		const response = await fetch("/api/auth/login", {
+			method: "POST",
 			headers: {
-				'Content-Type': 'application/json'
+				"Content-Type": "application/json",
 			},
-			body: JSON.stringify(loginForm.value)
-		})
+			body: JSON.stringify(loginForm.value),
+		});
 
-		const result = await response.json()
+		const result = await response.json();
 
 		if (result.code === 200) {
 			// 登录成功，存储令牌
-			localStorage.setItem('access_token', result.data.token.accessToken)
-			localStorage.setItem('refresh_token', result.data.token.refreshToken)
-			
+			localStorage.setItem("access_token", result.data.token.accessToken);
+			localStorage.setItem("refresh_token", result.data.token.refreshToken);
+
 			// 存储用户信息
-			localStorage.setItem('user_info', JSON.stringify(result.data.user))
+			localStorage.setItem("user_info", JSON.stringify(result.data.user));
 
 			// 跳转到首页
-			router.push('/')
+			router.push("/");
 		} else {
 			// 显示错误信息
-			errorMessage.value = result.message || '登录失败，请重试'
+			errorMessage.value = result.message || "登录失败，请重试";
 		}
 	} catch (error) {
-		console.error('登录错误:', error)
-		errorMessage.value = '网络错误，请检查网络连接'
+		console.error("登录错误:", error);
+		errorMessage.value = "网络错误，请检查网络连接";
 	} finally {
-		loading.value = false
+		loading.value = false;
 	}
-}
+};
 </script>
 
 <style scoped>

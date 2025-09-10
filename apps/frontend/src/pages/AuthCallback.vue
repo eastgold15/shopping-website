@@ -25,73 +25,72 @@
 </template>
 
 <script setup lang="ts">
+const router = useRouter();
 
-const router = useRouter()
-
-const loading = ref(true)
-const error = ref(false)
-const errorMessage = ref('')
+const loading = ref(true);
+const error = ref(false);
+const errorMessage = ref("");
 
 // 处理 OAuth 回调
 onMounted(() => {
-  try {
-    const urlParams = new URLSearchParams(window.location.search)
-    const token = urlParams.get('token')
-    const refreshToken = urlParams.get('refresh_token')
-    const errorParam = urlParams.get('error')
+	try {
+		const urlParams = new URLSearchParams(window.location.search);
+		const token = urlParams.get("token");
+		const refreshToken = urlParams.get("refresh_token");
+		const errorParam = urlParams.get("error");
 
-    if (errorParam) {
-      // 处理错误
-      handleError(errorParam)
-      return
-    }
+		if (errorParam) {
+			// 处理错误
+			handleError(errorParam);
+			return;
+		}
 
-    if (token) {
-      // 存储令牌
-      localStorage.setItem('access_token', token)
-      if (refreshToken) {
-        localStorage.setItem('refresh_token', refreshToken)
-      }
+		if (token) {
+			// 存储令牌
+			localStorage.setItem("access_token", token);
+			if (refreshToken) {
+				localStorage.setItem("refresh_token", refreshToken);
+			}
 
-      // 清理URL参数
-      window.history.replaceState({}, document.title, window.location.pathname)
+			// 清理URL参数
+			window.history.replaceState({}, document.title, window.location.pathname);
 
-      loading.value = false
+			loading.value = false;
 
-      // 延迟跳转到首页
-      setTimeout(() => {
-        router.push('/')
-      }, 1500)
-    } else {
-      handleError('no_token')
-    }
-  } catch (err) {
-    console.error('OAuth callback error:', err)
-    handleError('callback_processing_error')
-  }
-})
+			// 延迟跳转到首页
+			setTimeout(() => {
+				router.push("/");
+			}, 1500);
+		} else {
+			handleError("no_token");
+		}
+	} catch (err) {
+		console.error("OAuth callback error:", err);
+		handleError("callback_processing_error");
+	}
+});
 
 function handleError(errorType: string) {
-  loading.value = false
-  error.value = true
+	loading.value = false;
+	error.value = true;
 
-  switch (errorType) {
-    case 'oauth_error':
-      errorMessage.value = '授权过程中发生错误，请重试'
-      break
-    case 'callback_error':
-      errorMessage.value = '登录回调处理失败，请重试'
-      break
-    case 'no_token':
-      errorMessage.value = '未收到登录令牌，请重试'
-      break
-    default:
-      errorMessage.value = '登录过程中发生未知错误'
-  }
+	switch (errorType) {
+		case "oauth_error":
+			errorMessage.value = "授权过程中发生错误，请重试";
+			break;
+		case "callback_error":
+			errorMessage.value = "登录回调处理失败，请重试";
+			break;
+		case "no_token":
+			errorMessage.value = "未收到登录令牌，请重试";
+			break;
+		default:
+			errorMessage.value = "登录过程中发生未知错误";
+	}
 }
 
 function goToLogin() {
-  router.push('/login')
+	router.push("/login");
 }
 </script>
 

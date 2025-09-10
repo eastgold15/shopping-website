@@ -1,484 +1,533 @@
 <script setup lang="ts">
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface Admin {
-    id: number
-    username: string
-    email: string
-    phone: string
-    realName: string
-    avatar: string
-    role: AdminRole
-    permissions: string[]
-    status: AdminStatus
-    lastLoginAt: Date | null
-    lastLoginIp: string
-    loginCount: number
-    createdAt: Date
-    createdBy: string
-    remark: string
-    department: string
-    position: string
+	id: number;
+	username: string;
+	email: string;
+	phone: string;
+	realName: string;
+	avatar: string;
+	role: AdminRole;
+	permissions: string[];
+	status: AdminStatus;
+	lastLoginAt: Date | null;
+	lastLoginIp: string;
+	loginCount: number;
+	createdAt: Date;
+	createdBy: string;
+	remark: string;
+	department: string;
+	position: string;
 }
 
 interface AdminForm {
-    username: string
-    email: string
-    phone: string
-    realName: string
-    password?: string
-    role: AdminRole
-    permissions: string[]
-    status: AdminStatus
-    remark: string
-    department: string
-    position: string
+	username: string;
+	email: string;
+	phone: string;
+	realName: string;
+	password?: string;
+	role: AdminRole;
+	permissions: string[];
+	status: AdminStatus;
+	remark: string;
+	department: string;
+	position: string;
 }
 
-type AdminStatus = 'active' | 'inactive' | 'locked'
-type AdminRole = 'super_admin' | 'admin' | 'operator' | 'viewer'
+type AdminStatus = "active" | "inactive" | "locked";
+type AdminRole = "super_admin" | "admin" | "operator" | "viewer";
 
 // 响应式数据
-const loading = ref(false)
-const saving = ref(false)
-const admins = ref<Admin[]>([])
-const selectedAdmins = ref<Admin[]>([])
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
-const sortField = ref('createdAt')
-const sortOrder = ref(-1)
-const searchKeyword = ref('')
-const filterStatus = ref('all')
-const filterRole = ref('all')
-const filterDateRange = ref<Date[]>([])
-const showCreateDialog = ref(false)
-const editingAdmin = ref<Admin | null>(null)
+const loading = ref(false);
+const saving = ref(false);
+const admins = ref<Admin[]>([]);
+const selectedAdmins = ref<Admin[]>([]);
+const total = ref(0);
+const page = ref(1);
+const pageSize = ref(10);
+const sortField = ref("createdAt");
+const sortOrder = ref(-1);
+const searchKeyword = ref("");
+const filterStatus = ref("all");
+const filterRole = ref("all");
+const filterDateRange = ref<Date[]>([]);
+const showCreateDialog = ref(false);
+const editingAdmin = ref<Admin | null>(null);
 
 // 表单数据
 const adminForm = ref<AdminForm>({
-    username: '',
-    email: '',
-    phone: '',
-    realName: '',
-    password: '',
-    role: 'operator',
-    permissions: [],
-    status: 'active',
-    remark: '',
-    department: '',
-    position: ''
-})
+	username: "",
+	email: "",
+	phone: "",
+	realName: "",
+	password: "",
+	role: "operator",
+	permissions: [],
+	status: "active",
+	remark: "",
+	department: "",
+	position: "",
+});
 
 // 选项数据
 const statusOptions = [
-    { label: '全部状态', value: 'all' },
-    { label: '正常', value: 'active' },
-    { label: '禁用', value: 'inactive' },
-    { label: '锁定', value: 'locked' }
-]
+	{ label: "全部状态", value: "all" },
+	{ label: "正常", value: "active" },
+	{ label: "禁用", value: "inactive" },
+	{ label: "锁定", value: "locked" },
+];
 
 const roleOptions = [
-    { label: '全部角色', value: 'all' },
-    { label: '超级管理员', value: 'super_admin' },
-    { label: '管理员', value: 'admin' },
-    { label: '操作员', value: 'operator' },
-    { label: '查看者', value: 'viewer' }
-]
+	{ label: "全部角色", value: "all" },
+	{ label: "超级管理员", value: "super_admin" },
+	{ label: "管理员", value: "admin" },
+	{ label: "操作员", value: "operator" },
+	{ label: "查看者", value: "viewer" },
+];
 
 const adminStatusOptions = [
-    { label: '正常', value: 'active' },
-    { label: '禁用', value: 'inactive' },
-    { label: '锁定', value: 'locked' }
-]
+	{ label: "正常", value: "active" },
+	{ label: "禁用", value: "inactive" },
+	{ label: "锁定", value: "locked" },
+];
 
 const adminRoleOptions = [
-    { label: '超级管理员', value: 'super_admin' },
-    { label: '管理员', value: 'admin' },
-    { label: '操作员', value: 'operator' },
-    { label: '查看者', value: 'viewer' }
-]
+	{ label: "超级管理员", value: "super_admin" },
+	{ label: "管理员", value: "admin" },
+	{ label: "操作员", value: "operator" },
+	{ label: "查看者", value: "viewer" },
+];
 
 const permissionOptions = [
-    { label: '用户管理', value: 'users.manage' },
-    { label: '商品管理', value: 'products.manage' },
-    { label: '订单管理', value: 'orders.manage' },
-    { label: '内容管理', value: 'content.manage' },
-    { label: '系统设置', value: 'system.manage' },
-    { label: '数据统计', value: 'analytics.view' },
-    { label: '财务管理', value: 'finance.manage' },
-    { label: '营销管理', value: 'marketing.manage' }
-]
+	{ label: "用户管理", value: "users.manage" },
+	{ label: "商品管理", value: "products.manage" },
+	{ label: "订单管理", value: "orders.manage" },
+	{ label: "内容管理", value: "content.manage" },
+	{ label: "系统设置", value: "system.manage" },
+	{ label: "数据统计", value: "analytics.view" },
+	{ label: "财务管理", value: "finance.manage" },
+	{ label: "营销管理", value: "marketing.manage" },
+];
 
 const departmentOptions = [
-    { label: '技术部', value: '技术部' },
-    { label: '运营部', value: '运营部' },
-    { label: '市场部', value: '市场部' },
-    { label: '客服部', value: '客服部' },
-    { label: '财务部', value: '财务部' },
-    { label: '人事部', value: '人事部' }
-]
+	{ label: "技术部", value: "技术部" },
+	{ label: "运营部", value: "运营部" },
+	{ label: "市场部", value: "市场部" },
+	{ label: "客服部", value: "客服部" },
+	{ label: "财务部", value: "财务部" },
+	{ label: "人事部", value: "人事部" },
+];
 
 // 工具函数
-const router = useRouter()
-const confirm = useConfirm()
-const toast = useToast()
+const router = useRouter();
+const confirm = useConfirm();
+const toast = useToast();
 
 // 计算属性
 const isFormValid = computed(() => {
-    return adminForm.value.username.trim() &&
-        adminForm.value.email.trim() &&
-        adminForm.value.realName.trim() &&
-        (!editingAdmin.value ? adminForm.value.password?.trim() : true)
-})
+	return (
+		adminForm.value.username.trim() &&
+		adminForm.value.email.trim() &&
+		adminForm.value.realName.trim() &&
+		(!editingAdmin.value ? adminForm.value.password?.trim() : true)
+	);
+});
 
 const adminStatistics = computed(() => {
-    const stats = {
-        total: admins.value.length,
-        active: 0,
-        inactive: 0,
-        locked: 0,
-        super_admin: 0,
-        admin: 0,
-        operator: 0,
-        viewer: 0
-    }
+	const stats = {
+		total: admins.value.length,
+		active: 0,
+		inactive: 0,
+		locked: 0,
+		super_admin: 0,
+		admin: 0,
+		operator: 0,
+		viewer: 0,
+	};
 
-    admins.value.forEach(admin => {
-        stats[admin.status]++
-        stats[admin.role]++
-    })
+	admins.value.forEach((admin) => {
+		stats[admin.status]++;
+		stats[admin.role]++;
+	});
 
-    return stats
-})
+	return stats;
+});
 
 // 方法
 const loadAdmins = async () => {
-    try {
-        loading.value = true
-        const params = {
-            page: page.value,
-            pageSize: pageSize.value,
-            sortBy: sortField.value,
-            sortOrder: sortOrder.value === 1 ? 'asc' : 'desc',
-            search: searchKeyword.value || undefined,
-            status: filterStatus.value !== 'all' ? filterStatus.value : undefined,
-            role: filterRole.value !== 'all' ? filterRole.value : undefined,
-            startDate: filterDateRange.value?.[0],
-            endDate: filterDateRange.value?.[1]
-        }
+	try {
+		loading.value = true;
+		const params = {
+			page: page.value,
+			pageSize: pageSize.value,
+			sortBy: sortField.value,
+			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
+			search: searchKeyword.value || undefined,
+			status: filterStatus.value !== "all" ? filterStatus.value : undefined,
+			role: filterRole.value !== "all" ? filterRole.value : undefined,
+			startDate: filterDateRange.value?.[0],
+			endDate: filterDateRange.value?.[1],
+		};
 
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 500))
+		// 模拟API调用
+		await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // 模拟数据
-        const mockAdmins: Admin[] = [
-            {
-                id: 1,
-                username: 'superadmin',
-                email: 'admin@example.com',
-                phone: '13800138000',
-                realName: '系统管理员',
-                avatar: '/uploads/admin1.jpg',
-                role: 'super_admin',
-                permissions: ['users.manage', 'products.manage', 'orders.manage', 'content.manage', 'system.manage', 'analytics.view', 'finance.manage', 'marketing.manage'],
-                status: 'active',
-                lastLoginAt: new Date(),
-                lastLoginIp: '192.168.1.100',
-                loginCount: 1250,
-                createdAt: new Date(Date.now() - 86400000 * 365),
-                createdBy: 'system',
-                remark: '系统超级管理员',
-                department: '技术部',
-                position: '技术总监'
-            },
-            {
-                id: 2,
-                username: 'admin001',
-                email: 'admin001@example.com',
-                phone: '13900139000',
-                realName: '张三',
-                avatar: '/uploads/admin2.jpg',
-                role: 'admin',
-                permissions: ['users.manage', 'products.manage', 'orders.manage', 'analytics.view'],
-                status: 'active',
-                lastLoginAt: new Date(Date.now() - 3600000),
-                lastLoginIp: '192.168.1.101',
-                loginCount: 580,
-                createdAt: new Date(Date.now() - 86400000 * 180),
-                createdBy: 'superadmin',
-                remark: '运营管理员',
-                department: '运营部',
-                position: '运营经理'
-            },
-            {
-                id: 3,
-                username: 'operator001',
-                email: 'operator001@example.com',
-                phone: '13700137000',
-                realName: '李四',
-                avatar: '',
-                role: 'operator',
-                permissions: ['orders.manage', 'content.manage'],
-                status: 'active',
-                lastLoginAt: new Date(Date.now() - 86400000),
-                lastLoginIp: '192.168.1.102',
-                loginCount: 120,
-                createdAt: new Date(Date.now() - 86400000 * 60),
-                createdBy: 'admin001',
-                remark: '客服操作员',
-                department: '客服部',
-                position: '客服专员'
-            },
-            {
-                id: 4,
-                username: 'viewer001',
-                email: 'viewer001@example.com',
-                phone: '13600136000',
-                realName: '王五',
-                avatar: '',
-                role: 'viewer',
-                permissions: ['analytics.view'],
-                status: 'inactive',
-                lastLoginAt: new Date(Date.now() - 86400000 * 7),
-                lastLoginIp: '192.168.1.103',
-                loginCount: 45,
-                createdAt: new Date(Date.now() - 86400000 * 30),
-                createdBy: 'admin001',
-                remark: '数据分析师',
-                department: '市场部',
-                position: '数据分析师'
-            }
-        ]
+		// 模拟数据
+		const mockAdmins: Admin[] = [
+			{
+				id: 1,
+				username: "superadmin",
+				email: "admin@example.com",
+				phone: "13800138000",
+				realName: "系统管理员",
+				avatar: "/uploads/admin1.jpg",
+				role: "super_admin",
+				permissions: [
+					"users.manage",
+					"products.manage",
+					"orders.manage",
+					"content.manage",
+					"system.manage",
+					"analytics.view",
+					"finance.manage",
+					"marketing.manage",
+				],
+				status: "active",
+				lastLoginAt: new Date(),
+				lastLoginIp: "192.168.1.100",
+				loginCount: 1250,
+				createdAt: new Date(Date.now() - 86400000 * 365),
+				createdBy: "system",
+				remark: "系统超级管理员",
+				department: "技术部",
+				position: "技术总监",
+			},
+			{
+				id: 2,
+				username: "admin001",
+				email: "admin001@example.com",
+				phone: "13900139000",
+				realName: "张三",
+				avatar: "/uploads/admin2.jpg",
+				role: "admin",
+				permissions: [
+					"users.manage",
+					"products.manage",
+					"orders.manage",
+					"analytics.view",
+				],
+				status: "active",
+				lastLoginAt: new Date(Date.now() - 3600000),
+				lastLoginIp: "192.168.1.101",
+				loginCount: 580,
+				createdAt: new Date(Date.now() - 86400000 * 180),
+				createdBy: "superadmin",
+				remark: "运营管理员",
+				department: "运营部",
+				position: "运营经理",
+			},
+			{
+				id: 3,
+				username: "operator001",
+				email: "operator001@example.com",
+				phone: "13700137000",
+				realName: "李四",
+				avatar: "",
+				role: "operator",
+				permissions: ["orders.manage", "content.manage"],
+				status: "active",
+				lastLoginAt: new Date(Date.now() - 86400000),
+				lastLoginIp: "192.168.1.102",
+				loginCount: 120,
+				createdAt: new Date(Date.now() - 86400000 * 60),
+				createdBy: "admin001",
+				remark: "客服操作员",
+				department: "客服部",
+				position: "客服专员",
+			},
+			{
+				id: 4,
+				username: "viewer001",
+				email: "viewer001@example.com",
+				phone: "13600136000",
+				realName: "王五",
+				avatar: "",
+				role: "viewer",
+				permissions: ["analytics.view"],
+				status: "inactive",
+				lastLoginAt: new Date(Date.now() - 86400000 * 7),
+				lastLoginIp: "192.168.1.103",
+				loginCount: 45,
+				createdAt: new Date(Date.now() - 86400000 * 30),
+				createdBy: "admin001",
+				remark: "数据分析师",
+				department: "市场部",
+				position: "数据分析师",
+			},
+		];
 
-        admins.value = mockAdmins
-        total.value = mockAdmins.length
-
-    } catch (error) {
-        console.error('加载管理员失败:', error)
-        admins.value = []
-        total.value = 0
-        toast.add({ severity: 'error', summary: '错误', detail: '加载管理员失败', life: 1000 })
-    } finally {
-        loading.value = false
-    }
-}
+		admins.value = mockAdmins;
+		total.value = mockAdmins.length;
+	} catch (error) {
+		console.error("加载管理员失败:", error);
+		admins.value = [];
+		total.value = 0;
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载管理员失败",
+			life: 1000,
+		});
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 分页处理
 const onPage = (event: any) => {
-    page.value = event.page + 1
-    pageSize.value = event.rows
-    loadAdmins()
-}
+	page.value = event.page + 1;
+	pageSize.value = event.rows;
+	loadAdmins();
+};
 
 // 排序处理
 const onSort = (event: any) => {
-    sortField.value = event.sortField
-    sortOrder.value = event.sortOrder
-    loadAdmins()
-}
+	sortField.value = event.sortField;
+	sortOrder.value = event.sortOrder;
+	loadAdmins();
+};
 
 // 搜索处理
 const handleSearch = () => {
-    page.value = 1
-    loadAdmins()
-}
+	page.value = 1;
+	loadAdmins();
+};
 
 // 筛选处理
 const handleFilter = () => {
-    page.value = 1
-    loadAdmins()
-}
+	page.value = 1;
+	loadAdmins();
+};
 
 // 显示编辑对话框
 const showEditDialog = (admin: Admin) => {
-    editingAdmin.value = admin
-    adminForm.value = {
-        username: admin.username,
-        email: admin.email,
-        phone: admin.phone,
-        realName: admin.realName,
-        password: '',
-        role: admin.role,
-        permissions: [...admin.permissions],
-        status: admin.status,
-        remark: admin.remark,
-        department: admin.department,
-        position: admin.position
-    }
-    showCreateDialog.value = true
-}
+	editingAdmin.value = admin;
+	adminForm.value = {
+		username: admin.username,
+		email: admin.email,
+		phone: admin.phone,
+		realName: admin.realName,
+		password: "",
+		role: admin.role,
+		permissions: [...admin.permissions],
+		status: admin.status,
+		remark: admin.remark,
+		department: admin.department,
+		position: admin.position,
+	};
+	showCreateDialog.value = true;
+};
 
 // 关闭对话框
 const closeDialog = () => {
-    showCreateDialog.value = false
-    editingAdmin.value = null
-    adminForm.value = {
-        username: '',
-        email: '',
-        phone: '',
-        realName: '',
-        password: '',
-        role: 'operator',
-        permissions: [],
-        status: 'active',
-        remark: '',
-        department: '',
-        position: ''
-    }
-}
+	showCreateDialog.value = false;
+	editingAdmin.value = null;
+	adminForm.value = {
+		username: "",
+		email: "",
+		phone: "",
+		realName: "",
+		password: "",
+		role: "operator",
+		permissions: [],
+		status: "active",
+		remark: "",
+		department: "",
+		position: "",
+	};
+};
 
 // 保存管理员
 const saveAdmin = async () => {
-    if (!isFormValid.value) {
-        toast.add({ severity: 'warn', summary: '警告', detail: '请填写必填字段', life: 1000 })
-        return
-    }
+	if (!isFormValid.value) {
+		toast.add({
+			severity: "warn",
+			summary: "警告",
+			detail: "请填写必填字段",
+			life: 1000,
+		});
+		return;
+	}
 
-    try {
-        saving.value = true
+	try {
+		saving.value = true;
 
-        if (editingAdmin.value) {
-            // 更新
-            toast.add({ severity: 'success', summary: '成功', detail: '更新管理员成功', life: 1000 })
-        } else {
-            // 创建
-            toast.add({ severity: 'success', summary: '成功', detail: '创建管理员成功' })
-        }
+		if (editingAdmin.value) {
+			// 更新
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "更新管理员成功",
+				life: 1000,
+			});
+		} else {
+			// 创建
+			toast.add({
+				severity: "success",
+				summary: "成功",
+				detail: "创建管理员成功",
+			});
+		}
 
-        closeDialog()
-        loadAdmins()
-    } catch (error) {
-        console.error('保存管理员失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '保存管理员失败' })
-    } finally {
-        saving.value = false
-    }
-}
+		closeDialog();
+		loadAdmins();
+	} catch (error) {
+		console.error("保存管理员失败:", error);
+		toast.add({ severity: "error", summary: "错误", detail: "保存管理员失败" });
+	} finally {
+		saving.value = false;
+	}
+};
 
 // 确认删除
 const confirmDelete = (admin: Admin) => {
-    confirm.require({
-        message: `确定要删除管理员 "${admin.realName}" 吗？`,
-        header: '删除确认',
-        icon: 'pi pi-exclamation-triangle',
-        acceptClass: 'p-button-danger',
-        accept: () => deleteAdmin(admin.id)
-    })
-}
+	confirm.require({
+		message: `确定要删除管理员 "${admin.realName}" 吗？`,
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => deleteAdmin(admin.id),
+	});
+};
 
 // 删除管理员
 const deleteAdmin = async (id: number) => {
-    try {
-        toast.add({ severity: 'success', summary: '成功', detail: '删除管理员成功' })
-        loadAdmins()
-    } catch (error) {
-        console.error('删除管理员失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '删除管理员失败' })
-    }
-}
+	try {
+		toast.add({
+			severity: "success",
+			summary: "成功",
+			detail: "删除管理员成功",
+		});
+		loadAdmins();
+	} catch (error) {
+		console.error("删除管理员失败:", error);
+		toast.add({ severity: "error", summary: "错误", detail: "删除管理员失败" });
+	}
+};
 
 // 切换管理员状态
 const toggleAdminStatus = async (admin: Admin) => {
-    try {
-        const newStatus = admin.status === 'active' ? 'inactive' : 'active'
-        admin.status = newStatus
-        toast.add({
-            severity: 'success',
-            summary: '成功',
-            detail: `${newStatus === 'active' ? '启用' : '禁用'}管理员成功`
-        })
-        loadAdmins()
-    } catch (error) {
-        console.error('切换管理员状态失败:', error)
-        toast.add({ severity: 'error', summary: '错误', detail: '切换管理员状态失败' })
-    }
-}
+	try {
+		const newStatus = admin.status === "active" ? "inactive" : "active";
+		admin.status = newStatus;
+		toast.add({
+			severity: "success",
+			summary: "成功",
+			detail: `${newStatus === "active" ? "启用" : "禁用"}管理员成功`,
+		});
+		loadAdmins();
+	} catch (error) {
+		console.error("切换管理员状态失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "切换管理员状态失败",
+		});
+	}
+};
 
 // 重置密码
 const resetPassword = async (admin: Admin) => {
-    confirm.require({
-        message: `确定要重置管理员 "${admin.realName}" 的密码吗？`,
-        header: '重置密码确认',
-        icon: 'pi pi-exclamation-triangle',
-        accept: async () => {
-            try {
-                // 模拟API调用
-                await new Promise(resolve => setTimeout(resolve, 500))
-                toast.add({ severity: 'success', summary: '成功', detail: '密码重置成功，新密码已发送到管理员邮箱' })
-            } catch (error) {
-                console.error('重置密码失败:', error)
-                toast.add({ severity: 'error', summary: '错误', detail: '重置密码失败' })
-            }
-        }
-    })
-}
+	confirm.require({
+		message: `确定要重置管理员 "${admin.realName}" 的密码吗？`,
+		header: "重置密码确认",
+		icon: "pi pi-exclamation-triangle",
+		accept: async () => {
+			try {
+				// 模拟API调用
+				await new Promise((resolve) => setTimeout(resolve, 500));
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "密码重置成功，新密码已发送到管理员邮箱",
+				});
+			} catch (error) {
+				console.error("重置密码失败:", error);
+				toast.add({
+					severity: "error",
+					summary: "错误",
+					detail: "重置密码失败",
+				});
+			}
+		},
+	});
+};
 
 // 获取状态标签样式
 const getStatusSeverity = (status: AdminStatus) => {
-    const severityMap = {
-        active: 'success',
-        inactive: 'warning',
-        locked: 'danger'
-    }
-    return severityMap[status] || 'secondary'
-}
+	const severityMap = {
+		active: "success",
+		inactive: "warning",
+		locked: "danger",
+	};
+	return severityMap[status] || "secondary";
+};
 
 const getRoleSeverity = (role: AdminRole) => {
-    const severityMap = {
-        super_admin: 'danger',
-        admin: 'warning',
-        operator: 'info',
-        viewer: 'secondary'
-    }
-    return severityMap[role] || 'secondary'
-}
+	const severityMap = {
+		super_admin: "danger",
+		admin: "warning",
+		operator: "info",
+		viewer: "secondary",
+	};
+	return severityMap[role] || "secondary";
+};
 
 // 获取状态文本
 const getStatusText = (status: AdminStatus) => {
-    const textMap = {
-        active: '正常',
-        inactive: '禁用',
-        locked: '锁定'
-    }
-    return textMap[status] || status
-}
+	const textMap = {
+		active: "正常",
+		inactive: "禁用",
+		locked: "锁定",
+	};
+	return textMap[status] || status;
+};
 
 const getRoleText = (role: AdminRole) => {
-    const textMap = {
-        super_admin: '超级管理员',
-        admin: '管理员',
-        operator: '操作员',
-        viewer: '查看者'
-    }
-    return textMap[role] || role
-}
+	const textMap = {
+		super_admin: "超级管理员",
+		admin: "管理员",
+		operator: "操作员",
+		viewer: "查看者",
+	};
+	return textMap[role] || role;
+};
 
 // 格式化日期
 const formatDate = (date: Date | string | null) => {
-    if (!date) return '-'
-    const d = new Date(date)
-    return d.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
+	if (!date) return "-";
+	const d = new Date(date);
+	return d.toLocaleDateString("zh-CN", {
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+};
 
 // 导出管理员
 const exportAdmins = () => {
-    toast.add({ severity: 'info', summary: '提示', detail: '导出功能开发中...' })
-}
+	toast.add({ severity: "info", summary: "提示", detail: "导出功能开发中..." });
+};
 
 // 组件挂载时加载数据
 onMounted(() => {
-    loadAdmins()
-})
+	loadAdmins();
+});
 </script>
 
 <template>

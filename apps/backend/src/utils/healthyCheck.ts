@@ -9,11 +9,7 @@ import { db } from "../db/connection";
 export async function performHealthCheck() {
 	try {
 		//打印数据库连接信息
-		console.log(
-			"数据库连接信息",
-			process.env.DATABASE_URL,
-
-		);
+		console.log("数据库连接信息", process.env.DATABASE_URL);
 
 		const result = await db.execute(sql`SELECT 1 + 1 AS solution`);
 		console.log("数据库连接成功", result);

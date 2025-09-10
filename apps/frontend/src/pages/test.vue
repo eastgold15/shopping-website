@@ -1,7 +1,6 @@
 <script setup>
-import Counter from '@frontend/components/count.vue'
-import { api } from '@frontend/utils/api';
-
+import Counter from "@frontend/components/count.vue";
+import { api } from "@frontend/utils/api";
 
 // 使用响应式数据存储API结果
 const data = ref(null);
@@ -17,11 +16,11 @@ onMounted(async () => {
 			console.log("1111", result);
 		} else {
 			error.value = apiError;
-			console.error('API请求失败:', apiError);
+			console.error("API请求失败:", apiError);
 		}
 	} catch (err) {
 		error.value = err;
-		console.error('API请求失败:', err);
+		console.error("API请求失败:", err);
 	} finally {
 		loading.value = false;
 	}

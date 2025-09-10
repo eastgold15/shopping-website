@@ -1,15 +1,15 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(git config:*)",
-      "Bash(bun run:*)",
-      "Read(//d/Users/boer/Desktop/shopping-website/apps/frontend/**)",
-      "Read(//d/Users/boer/Desktop/shopping-website/**)",
-      "Bash(pnpm install:*)",
-      "Bash(pnpm dev)",
-      "Bash(bun run dev:*)"
-    ],
-    "deny": [],
-    "ask": []
-  }
+	"permissions": {
+		"allow": [
+			"Bash(git config:*)",
+			"Bash(bun run:*)",
+			"Read(//d/Users/boer/Desktop/shopping-website/apps/frontend/**)",
+			"Read(//d/Users/boer/Desktop/shopping-website/**)",
+			"Bash(pnpm install:*)",
+			"Bash(pnpm dev)",
+			"Bash(bun run dev:*)"
+		],
+		"deny": [],
+		"ask": []
+	}
 }
