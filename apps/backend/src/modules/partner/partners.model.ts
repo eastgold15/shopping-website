@@ -18,12 +18,12 @@ export interface Partner {
 // Elysia模型定义
 export const partnersModel = {
 	// 创建合作伙伴请求参数
-	CreatePartnerDto: DbType.typebox.insert.partnersSchema,
+	CreatePartnerDto: t.Omit
+		(DbType.typebox.insert.partnersSchema, ['id', 'createdAt', 'updatedAt', 'sortOrder']),
 
 	// 更新合作伙伴请求参数
-	UpdatePartnerDto: t.Object({
-		...DbType.spreads.insert.partnersSchema,
-	}),
+	UpdatePartnerDto: t.Partial(t.Omit
+		(DbType.typebox.insert.partnersSchema, ['id', 'createdAt', 'updatedAt', 'sortOrder'])),
 
 	// 排序更新请求
 	UpdateSortRequest: t.Object({

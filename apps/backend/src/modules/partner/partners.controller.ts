@@ -1,8 +1,14 @@
+import { db } from "@backend/db/connection";
+import { partnersSchema } from "@backend/db/schema";
 import { commonRes, pageRes } from "@backend/utils/Res";
+import {
+	asc,
+	eq,
+	getTableColumns
+} from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { partnersModel } from "./partners.model";
 import { PartnersService } from "./partners.service";
-
 /**
  * 合作伙伴控制器
  * 处理合作伙伴相关的HTTP请求
@@ -17,9 +23,16 @@ export const partnersController = new Elysia({
 	// 获取所有合作伙伴（前台用）
 	.get(
 		"/list",
-		async ({ partnersService }) => {
+		async () => {
 			try {
-				const partners = await partnersService.getActivePartnersList();
+				const columns = getTableColumns(partnersSchema);
+				const partners = await db
+					.select(columns)
+					.from(partnersSchema)
+					.where(eq(partnersSchema.isActive, true))
+					.orderBy(asc(partnersSchema.id
+					));
+
 				return commonRes(partners, 200, "获取合作伙伴列表成功");
 			} catch (error) {
 				console.error("获取合作伙伴列表失败:", error);
@@ -96,7 +109,7 @@ export const partnersController = new Elysia({
 		async ({ body, partnersService }) => {
 			try {
 				const newPartner = await partnersService.createPartner(body);
-				return commonRes(newPartner, 201, "创建合作伙伴成功");
+				return commonRes(newPartner, 200, "创建合作伙伴成功");
 			} catch (error) {
 				console.error("创建合作伙伴失败:", error);
 				return commonRes(null, 500, "创建合作伙伴失败");

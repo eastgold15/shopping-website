@@ -340,10 +340,9 @@ export const partnersSchema = pgTable("partners", {
 	id: serial("id").primaryKey(), // 合作伙伴唯一标识
 	name: varchar("name", { length: 255 }).notNull(), // 合作伙伴名称
 	description: text("description").notNull(), // 合作伙伴描述
-	image: text("image")
+	image_id: integer("image_id")
 		.notNull()
-		.references(() => imagesSchema.url), // 合作伙伴Logo图片URL - 引用imagesSchema.url
-	url: varchar("url", { length: 500 }).notNull(), // 合作伙伴网站链接
+		.references(() => imagesSchema.id), // 合作伙伴Logo图片URL - 引用imagesSchema.url
 	sortOrder: integer("sort_order").default(0), // 排序权重
 	isActive: boolean("is_active").default(true), // 是否显示
 	createdAt: timestamp("created_at").defaultNow(), // 创建时间
@@ -353,7 +352,7 @@ export const partnersSchema = pgTable("partners", {
 export const partnersRelations = relations(partnersSchema, ({ one }) => ({
 	// 合作伙伴Logo关联到图片管理表 - 外键在partners表中
 	imageRef: one(imagesSchema, {
-		fields: [partnersSchema.image],
-		references: [imagesSchema.url],
+		fields: [partnersSchema.image_id],
+		references: [imagesSchema.id],
 	}),
 }));

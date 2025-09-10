@@ -1,3 +1,4 @@
+import { commonRes } from "@backend/utils/Res";
 import {
 	and,
 	asc,
@@ -141,6 +142,12 @@ export class PartnersService {
 	 * @returns 创建的合作伙伴
 	 */
 	async createPartner(data: CreatePartnerDto) {
+		// db.transaction(async (tx) => {
+
+		// 	tx.insert(partnersSchema)
+		// 		.values(rest)
+		// 		.returning(this.columns);
+		// });
 		const [newPartner] = await db
 			.insert(partnersSchema)
 			.values(data)
@@ -178,12 +185,12 @@ export class PartnersService {
 			.delete(partnersSchema)
 			.where(eq(partnersSchema.id, id));
 
-		if (result.count === 1) {
-			console.log("成功删除了一条记录");
-			return { success: true, message: "删除成功" };
-		} else if (result.count === 0) {
-			console.log("没有找到匹配的记录，无法删除");
-			return { success: false, message: "未找到该记录" };
+
+		if (result.rowCount === 1) {
+
+			return commonRes(null, 200, "删除成功");
+		} else if (result.rowCount === 0) {
+			return commonRes(null, 200, "没有找到匹配的记录，无法删除");
 		}
 	}
 
