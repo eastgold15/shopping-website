@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type {
-  BatchDeleteImageDto,
-  ImageModel,
-  UpdateImageDto,
+	BatchDeleteImageDto,
+	ImageModel,
+	UpdateImageDto,
 } from "@backend/modules/image/images.model";
 import {
-  copyToClipboard,
-  formatDate,
-  formatSize,
-  getImageUrl,
-  openInNewTab,
+	copyToClipboard,
+	formatDate,
+	formatSize,
+	getImageUrl,
+	openInNewTab,
 } from "@frontend/utils/formatUtils";
 import { api } from "@frontend/utils/handleApi";
 import { useConfirm } from "primevue/useconfirm";
@@ -39,13 +39,13 @@ const confirm = useConfirm();
 
 // 分类选项
 const categoryOptions = [
-  { label: "全部", value: "all" },
-  { label: "轮播图", value: "carousel" },
-  { label: "Banner图", value: "banner" },
-  { label: "新闻图片", value: "news" },
-  { label: "产品图片", value: "product" },
-  { label: "分类图片", value: "category" },
-  { label: "其他", value: "general" },
+	{ label: "全部", value: "all" },
+	{ label: "轮播图", value: "carousel" },
+	{ label: "Banner图", value: "banner" },
+	{ label: "新闻图片", value: "news" },
+	{ label: "产品图片", value: "product" },
+	{ label: "分类图片", value: "category" },
+	{ label: "其他", value: "general" },
 ];
 
 // 计算属性
@@ -54,40 +54,40 @@ const categoryOptions = [
  * 过滤后的图片列表
  */
 const filteredImages = computed(() => {
-  let result = images.value;
+	let result = images.value;
 
-  // 按分类过滤
-  if (selectedCategory.value !== "all") {
-    result = result.filter((img) => img.category === selectedCategory.value);
-  }
+	// 按分类过滤
+	if (selectedCategory.value !== "all") {
+		result = result.filter((img) => img.category === selectedCategory.value);
+	}
 
-  // 按搜索关键词过滤
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(
-      (img) =>
-        img.fileName.toLowerCase().includes(query) ||
-        img.altText?.toLowerCase().includes(query),
-    );
-  }
+	// 按搜索关键词过滤
+	if (searchQuery.value.trim()) {
+		const query = searchQuery.value.toLowerCase();
+		result = result.filter(
+			(img) =>
+				img.fileName.toLowerCase().includes(query) ||
+				img.altText?.toLowerCase().includes(query),
+		);
+	}
 
-  return result;
+	return result;
 });
 
 /**
  * 分页后的图片列表
  */
 const paginatedImages = computed(() => {
-  const start = first.value;
-  const end = start + pageSize.value;
-  return filteredImages.value.slice(start, end);
+	const start = first.value;
+	const end = start + pageSize.value;
+	return filteredImages.value.slice(start, end);
 });
 
 /**
  * 总页数
  */
 const totalPages = computed(() => {
-  return Math.ceil(filteredImages.value.length / pageSize.value);
+	return Math.ceil(filteredImages.value.length / pageSize.value);
 });
 
 // 方法
@@ -96,250 +96,250 @@ const totalPages = computed(() => {
  * 加载图片列表
  */
 const loadImages = async () => {
-  loading.value = true;
-  try {
-    const res = await api.images.list();
-    if (!res) {
-      toast.add({
-        severity: "error",
-        summary: "加载失败",
-        detail: (res as Error).message,
-        life: 3000,
-      });
-    } else {
-      images.value = res.data.items;
-    }
-  } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "加载失败",
-      detail: "无法加载图片列表",
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
-  }
+	loading.value = true;
+	try {
+		const res = await api.images.list();
+		if (!res) {
+			toast.add({
+				severity: "error",
+				summary: "加载失败",
+				detail: (res as Error).message,
+				life: 3000,
+			});
+		} else {
+			images.value = res.data.items;
+		}
+	} catch (error) {
+		toast.add({
+			severity: "error",
+			summary: "加载失败",
+			detail: "无法加载图片列表",
+			life: 3000,
+		});
+	} finally {
+		loading.value = false;
+	}
 };
 
 /**
  * 按分类过滤
  */
 const filterByCategory = () => {
-  first.value = 0; // 重置到第一页
+	first.value = 0; // 重置到第一页
 };
 
 /**
  * 搜索图片
  */
 const searchImages = () => {
-  first.value = 0; // 重置到第一页
+	first.value = 0; // 重置到第一页
 };
 
 /**
  * 分页变化
  */
 const onPageChange = (event: any) => {
-  first.value = event.first;
-  pageSize.value = event.rows;
+	first.value = event.first;
+	pageSize.value = event.rows;
 };
 
 /**
  * 预览图片
  */
 const previewImage = (image: ImageModel) => {
-  previewImageData.value = image;
-  showPreviewDialog.value = true;
+	previewImageData.value = image;
+	showPreviewDialog.value = true;
 };
 
 /**
  * 编辑图片
  */
 const editImage = (image: ImageModel) => {
-  editImageData.value = { ...image };
-  showEditDialog.value = true;
+	editImageData.value = { ...image };
+	showEditDialog.value = true;
 };
 
 /**
  * 保存图片编辑
  */
 const saveImageEdit = async () => {
-  if (!editImageData.value) return;
+	if (!editImageData.value) return;
 
-  saving.value = true;
-  try {
-    const updateData: UpdateImageDto = {
-      fileName: editImageData.value.fileName,
-      category: editImageData.value.category,
-      altText: editImageData.value.altText,
-    };
+	saving.value = true;
+	try {
+		const updateData: UpdateImageDto = {
+			fileName: editImageData.value.fileName,
+			category: editImageData.value.category,
+			altText: editImageData.value.altText,
+		};
 
-    const response = await api.images.update(
-      editImageData.value.id,
-      updateData,
-    );
+		const response = await api.images.update(
+			editImageData.value.id,
+			updateData,
+		);
 
-    if (response.status === 200 && response.data?.code == 200) {
-      // 更新本地数据
-      const index = images.value.findIndex(
-        (img) => img.id === editImageData.value!.id,
-      );
-      if (index !== -1) {
-        images.value[index] = { ...editImageData.value };
-      }
+		if (response.status === 200 && response.data?.code == 200) {
+			// 更新本地数据
+			const index = images.value.findIndex(
+				(img) => img.id === editImageData.value!.id,
+			);
+			if (index !== -1) {
+				images.value[index] = { ...editImageData.value };
+			}
 
-      showEditDialog.value = false;
-      toast.add({
-        severity: "success",
-        summary: "保存成功",
-        detail: "图片信息已更新",
-        life: 3000,
-      });
-    } else {
-      throw new Error(response.data?.error || "保存失败");
-    }
-  } catch (error) {
-    console.error("保存失败:", error);
-    toast.add({
-      severity: "error",
-      summary: "保存失败",
-      detail: "无法保存图片信息",
-      life: 3000,
-    });
-  } finally {
-    saving.value = false;
-  }
+			showEditDialog.value = false;
+			toast.add({
+				severity: "success",
+				summary: "保存成功",
+				detail: "图片信息已更新",
+				life: 3000,
+			});
+		} else {
+			throw new Error(response.data?.error || "保存失败");
+		}
+	} catch (error) {
+		console.error("保存失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "保存失败",
+			detail: "无法保存图片信息",
+			life: 3000,
+		});
+	} finally {
+		saving.value = false;
+	}
 };
 
 /**
  * 复制图片URL
  */
 const copyImageUrl = async (image: ImageModel) => {
-  const success = await copyToClipboard(getImageUrl(image.url));
+	const success = await copyToClipboard(getImageUrl(image.url));
 
-  if (success) {
-    toast.add({
-      severity: "success",
-      summary: "复制成功",
-      detail: "图片链接已复制到剪贴板",
-      life: 2000,
-    });
-  } else {
-    toast.add({
-      severity: "error",
-      summary: "复制失败",
-      detail: "无法复制到剪贴板",
-      life: 2000,
-    });
-  }
+	if (success) {
+		toast.add({
+			severity: "success",
+			summary: "复制成功",
+			detail: "图片链接已复制到剪贴板",
+			life: 2000,
+		});
+	} else {
+		toast.add({
+			severity: "error",
+			summary: "复制失败",
+			detail: "无法复制到剪贴板",
+			life: 2000,
+		});
+	}
 };
 
 /**
  * 在新标签页打开图片
  */
 const openImageInNewTab = (image: ImageModel) => {
-  openInNewTab(getImageUrl(image.url));
+	openInNewTab(getImageUrl(image.url));
 };
 
 /**
  * 确认删除单个图片
  */
 const confirmDelete = (image: ImageModel) => {
-  confirm.require({
-    message: `确定要删除图片 "${image.fileName}" 吗？`,
-    header: "删除确认",
-    icon: "pi pi-exclamation-triangle",
-    acceptClass: "p-button-danger",
-    accept: () => deleteImage(image.id),
-  });
+	confirm.require({
+		message: `确定要删除图片 "${image.fileName}" 吗？`,
+		header: "删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => deleteImage(image.id),
+	});
 };
 
 /**
  * 确认批量删除
  */
 const confirmBatchDelete = () => {
-  confirm.require({
-    message: `确定要删除选中的 ${selectedImages.value.length} 张图片吗？`,
-    header: "批量删除确认",
-    icon: "pi pi-exclamation-triangle",
-    acceptClass: "p-button-danger",
-    accept: () => batchDeleteImages(),
-  });
+	confirm.require({
+		message: `确定要删除选中的 ${selectedImages.value.length} 张图片吗？`,
+		header: "批量删除确认",
+		icon: "pi pi-exclamation-triangle",
+		acceptClass: "p-button-danger",
+		accept: () => batchDeleteImages(),
+	});
 };
 
 /**
  * 删除单个图片
  */
 const deleteImage = async (imageId: string) => {
-  try {
-    await api.images.delete(imageId);
+	try {
+		await api.images.delete(imageId);
 
-    // 从列表中移除
-    images.value = images.value.filter((img) => img.id !== imageId);
+		// 从列表中移除
+		images.value = images.value.filter((img) => img.id !== imageId);
 
-    // 从选中列表中移除
-    selectedImages.value = selectedImages.value.filter((id) => id !== imageId);
+		// 从选中列表中移除
+		selectedImages.value = selectedImages.value.filter((id) => id !== imageId);
 
-    toast.add({
-      severity: "success",
-      summary: "删除成功",
-      detail: "图片已删除",
-      life: 2000,
-    });
-  } catch (error) {
-    console.error("删除失败:", error);
-    toast.add({
-      severity: "error",
-      summary: "删除失败",
-      detail: "无法删除图片",
-      life: 2000,
-    });
-  }
+		toast.add({
+			severity: "success",
+			summary: "删除成功",
+			detail: "图片已删除",
+			life: 2000,
+		});
+	} catch (error) {
+		console.error("删除失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "删除失败",
+			detail: "无法删除图片",
+			life: 2000,
+		});
+	}
 };
 
 /**
  * 批量删除图片
  */
 const batchDeleteImages = async () => {
-  try {
-    const batchDeleteData: BatchDeleteImageDto = {
-      imageIds: selectedImages.value,
-    };
+	try {
+		const batchDeleteData: BatchDeleteImageDto = {
+			imageIds: selectedImages.value,
+		};
 
-    const response = await api.images.batchDelete(batchDeleteData);
+		const response = await api.images.batchDelete(batchDeleteData);
 
-    // 从列表中移除
-    images.value = images.value.filter(
-      (img) => !selectedImages.value.includes(img.id),
-    );
-    // 清空选中列表
-    selectedImages.value = [];
-    toast.add({
-      severity: "success",
-      summary: "删除成功",
-      detail: `已删除 ${response.data.deletedCount} 张图片`,
-      life: 3000,
-    });
-  } catch (error) {
-    console.error("批量删除失败:", error);
-    toast.add({
-      severity: "error",
-      summary: "删除失败",
-      detail: "无法批量删除图片",
-      life: 3000,
-    });
-  }
+		// 从列表中移除
+		images.value = images.value.filter(
+			(img) => !selectedImages.value.includes(img.id),
+		);
+		// 清空选中列表
+		selectedImages.value = [];
+		toast.add({
+			severity: "success",
+			summary: "删除成功",
+			detail: `已删除 ${response.data.deletedCount} 张图片`,
+			life: 3000,
+		});
+	} catch (error) {
+		console.error("批量删除失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "删除失败",
+			detail: "无法批量删除图片",
+			life: 3000,
+		});
+	}
 };
 
 /**
  * 获取分类标签
  */
 const getCategoryLabel = (category: string): string => {
-  const option = categoryOptions.find((opt) => opt.value === category);
-  return option?.label || category;
+	const option = categoryOptions.find((opt) => opt.value === category);
+	return option?.label || category;
 };
 // 生命周期
 onMounted(() => {
-  loadImages();
+	loadImages();
 });
 
 const showUploadDialog = ref(false);

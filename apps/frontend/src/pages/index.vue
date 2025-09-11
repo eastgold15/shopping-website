@@ -19,9 +19,9 @@ console.log(JSON.stringify(defaultIntroParagraphs));
 // 加载合作伙伴数据
 const loadPartners = async () => {
   try {
-    const { code, data, message } = await api.partners.list() as any
+    const { code, data, message } = (await api.partners.list()) as any;
 
-    cosnoelog(code, data, message)
+
     if (code == 200 && data) {
       partners.value = data.items;
       console.log("合作伙伴数据:", data);

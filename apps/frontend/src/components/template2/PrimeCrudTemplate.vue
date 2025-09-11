@@ -1,118 +1,185 @@
-<script lang="ts" generic="T extends { id: number }, PageQuery, MetaData" setup>
-
-import type { PageData } from '@backend/types'
-import type { GenCmsTemplateData } from '@frontend/composables/cms/usePrimeTemplateGen'
-import type { FormInstance, FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Paginator from 'primevue/paginator'
-import Panel from 'primevue/panel'
-
-import Tag from 'primevue/tag'
-import { useToast } from 'primevue/usetoast'
-
-import Drawer from 'primevue/drawer'
+<script lang="ts" generic="T extends { id: number }, PageQuery extends BaseQueryParams" setup>
+import type { PageData } from "@backend/types";
+import type {
+  BaseQueryParams,
+  FormResolver,
+  GenCmsTemplateData,
+} from "@frontend/types/prime-cms";
+import type { FormInstance, FormSubmitEvent } from "@primevue/forms";
+import { Form } from "@primevue/forms";
+import Button from "primevue/button";
+import Column from "primevue/column";
+import DataTable from "primevue/datatable";
+import Drawer from "primevue/drawer";
+import Paginator from "primevue/paginator";
+import Panel from "primevue/panel";
+import Tag from "primevue/tag";
+import { useToast } from "primevue/usetoast";
+import { computed, ref, toRaw } from "vue";
 
 const props = defineProps<{
-  name: string
-  identifier?: string
+  name: string;
+  identifier?: string;
   /**
    * 表单数据
    */
-  queryForm: Partial<PageQuery>
-  tableData: PageData<T[]>
-  templateData: GenCmsTemplateData<T, PageQuery, MetaData>
-  resolver?: any // PrimeVue 表单验证器（支持zodResolver、yupResolver、valibotResolver或自定义resolver）
-  queryResolver?: any // 查询表单验证器
-  crudController?: number
-}>()
+  queryForm: Partial<PageQuery>;
+  tableData: PageData<T[]>;
+  templateData: GenCmsTemplateData<T, Omit<T, "id">, PageQuery>;
+  resolver: FormResolver | any;
+  queryResolver: FormResolver | any;
+  crudController?: number;
+}>();
 
-// // 定义插槽类型
-// defineSlots<{
-//   CrudForm: (props: { data: T; mode: string; disabled: boolean }) => any
-//   CrudFormAction: () => any
-//   QueryForm: () => any
-//   QueryFormAction: () => any
-//   TableColumn: () => any
-//   IHeader: () => any
-// }>()
 
-// 添加空值检查，避免解构null值
-const templateDataRef = computed(() => props.templateData)
-
+const templateDataRef = computed(() => props.templateData);
 const {
   FormSearch,
   formLoading,
   handleCrudDialog,
-  tableData,
+  tableData: templateTableData,
   fetchList,
   crudDialogOptions,
   resetForm,
   submitForm,
   handleDeletes,
-} = templateDataRef.value || {
-  FormSearch: null,
-  formLoading: ref(false),
-  handleCrudDialog: () => { },
-  tableData: ref({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 } }),
-  fetchList: () => { },
-  crudDialogOptions: ref({ visible: false, mode: 'NEW', data: null, loading: false }),
-  resetForm: () => { },
-  submitForm: () => { },
-  handleDeletes: () => { },
-}
+} = templateDataRef.value;
 
-const _crudController = computed(() => props.crudController || 15)
-const toast = useToast()
+// 确保使用正确的表单数据
+const tableData = computed(() => templateTableData.value);
+
+// 为 crudDialogOptions 添加类型注解
+const crudDialogOptionsRef = crudDialogOptions;
+
+const _crudController = computed(() => props.crudController || 15);
+const toast = useToast();
 
 // 表单引用
-const queryFormRef = ref<FormInstance>()
-const drawerFormRef = ref<FormInstance>()
+const queryFormRef = ref<FormInstance | null>(null);
+const drawerFormRef = ref<FormInstance | null>(null);
 
 // 分页配置
 const paginationOptions = computed(() => ({
   first: (tableData.value.meta.page - 1) * tableData.value.meta.pageSize,
   rows: tableData.value.meta.pageSize,
-  totalRecords: tableData.value.meta.totalPages,
-  rowsPerPageOptions: [20, 30, 50, 100]
-}))
+  totalRecords: tableData.value.meta.total,
+  rowsPerPageOptions: [20, 30, 50, 100],
+}));
 
 // 分页事件处理
-const onPageChange = (event: any) => {
-  tableData.value.meta.page = Math.floor(event.first / event.rows) + 1
-  tableData.value.meta.pageSize = event.rows
-  fetchList()
-}
+const onPageChange = (event: { first: number; rows: number }) => {
+  tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
+  tableData.value.meta.pageSize = event.rows;
+  fetchList();
+};
 
 // 查询表单提交处理
 const onQueryFormSubmit = async (event: FormSubmitEvent) => {
   if (event.valid) {
-    await FormSearch(queryFormRef.value)
+    await FormSearch(queryFormRef.value);
   } else {
     toast.add({
-      severity: 'error',
-      summary: '查询表单验证失败',
-      detail: '请检查输入内容',
-      life: 3000
-    })
+      severity: "error",
+      summary: "查询表单验证失败",
+      detail: "请检查输入内容",
+      life: 3000,
+    });
   }
-}
+};
 
 // 表单提交处理
 const onFormSubmit = async (event: FormSubmitEvent) => {
   if (event.valid) {
-    await submitForm(drawerFormRef.value)
+    try {
+      crudDialogOptionsRef.value.loading = true;
+
+      const formData = event.values as T;
+
+      // 获取当前表单数据
+      const currentData = crudDialogOptionsRef.value.data || {};
+      const submitData = { ...currentData, ...formData } as T;
+
+      // 转换提交数据
+      if (templateDataRef.value.transformSubmitData) {
+        templateDataRef.value.transformSubmitData(
+          submitData,
+          crudDialogOptionsRef.value.mode,
+        );
+      }
+
+      // 提交数据
+      const rawSubmitData = toRaw(submitData) as T;
+      let res;
+
+      if (crudDialogOptionsRef.value.mode === "EDIT") {
+        // console.log("EDIT", EDIT);
+        res = await templateDataRef.value.update(
+          rawSubmitData.id!,
+          rawSubmitData,
+        );
+        console.log("res", res);
+        if (res.code === 200) {
+          toast.add({
+            severity: "success",
+            summary: "修改成功",
+            detail: "数据已成功修改",
+            life: 3000,
+          });
+        } else {
+          toast.add({
+            severity: "error",
+            summary: "修改失败",
+            detail: res.message ?? "修改失败！",
+            life: 3000,
+          });
+        }
+      } else {
+        // 对于新建操作，需要移除id字段
+        const { id, ...createData } = rawSubmitData;
+        res = await templateDataRef.value.create(createData as Omit<T, "id">);
+        console.log("res", res);
+        if (res.code === 200) {
+          toast.add({
+            severity: "success",
+            summary: "添加成功",
+            detail: "数据已成功添加",
+            life: 3000,
+          });
+        } else {
+          toast.add({
+            severity: "error",
+            summary: "添加失败",
+            detail: res.message ?? "添加失败！",
+            life: 3000,
+          });
+        }
+      }
+
+      // 统一处理成功后的逻辑
+      if (res?.code === 200) {
+        crudDialogOptionsRef.value.visible = false;
+        await fetchList();
+      }
+    } catch (error) {
+      console.error("表单提交失败:", error);
+      toast.add({
+        severity: "error",
+        summary: "提交失败",
+        detail: "表单提交失败，请稍后重试",
+        life: 3000,
+      });
+    } finally {
+      crudDialogOptionsRef.value.loading = false;
+    }
   } else {
     toast.add({
-      severity: 'error',
-      summary: '表单验证失败',
-      detail: '请检查输入内容',
-      life: 3000
-    })
+      severity: "error",
+      summary: "表单验证失败",
+      detail: "请检查输入内容",
+      life: 3000,
+    });
   }
-}
+};
 </script>
 
 <template>
@@ -121,12 +188,10 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
     <Panel header="查询条件" class="mb-4">
       <slot name="IHeader">
         <Form ref="queryFormRef" :initialValues="queryForm" :resolver="props.queryResolver" @submit="onQueryFormSubmit">
-          <div class="    md:flex md:justify-between md:items-center ">
-
-            <div class="md:flex gap-4">
+          <div class="md:flex md:justify-between md:items-center ">
+            <div class="md:flex md:items-center  gap-4">
               <slot name="QueryForm" />
             </div>
-
             <div>
               <slot name="QueryFormAction">
                 <div class=" md:col-auto">
@@ -141,8 +206,6 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
                 </div>
               </slot>
             </div>
-
-
           </div>
         </Form>
       </slot>
@@ -181,45 +244,43 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
     </Panel>
 
     <!-- 侧边栏对话框 -->
-    <Drawer v-model:visible="crudDialogOptions.visible" position="right" class="w-full md:w-40rem lg:w-30rem h-screen"
-      :modal="true">
+    <Drawer v-model:visible="crudDialogOptionsRef.visible" position="right"
+      class="w-full md:w-40rem lg:w-30rem h-screen" :modal="true">
       <template #header>
         <div class="flex align-items-center gap-2">
           <i class="pi pi-user"></i>
           <span class="font-bold">
-            <span v-if="crudDialogOptions.mode === 'NEW'">新建</span>
-            <span v-else-if="crudDialogOptions.mode === 'EDIT'">编辑</span>
-            <span v-else-if="crudDialogOptions.mode === 'READ'">查看</span>
+            <span v-if="crudDialogOptionsRef.mode === 'NEW'">新建</span>
+            <span v-else-if="crudDialogOptionsRef.mode === 'EDIT'">编辑</span>
+            <span v-else-if="crudDialogOptionsRef.mode === 'READ'">查看</span>
             {{ name }}信息
           </span>
-          <Tag v-if="crudDialogOptions.data" :value="`#${crudDialogOptions.data.id}`" severity="secondary"
+          <Tag v-if="crudDialogOptionsRef.data" :value="`#${crudDialogOptionsRef.data.id}`" severity="secondary"
             class="ml-2" />
         </div>
       </template>
 
-
-      <div class="flex justify-center  ">
-
-        <Form v-if="crudDialogOptions.data" ref="drawerFormRef" :initialValues="crudDialogOptions.data"
-          :resolver="props.resolver" @submit="onFormSubmit" class="w-full flex flex-col gap-4 sm:w-56 ">
-          <slot :data="(crudDialogOptions.data as T)" :mode="crudDialogOptions.mode"
-            :disabled="crudDialogOptions.loading || crudDialogOptions.mode === 'READ'" name="CrudForm" />
+      <div class="flex justify-center">
+        <Form v-if="crudDialogOptionsRef.data" ref="drawerFormRef" :initialValues="crudDialogOptionsRef.data"
+          :resolver="props.resolver" @submit="onFormSubmit" class="w-full flex flex-col gap-4 sm:w-56">
+          <slot :data="(crudDialogOptionsRef.data as T)" :mode="crudDialogOptionsRef.mode"
+            :disabled="crudDialogOptionsRef.loading || crudDialogOptionsRef.mode === 'READ'" name="CrudForm" />
         </Form>
-
       </div>
-
 
       <template #footer>
         <div class="flex gap-2 justify-content-end">
           <slot name="CrudFormAction">
-            <template v-if="crudDialogOptions.mode === 'READ'">
-              <Button label="关闭" icon="pi pi-times" severity="secondary" @click="crudDialogOptions.visible = false" />
+            <template v-if="crudDialogOptionsRef.mode === 'READ'">
+              <Button label="关闭" icon="pi pi-times" severity="secondary"
+                @click="crudDialogOptionsRef.visible = false" />
             </template>
             <template v-else>
-              <Button label="取消" icon="pi pi-times" severity="secondary" @click="crudDialogOptions.visible = false" />
+              <Button label="取消" icon="pi pi-times" severity="secondary"
+                @click="crudDialogOptionsRef.visible = false" />
               <Button label="重置" icon="pi pi-refresh" severity="secondary" @click="resetForm(drawerFormRef)" />
-              <Button :label="crudDialogOptions.mode !== 'NEW' ? '修改' : '新增'" icon="pi pi-check"
-                :loading="crudDialogOptions.loading" @click="submitForm(drawerFormRef)" />
+              <Button type="submit" :label="crudDialogOptionsRef.mode !== 'NEW' ? '修改' : '新增'" icon="pi pi-check"
+                :loading="crudDialogOptionsRef.loading" @click="drawerFormRef?.submit?.()" />
             </template>
           </slot>
         </div>
@@ -228,21 +289,4 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
   </div>
 </template>
 
-<style scoped>
-.prime-crud-template {
-  width: 100%;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  align-items: end;
-}
-
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+<style scoped></style>

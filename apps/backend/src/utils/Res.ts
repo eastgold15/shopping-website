@@ -44,8 +44,9 @@ export type CommonRes<T> = {
  */
 export function commonRes<T>(
   data: T,
-  message = "操作成功",
   code = 200,
+  message = "操作成功",
+
 ): CommonRes<T> {
   return {
     code,
@@ -106,7 +107,7 @@ export function pageRes<T>(
         totalPages: Math.ceil(total / pageSize),
       },
     },
-    message,
     200,
+    message,
   );
 }

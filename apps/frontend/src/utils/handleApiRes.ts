@@ -4,15 +4,7 @@
  * @param showToast 是否显示错误提示（默认为 true）
  * @returns 如果成功返回 response.data，失败抛出错误并显示错误消息
  */
-export async function handleApiRes<T>(
-  apiPromise: Promise<{
-    status: number;
-    message?: string;
-    data?: T;
-    [key: string]: any;
-  }>,
-  showToast: boolean = true,
-): Promise<Exclude<T, null | undefined>> {
+export async function handleApiRes<T>(apiPromise: T) {
   try {
     const { status, data, message } = await apiPromise;
 
@@ -56,10 +48,6 @@ function showErrorToast(message: string) {
     });
 }
 
-
-
-
-
 /**
  * 更智能的默认值生成器（推荐使用）
  */
@@ -67,15 +55,15 @@ export function smartDefaultValue<T>(): T {
   // 处理基本类型
   const type = typeof {} as T;
 
-  if (type === 'string') return '' as unknown as T;
-  if (type === 'number') return 0 as unknown as T;
-  if (type === 'boolean') return false as unknown as T;
+  if (type === "string") return "" as unknown as T;
+  if (type === "number") return 0 as unknown as T;
+  if (type === "boolean") return false as unknown as T;
 
   // 处理数组
   if (Array.isArray({} as T)) return [] as unknown as T;
 
   // 处理对象 - 递归创建默认值
-  if (type === 'object') {
+  if (type === "object") {
     // 这是一个简化版本，实际使用时可能需要更复杂的逻辑
     return {} as T;
   }

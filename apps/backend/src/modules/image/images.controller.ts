@@ -55,7 +55,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
     "/:id",
     async ({ params, body, imagesService }) => {
       const result = await imagesService.updateImage(params.id, body as any);
-      return commonRes(null, "更新成功");
+      return commonRes(null, 200,"更新成功");
     },
     {
       params: t.Object({
@@ -107,7 +107,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
           };
         }
 
-        return commonRes(null, "删除成功");
+        return commonRes(null, 200,"删除成功");
       } catch (error) {
         console.error("删除图片失败:", error);
         return {

@@ -7,209 +7,209 @@ const route = useRoute();
 const sidebarVisible = ref(false);
 const userMenuVisible = ref(false);
 const currentUser = ref({
-  name: "管理员",
-  avatar: "",
-  role: "Administrator",
+	name: "管理员",
+	avatar: "",
+	role: "Administrator",
 });
 
 // 当前页面标题
 const currentPageTitle = computed(() => {
-  const path = route.path;
-  if (path.includes("/dashboard")) return "仪表盘";
-  if (path.includes("/partners")) return "合作伙伴管理";
-  if (path.includes("/categories")) return "商品分类管理";
-  if (path.includes("/products/add")) return "添加商品";
-  if (path.includes("/products")) return "商品管理";
-  if (path.includes("/orders")) return "订单管理";
-  if (path.includes("/refunds")) return "退款管理";
-  if (path.includes("/users")) return "用户管理";
-  if (path.includes("/admins")) return "管理员管理";
-  if (path.includes("/settings")) return "网站设置";
-  if (path.includes("/header-config")) return "顶部配置管理";
-  if (path.includes("/footer-config")) return "底部配置管理";
-  if (path.includes("/advertisements")) return "广告管理";
-  if (path.includes("/images")) return "图片管理";
-  if (path.includes("/payment-settings")) return "支付设置";
-  if (path.includes("/shipping-settings")) return "物流设置";
-  if (path.includes("/sales-reports")) return "销售统计";
-  if (path.includes("/users-reports")) return "用户统计";
-  if (path.includes("/reports")) return "统计报表";
-  return "仪表盘";
+	const path = route.path;
+	if (path.includes("/dashboard")) return "仪表盘";
+	if (path.includes("/partners")) return "合作伙伴管理";
+	if (path.includes("/categories")) return "商品分类管理";
+	if (path.includes("/products/add")) return "添加商品";
+	if (path.includes("/products")) return "商品管理";
+	if (path.includes("/orders")) return "订单管理";
+	if (path.includes("/refunds")) return "退款管理";
+	if (path.includes("/users")) return "用户管理";
+	if (path.includes("/admins")) return "管理员管理";
+	if (path.includes("/settings")) return "网站设置";
+	if (path.includes("/header-config")) return "顶部配置管理";
+	if (path.includes("/footer-config")) return "底部配置管理";
+	if (path.includes("/advertisements")) return "广告管理";
+	if (path.includes("/images")) return "图片管理";
+	if (path.includes("/payment-settings")) return "支付设置";
+	if (path.includes("/shipping-settings")) return "物流设置";
+	if (path.includes("/sales-reports")) return "销售统计";
+	if (path.includes("/users-reports")) return "用户统计";
+	if (path.includes("/reports")) return "统计报表";
+	return "仪表盘";
 });
 
 const menuItems = ref([
-  {
-    label: "仪表盘",
-    icon: "pi pi-home",
-    command: () => router.push("/admin/dashboard"),
-  },
-  {
-    label: "合作伙伴管理",
-    icon: "pi pi-briefcase",
-    command: () => router.push("/admin/partners"),
-  },
-  {
-    label: "商品管理",
-    icon: "pi pi-box",
-    items: [
-      {
-        label: "商品列表",
-        icon: "pi pi-list",
-        command: () => router.push("/admin/products"),
-      },
-      {
-        label: "添加商品",
-        icon: "pi pi-plus",
-        command: () => router.push("/admin/products/add"),
-      },
-      {
-        label: "商品分类",
-        icon: "pi pi-sitemap",
-        command: () => router.push("/admin/categories"),
-      },
-    ],
-  },
-  {
-    label: "订单管理",
-    icon: "pi pi-shopping-cart",
-    items: [
-      {
-        label: "订单列表",
-        icon: "pi pi-list",
-        command: () => router.push("/admin/orders"),
-      },
-      {
-        label: "退款管理",
-        icon: "pi pi-money-bill",
-        command: () => router.push("/admin/refunds"),
-      },
-    ],
-  },
-  {
-    label: "用户管理",
-    icon: "pi pi-users",
-    items: [
-      {
-        label: "用户列表",
-        icon: "pi pi-list",
-        command: () => router.push("/admin/users"),
-      },
-      {
-        label: "管理员",
-        icon: "pi pi-user-edit",
-        command: () => router.push("/admin/admins"),
-      },
-    ],
-  },
-  {
-    label: "网站设置",
-    icon: "pi pi-cog",
-    items: [
-      {
-        label: "基本设置",
-        icon: "pi pi-info-circle",
-        command: () => router.push("/admin/settings"),
-      },
+	{
+		label: "仪表盘",
+		icon: "pi pi-home",
+		command: () => router.push("/admin/dashboard"),
+	},
+	{
+		label: "合作伙伴管理",
+		icon: "pi pi-briefcase",
+		command: () => router.push("/admin/partners"),
+	},
+	{
+		label: "商品管理",
+		icon: "pi pi-box",
+		items: [
+			{
+				label: "商品列表",
+				icon: "pi pi-list",
+				command: () => router.push("/admin/products"),
+			},
+			{
+				label: "添加商品",
+				icon: "pi pi-plus",
+				command: () => router.push("/admin/products/add"),
+			},
+			{
+				label: "商品分类",
+				icon: "pi pi-sitemap",
+				command: () => router.push("/admin/categories"),
+			},
+		],
+	},
+	{
+		label: "订单管理",
+		icon: "pi pi-shopping-cart",
+		items: [
+			{
+				label: "订单列表",
+				icon: "pi pi-list",
+				command: () => router.push("/admin/orders"),
+			},
+			{
+				label: "退款管理",
+				icon: "pi pi-money-bill",
+				command: () => router.push("/admin/refunds"),
+			},
+		],
+	},
+	{
+		label: "用户管理",
+		icon: "pi pi-users",
+		items: [
+			{
+				label: "用户列表",
+				icon: "pi pi-list",
+				command: () => router.push("/admin/users"),
+			},
+			{
+				label: "管理员",
+				icon: "pi pi-user-edit",
+				command: () => router.push("/admin/admins"),
+			},
+		],
+	},
+	{
+		label: "网站设置",
+		icon: "pi pi-cog",
+		items: [
+			{
+				label: "基本设置",
+				icon: "pi pi-info-circle",
+				command: () => router.push("/admin/settings"),
+			},
 
-      {
-        label: "广告管理",
-        icon: "pi pi-image",
-        command: () => router.push("/admin/advertisements"),
-      },
-      {
-        label: "图片管理",
-        icon: "pi pi-images",
-        command: () => router.push("/admin/images"),
-      },
-      {
-        label: "资源管理",
-        icon: "pi pi-images",
-        command: () => router.push("/admin/media"),
-      },
-      {
-        label: "支付设置",
-        icon: "pi pi-credit-card",
-        command: () => router.push("/admin/payment-settings"),
-      },
-      {
-        label: "物流设置",
-        icon: "pi pi-truck",
-        command: () => router.push("/admin/shipping-settings"),
-      },
-    ],
-  },
-  {
-    label: "统计报表",
-    icon: "pi pi-chart-bar",
-    items: [
-      {
-        label: "销售统计",
-        icon: "pi pi-chart-line",
-        command: () => router.push("/admin/sales-reports"),
-      },
-      {
-        label: "用户统计",
-        icon: "pi pi-chart-pie",
-        command: () => router.push("/admin/users-reports"),
-      },
-    ],
-  },
+			{
+				label: "广告管理",
+				icon: "pi pi-image",
+				command: () => router.push("/admin/advertisements"),
+			},
+			{
+				label: "图片管理",
+				icon: "pi pi-images",
+				command: () => router.push("/admin/images"),
+			},
+			{
+				label: "资源管理",
+				icon: "pi pi-images",
+				command: () => router.push("/admin/media"),
+			},
+			{
+				label: "支付设置",
+				icon: "pi pi-credit-card",
+				command: () => router.push("/admin/payment-settings"),
+			},
+			{
+				label: "物流设置",
+				icon: "pi pi-truck",
+				command: () => router.push("/admin/shipping-settings"),
+			},
+		],
+	},
+	{
+		label: "统计报表",
+		icon: "pi pi-chart-bar",
+		items: [
+			{
+				label: "销售统计",
+				icon: "pi pi-chart-line",
+				command: () => router.push("/admin/sales-reports"),
+			},
+			{
+				label: "用户统计",
+				icon: "pi pi-chart-pie",
+				command: () => router.push("/admin/users-reports"),
+			},
+		],
+	},
 ]);
 
 const userMenuItems = ref([
-  {
-    label: "个人资料",
-    icon: "pi pi-user",
-    command: () => {
-      // 跳转到个人资料页面
-    },
-  },
-  {
-    label: "修改密码",
-    icon: "pi pi-key",
-    command: () => {
-      // 跳转到修改密码页面
-    },
-  },
-  {
-    label: "退出登录",
-    icon: "pi pi-sign-out",
-    command: () => {
-      // 执行退出登录
-      console.log("退出登录");
-    },
-  },
+	{
+		label: "个人资料",
+		icon: "pi pi-user",
+		command: () => {
+			// 跳转到个人资料页面
+		},
+	},
+	{
+		label: "修改密码",
+		icon: "pi pi-key",
+		command: () => {
+			// 跳转到修改密码页面
+		},
+	},
+	{
+		label: "退出登录",
+		icon: "pi pi-sign-out",
+		command: () => {
+			// 执行退出登录
+			console.log("退出登录");
+		},
+	},
 ]);
 
 const toggleSidebar = () => {
-  sidebarVisible.value = !sidebarVisible.value;
+	sidebarVisible.value = !sidebarVisible.value;
 };
 
 const toggleUserMenu = (event) => {
-  userMenuVisible.value = !userMenuVisible.value;
+	userMenuVisible.value = !userMenuVisible.value;
 };
 const isDarkMode = ref(false);
 const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value;
-  if (isDarkMode.value) {
-    document.documentElement.classList.add("dark");
-    localStorage.setItem("theme", "dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
-  }
+	isDarkMode.value = !isDarkMode.value;
+	if (isDarkMode.value) {
+		document.documentElement.classList.add("dark");
+		localStorage.setItem("theme", "dark");
+	} else {
+		document.documentElement.classList.remove("dark");
+		localStorage.setItem("theme", "light");
+	}
 };
 
 // 初始化主题
 onMounted(() => {
-  const savedTheme = localStorage.getItem("theme");
-  if (
-    savedTheme === "dark" ||
-    (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)
-  ) {
-    isDarkMode.value = true;
-    document.documentElement.classList.add("dark");
-  }
+	const savedTheme = localStorage.getItem("theme");
+	if (
+		savedTheme === "dark" ||
+		(!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)
+	) {
+		isDarkMode.value = true;
+		document.documentElement.classList.add("dark");
+	}
 });
 </script>
 

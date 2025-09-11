@@ -3,4 +3,5 @@
     <router-view />
   </div>
   <toast></toast>
+  <ConfirmDialog></ConfirmDialog>
 </template>

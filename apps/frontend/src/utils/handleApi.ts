@@ -1,11 +1,21 @@
-import type { CreatePartnerDto, PartnerQueryDto, UpdatePartnerDto, UpdateSortDto } from "@backend/modules/partner";
-import type { ImageQueryDto, UpdateImageDto, UploadImageDto, UploadImagesDto } from "@backend/types";
+import type {
+  CreatePartnerDto,
+  PartnerQueryDto,
+  UpdatePartnerDto,
+  UpdateSortDto,
+} from "@backend/modules/partner";
+import type {
+  ImageQueryDto,
+  UpdateImageDto,
+  UploadImageDto,
+  UploadImagesDto,
+} from "@backend/types";
+// import { useToast } from "primevue/usetoast"; // 暂时不使用toast
 import { handleApiRes } from "./handleApiRes";
 import { client } from "./useTreaty";
 
 // 导出 handleApiRes 供其他文件使用
 export { handleApiRes };
-
 
 // 便捷的API调用方法
 export const api = {
@@ -98,8 +108,6 @@ export const api = {
       handleApiRes(client.api["site-configs"].batch.patch(data)),
   },
 
-
-
   // 广告相关
   advertisements: {
     list: (params?: any) =>
@@ -148,41 +156,146 @@ export const api = {
   },
 };
 
-export const useCmsApi = {
-  partner: {
-    list: (params: PartnerQueryDto) =>
-      handleApiRes(client.api.partners.list.get({ query: params })),
-    getById: (id: number) =>
-      handleApiRes(client.api.partners({ id: id }).get()),
-    create: (data: CreatePartnerDto) => handleApiRes(client.api.partners.post(data)),
-    update: (id: number, data: UpdatePartnerDto) =>
-      handleApiRes(client.api.partners({ id: id }).put(data)),
-    delete: (id: number) =>
-      handleApiRes(client.api.partners({ id: id }).delete()),
-    toggleActive: (id: number) =>
-      handleApiRes(client.api.partners({ id: id })["toggle-active"].patch()),
-    updateSort: (id: number, data: UpdateSortDto) =>
-      handleApiRes(client.api.partners({ id: id }).sort.patch(data)),
-  },
-  // 图片相关
-  images: {
-    list: (params: ImageQueryDto) =>
-      handleApiRes(client.api.images.list.get({ query: params })),
-    getById: (id: number) => handleApiRes(client.api.images({ id }).get()),
-    update: (id: number, data: UpdateImageDto) =>
-      handleApiRes(client.api.images({ id }).put(data)),
-    delete: (id: number) => handleApiRes(client.api.images({ id }).delete()),
-    batchDelete: (body: { ids: number[] }) =>
-      handleApiRes(client.api.images.batch.delete(body))
-  },
 
+const pageDefaultValue = {
+  code: 200,
+  message: "操作成功",
+  data: {
+    items: [],
+    meta: {
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      totalPages: 0
+    }
+  }
+}
+const comDefaultValue = {
+  code: 200,
+  message: "操作成功",
+  data: null
 }
 
 
-export const useFrontApi = {
 
+
+
+
+export const useCmsApi = () => {
+  // const toast = useToast() // 暂时不使用toast
+  return {
+    partner: {
+      list: async (params: PartnerQueryDto) => {
+        const { data, error } = await client.api.partners.list.get({ query: params })
+        if (error) {
+          console.error('Partner list error:', error)
+          return pageDefaultValue
+        }
+        return data
+      },
+
+      getById: async (id: number) => {
+        const { data, error } = await client.api.partners({ id: id }).get()
+        if (error) {
+          console.error('Partner getById error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+      create: async (data: CreatePartnerDto) => {
+        const { data: result, error } = await client.api.partners.post(data)
+        if (error) {
+          console.error('Partner create error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      update: async (id: number, data: UpdatePartnerDto) => {
+        const { data: result, error } = await client.api.partners({ id: id }).put(data)
+        if (error) {
+          console.error('Partner update error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      delete: async (id: number) => {
+        const { data: result, error } = await client.api.partners({ id: id }).delete()
+        if (error) {
+          console.error('Partner delete error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      toggleActive: async (id: number) => {
+        const { data: result, error } = await client.api.partners({ id: id })["toggle-active"].patch()
+        if (error) {
+          console.error('Partner toggleActive error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      updateSort: async (id: number, data: UpdateSortDto) => {
+        const { data: result, error } = await client.api.partners({ id: id }).sort.patch(data)
+        if (error) {
+          console.error('Partner updateSort error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+    },
+    // 图片相关
+    images: {
+      list: async (params: ImageQueryDto) => {
+        const { data, error } = await client.api.images.list.get({ query: params })
+        if (error) {
+          console.error('Images list error:', error)
+          return pageDefaultValue
+        }
+        return data
+      },
+
+      getById: async (id: number) => {
+        const { data, error } = await client.api.images({ id }).get()
+        if (error) {
+          console.error('Images getById error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+
+      update: async (id: number, data: UpdateImageDto) => {
+        const { data: result, error } = await client.api.images({ id }).put(data)
+        if (error) {
+          console.error('Images update error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      delete: async (id: number) => {
+        const { data: result, error } = await client.api.images({ id }).delete()
+        if (error) {
+          console.error('Images delete error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      batchDelete: async (body: { ids: number[] }) => {
+        const { data: result, error } = await client.api.images.batch.delete(body)
+        if (error) {
+          console.error('Images batchDelete error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+    },
+  };
 }
-export type UnPromisify<T> = T extends Promise<infer U> ? U : T
 
-
-
+export const useFrontApi = {};
+export type UnPromisify<T> = T extends Promise<infer U> ? U : T;

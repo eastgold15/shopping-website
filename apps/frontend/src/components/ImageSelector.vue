@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import type { ImageModel, ImageQueryDto } from "@backend/modules/image/images.model";
+import type {
+  ImageModel,
+  ImageQueryDto,
+} from "@backend/modules/image/images.model";
 import {
   formatDate,
   formatSize,
@@ -8,6 +11,7 @@ import {
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { useToast } from "primevue/usetoast";
 import { computed, onMounted, reactive, ref, watch } from "vue";
+
 const toast = useToast();
 // Props
 interface Props {
@@ -71,8 +75,7 @@ const loadImages = async () => {
       params.search = searchQuery.value.trim();
     }
 
-
-    const { code, data, message } = await useCmsApi.images.list(params);
+    const { code, data, message } = await useCmsApi().images.list(params);
 
     console.log(code, data, message);
     console.log("data", data);
@@ -216,7 +219,7 @@ onMounted(() => {
           <!-- 图片预览 -->
           <div class="image-preview">
             <img :src="getImageUrl(image.url)" :alt="image.fileName" class="preview-img" loading="lazy" />
-            
+
             <div class="image-overlay">
               <Button icon="pi pi-check" class="p-button-rounded p-button-sm p-button-success" label="选择" />
             </div>
