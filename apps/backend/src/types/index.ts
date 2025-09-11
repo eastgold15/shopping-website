@@ -13,33 +13,14 @@ export * from "../modules/product/products.model";
 export * from "../modules/statistics/statistics.model";
 export * from "../modules/user/users.model";
 
-// 通用响应类型
-export interface ApiResponse<T = any> {
-	success: boolean;
-	data: T;
-	message?: string;
-}
+export * from "@backend/modules/upload/uploads.model";
+export * from "@backend/utils/Res";
 
-export interface ApiError {
-	success: false;
-	message: string;
-	code?: string;
-	details?: any;
-}
 
-export interface PaginatedResponse<T> {
-	success: boolean;
-	data: T[];
-	pagination: {
-		page: number;
-		pageSize: number;
-		total: number;
-		totalPages: number;
-	};
-}
+
+
+
 
 // 常用工具类型
-export type ID = string | number;
-export type Timestamp = Date | string;
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;

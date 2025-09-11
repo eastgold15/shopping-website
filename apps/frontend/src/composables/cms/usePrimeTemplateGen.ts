@@ -1,4 +1,6 @@
 
+import type { CommonRes, PageData, PageRes } from '@backend/types'
+import type { UnPromisify } from '@frontend/utils/handleApi'
 import { omitBy } from 'lodash-es'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
@@ -13,19 +15,19 @@ export interface PrimeTemplateCrudHandler<T, TBase, PageQuery, MetaData> {
   // 查询 → 返回带id的数据
   getList: (query: Partial<PageQuery>) => Promise<PageRes<T>>
   // 新增 → 必须用 TBase（禁止传入id）
-  create: (data: TBase) => Promise<DataRes<void>>
+  create: (data: TBase) => Promise<CommonRes<null>>
   // 修改 → 必须用 TModel（强制要求id）
-  update: (id: string, data: T) => Promise<DataRes<void>>
-  delete?: (id: string) => Promise<any>
-  deletes?: (ids: string[]) => Promise<any>
+  update: (id: number, data: T) => Promise<CommonRes<null>>
+  delete?: (id: number) => Promise<any>
+  deletes?: (ids: number[]) => Promise<any>
   // 外部处理内部弹窗的方法
   handleCrudDialog?: (data: T, mode: CrudMode, meta?: Partial<MetaData>) => void
-  getDeleteBoxTitle: (id: string) => string
-  getDeleteBoxTitles: (ids: Array<string>) => string
+  getDeleteBoxTitle: (id: number) => string
+  getDeleteBoxTitles: (ids: Array<number>) => string
   // 获取空模型的方法
   getEmptyModel: () => T
   // 回调
-  onFetchSuccess?: () => Promise<void>
+  onFetchSuccess?: (data: any) => Promise<void>
   // 转换提交数据的方法
   transformSubmitData?: TransformSubmitData<any>
 }
@@ -35,12 +37,14 @@ export type CrudMode = 'NEW' | 'EDIT' | 'READ'
 /**
  * CRUD 操作类型枚举
  */
-export enum CurdController {
-  CREATE = 1,
-  REVIEW = 2,
-  UPDATE = 4,
-  DELETE = 8,
-}
+
+
+export const CurdController = {
+  CREATE: 1,
+  DELETE: 8,
+  REVIEW: 2,
+  UPDATE: 4,
+} as const
 
 /**
  * PrimeVue版本的CMS模板数据生成器
@@ -48,36 +52,35 @@ export enum CurdController {
  * @param queryData 查询参数
  * @returns 模板数据
  */
-export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuery, MetaData>(
+export async function genPrimeCmsTemplateData<T extends { id: number }, PageQuery, MetaData>(
   dataCrudHandler: PrimeTemplateCrudHandler<T, Omit<T, 'id'>, PageQuery, MetaData>,
   queryData: Partial<PageQuery>,
 ) {
   // PrimeVue服务
   const confirm = useConfirm()
   const toast = useToast()
-  
+
   // 表单加载状态
   const formLoading = ref(false)
 
   // 表格数据
-  const tableData = ref<PageModel<T>>({
+  const tableData = ref<PageData<T>>({
     items: [],
     meta: {
-      currentPage: 1,
-      itemCount: 0,
+      page: 1,
+      pageSize: 10,
+      total: 0,
       totalPages: 0,
-      itemsPerPage: 20,
-      totalItems: 0,
     },
   })
 
   // 搜索表单
   const queryForm = reactive<Partial<PageQuery>>({ ...queryData })
-  
+
   // 查询参数计算属性
   const queryParams = computed<Partial<PageQuery>>(() => ({
-    page: tableData.value.meta.currentPage,
-    pageSize: tableData.value.meta.itemsPerPage,
+    page: tableData.value.meta.page,
+    pageSize: tableData.value.meta.pageSize,
     ...toRaw(queryForm),
   }) as Partial<PageQuery>)
 
@@ -89,8 +92,15 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
       const { code, data, message } = await dataCrudHandler.getList(safeParams)
 
       if (code === 200) {
-        await dataCrudHandler.onFetchSuccess?.()
-        tableData.value = data
+
+        if (dataCrudHandler.onFetchSuccess) {
+          await dataCrudHandler.onFetchSuccess(data)
+          tableData.value = data
+        } else {
+          tableData.value = data
+        }
+
+
       } else {
         toast.add({
           severity: 'error',
@@ -194,14 +204,14 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
   // 提交表单
   async function submitForm(formEl: any) {
     if (!formEl) return
-    
+
     try {
       // PrimeVue表单验证
       let isValid = true
       if (formEl.validate) {
         isValid = await formEl.validate()
       }
-      
+
       if (!isValid) {
         toast.add({
           severity: 'warn',
@@ -231,7 +241,7 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
       // 提交数据
       const submitData = toRaw(data) as T
       let res
-      
+
       if (crudDialogOptions.value.mode === 'EDIT') {
         res = await dataCrudHandler.update(submitData.id!, submitData)
         if (res.code === 200) {
@@ -287,7 +297,7 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
   }
 
   // 删除数据
-  async function handleDeletes(ids: Array<string>) {
+  async function handleDeletes(ids: Array<number>) {
     confirm.require({
       message: `你确定要删除${dataCrudHandler.getDeleteBoxTitles(ids)} 吗？删除后这个${dataCrudHandler.getDeleteBoxTitles(ids)}永久无法找回。`,
       header: '确认删除',
@@ -314,7 +324,7 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
             })
             return
           }
-          
+
           await fetchList() // 刷新数据
           toast.add({
             severity: 'info',
@@ -358,7 +368,7 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
 
   // 手动指定返回类型
   type ResultType<T, PQ, MD> = {
-    tableData: Ref<PageModel<T[]>>
+    tableData: Ref<PageData<T[]>>
     formLoading: Ref<boolean>
     crudDialogOptions: Ref<CrudDialogOptions>
     queryForm: Ref<PageQuery>
@@ -369,10 +379,10 @@ export async function genPrimeCmsTemplateData<T extends { id: string }, PageQuer
     submitForm: (formEl: any) => Promise<void>
     handleDeletes: (ids: Array<string>) => Promise<void>
   } & { __genericTypes: [T, PQ, MD] }
-  
+
   return result as unknown as ResultType<T, PageQuery, MetaData>
 }
 
 // 自动提取类型
-export type GenCmsTemplateData<T extends { id: string }, PageQuery, MetaData> =
+export type GenCmsTemplateData<T extends { id: number }, PageQuery, MetaData> =
   UnPromisify<ReturnType<typeof genPrimeCmsTemplateData<T, PageQuery, MetaData>>>

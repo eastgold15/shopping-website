@@ -1,8 +1,7 @@
-<script lang="ts" generic="T extends { id: string }, PageQuery, MetaData" setup>
-// import type { FormInstance } from 'primevue/form'
+<script lang="ts" generic="T extends { id: number }, PageQuery, MetaData" setup>
 
+import type { PageData } from '@backend/types'
 import type { GenCmsTemplateData } from '@frontend/composables/cms/usePrimeTemplateGen'
-import type { PageModel } from '@frontend/types/prime-cms'
 import type { FormInstance } from '@primevue/forms'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -19,12 +18,25 @@ const props = defineProps<{
    * 表单数据
    */
   queryForm: Partial<PageQuery>
-  tableData: PageModel<T[]>
+  tableData: PageData<T[]>
   templateData: GenCmsTemplateData<T, PageQuery, MetaData>
   rules?: Record<string, any> // PrimeVue 表单验证规则
   queryRules?: Record<string, any>
   crudController?: number
 }>()
+
+// // 定义插槽类型
+// defineSlots<{
+//   CrudForm: (props: { data: T; mode: string; disabled: boolean }) => any
+//   CrudFormAction: () => any
+//   QueryForm: () => any
+//   QueryFormAction: () => any
+//   TableColumn: () => any
+//   IHeader: () => any
+// }>()
+
+// 添加空值检查，避免解构null值
+const templateDataRef = computed(() => props.templateData)
 
 const {
   FormSearch,
@@ -36,7 +48,17 @@ const {
   resetForm,
   submitForm,
   handleDeletes,
-} = props.templateData
+} = templateDataRef.value || {
+  FormSearch: null,
+  formLoading: ref(false),
+  handleCrudDialog: () => { },
+  tableData: ref({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 } }),
+  fetchList: () => { },
+  crudDialogOptions: ref({ visible: false, mode: 'NEW', data: null, loading: false }),
+  resetForm: () => { },
+  submitForm: () => { },
+  handleDeletes: () => { },
+}
 
 const _crudController = computed(() => props.crudController || 15)
 
@@ -46,16 +68,16 @@ const drawerFormRef = ref<FormInstance>()
 
 // 分页配置
 const paginationOptions = computed(() => ({
-  first: (tableData.value.meta.currentPage - 1) * tableData.value.meta.itemsPerPage,
-  rows: tableData.value.meta.itemsPerPage,
-  totalRecords: tableData.value.meta.totalItems,
+  first: (tableData.value.meta.page - 1) * tableData.value.meta.pageSize,
+  rows: tableData.value.meta.pageSize,
+  totalRecords: tableData.value.meta.totalPages,
   rowsPerPageOptions: [20, 30, 50, 100]
 }))
 
 // 分页事件处理
 const onPageChange = (event: any) => {
-  tableData.value.meta.currentPage = Math.floor(event.first / event.rows) + 1
-  tableData.value.meta.itemsPerPage = event.rows
+  tableData.value.meta.page = Math.floor(event.first / event.rows) + 1
+  tableData.value.meta.pageSize = event.rows
   fetchList()
 }
 </script>
@@ -66,19 +88,29 @@ const onPageChange = (event: any) => {
     <Panel header="查询条件" class="mb-4">
       <slot name="IHeader">
         <form ref="queryFormRef" @submit.prevent>
-          <div class="grid">
-            <slot name="QueryForm" />
+          <div class="    md:flex md:justify-between md:items-center ">
 
-            <slot name="QueryFormAction">
-              <div class="col-12 md:col-auto">
-                <div class="flex gap-2">
-                  <Button label="重置" icon="pi pi-refresh" severity="secondary" @click="resetForm(queryFormRef)" />
-                  <Button label="查询" icon="pi pi-search" :loading="formLoading" @click="FormSearch(queryFormRef)" />
-                  <Button :label="`新建${name}`" icon="pi pi-plus" severity="success"
-                    @click="handleCrudDialog(null, 'NEW')" />
+
+            <div class="md:flex gap-4">
+              <slot name="QueryForm" />
+            </div>
+
+            <div>
+              <slot name="QueryFormAction">
+                <div class=" md:col-auto">
+                  <div class="flex gap-2">
+                    <Button class="md:w-22  " label="重置" icon="pi pi-refresh" severity="secondary"
+                      @click="resetForm(queryFormRef)" />
+                    <Button class="w-22" label="查询" icon="pi pi-search" :loading="formLoading"
+                      @click="FormSearch(queryFormRef)" />
+                    <Button class="w-42" :label="`新建${name}`" icon="pi pi-plus" severity="success"
+                      @click="handleCrudDialog(null, 'NEW')" />
+                  </div>
                 </div>
-              </div>
-            </slot>
+              </slot>
+            </div>
+
+
           </div>
         </form>
       </slot>
@@ -109,7 +141,7 @@ const onPageChange = (event: any) => {
       </slot>
 
       <!-- 分页器 -->
-      <Paginator v-if="tableData && tableData.meta.totalItems > 0" :first="paginationOptions.first"
+      <Paginator v-if="tableData && tableData.meta.total > 0" :first="paginationOptions.first"
         :rows="paginationOptions.rows" :totalRecords="paginationOptions.totalRecords"
         :rowsPerPageOptions="paginationOptions.rowsPerPageOptions"
         template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
@@ -135,7 +167,7 @@ const onPageChange = (event: any) => {
 
       <template #default>
         <form v-if="crudDialogOptions.data" ref="drawerFormRef" @submit.prevent class="flex flex-column gap-4">
-          <slot :data="crudDialogOptions.data" :mode="crudDialogOptions.mode"
+          <slot :data="(crudDialogOptions.data as T)" :mode="crudDialogOptions.mode"
             :disabled="crudDialogOptions.loading || crudDialogOptions.mode === 'READ'" name="CrudForm" />
         </form>
       </template>

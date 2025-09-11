@@ -1,13 +1,13 @@
 import { Elysia, t } from "elysia";
-import { pageRes, pageResSchema } from "../Res";
+import { CreatePageResSchema, pageRes } from "../Res";
 import { createPaginator, paginate } from "./pagination";
 
 /**
  * 分页查询参数的 Elysia 类型定义
  */
 export const PaginationQuery = t.Object({
-	page: t.Optional(t.Number({ minimum: 1 })),
-	pageSize: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
+  page: t.Optional(t.Number({ minimum: 1 })),
+  pageSize: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
 });
 
 /**
@@ -15,10 +15,10 @@ export const PaginationQuery = t.Object({
  * 提供分页相关的装饰器和工具函数
  */
 export const PaginationPlugin = new Elysia({ name: "pagination-plugin" })
-	.decorate("paginate", paginate)
-	.decorate("createPaginator", createPaginator)
-	.decorate("pageRes", pageRes)
-	.model({
-		"pagination.query": PaginationQuery,
-		"pagination.result": pageResSchema(t.Any()),
-	});
+  .decorate("paginate", paginate)
+  .decorate("createPaginator", createPaginator)
+  .decorate("pageRes", pageRes)
+  .model({
+    "pagination.query": PaginationQuery,
+    "pagination.result": CreatePageResSchema(t.Any()),
+  });

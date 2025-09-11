@@ -9,7 +9,8 @@ interface Partner {
 	id: number;
 	name: string;
 	description: string;
-	image: string;
+	image: string; // 显示用的图片URL
+	imageId?: number; // 图片ID，用于编辑时回显
 	url: string;
 	sortOrder: number;
 	isActive: boolean;
@@ -20,7 +21,7 @@ interface Partner {
 interface PartnerForm {
 	name: string;
 	description: string;
-	image: string;
+	imageId: number | null; // 改为数字ID
 	url: string;
 	sortOrder: number;
 	isActive: boolean;
@@ -46,11 +47,14 @@ const showImageSelector = ref(false);
 const partnerForm = ref<PartnerForm>({
 	name: "",
 	description: "",
-	image: "",
+	imageId: null,
 	url: "",
 	sortOrder: 0,
 	isActive: true,
 });
+
+// 用于显示的图片URL
+const selectedImageUrl = ref<string>("");
 
 // 状态选项
 const statusOptions = [
@@ -68,7 +72,7 @@ const isFormValid = computed(() => {
 	return (
 		partnerForm.value.name.trim() &&
 		partnerForm.value.description.trim() &&
-		partnerForm.value.image.trim()
+		partnerForm.value.imageId !== null
 	);
 });
 
@@ -78,7 +82,10 @@ const openImageSelector = () => {
 };
 
 const onImageSelected = (imageUrl: string, imageData: any) => {
-	partnerForm.value.image = imageUrl;
+	// 保存图片ID到表单
+	partnerForm.value.imageId = imageData.id;
+	// 保存图片URL用于显示
+	selectedImageUrl.value = imageUrl;
 	showImageSelector.value = false;
 	toast.add({
 		severity: "success",
@@ -181,17 +188,19 @@ const handleFilter = () => {
 	loadPartners();
 };
 
-// 显示编辑对话框
-const showEditDialog = (partner: Partner) => {
+// 编辑合作伙伴
+const editPartner = (partner: Partner) => {
 	editingPartner.value = partner;
 	partnerForm.value = {
 		name: partner.name,
 		description: partner.description,
-		image: partner.image,
+		imageId: partner.imageId || null,
 		url: partner.url,
 		sortOrder: partner.sortOrder,
 		isActive: partner.isActive,
 	};
+	// 设置显示的图片URL
+	selectedImageUrl.value = partner.image || "";
 	showCreateDialog.value = true;
 };
 
@@ -202,11 +211,13 @@ const closeDialog = () => {
 	partnerForm.value = {
 		name: "",
 		description: "",
-		image: "",
+		imageId: null,
 		url: "",
 		sortOrder: 0,
 		isActive: true,
 	};
+	// 清空显示的图片URL
+	selectedImageUrl.value = "";
 };
 
 // 保存合作伙伴
@@ -619,8 +630,13 @@ onMounted(() => {
                 <div>
                     <label class="block text-sm font-medium mb-2">合作伙伴图片 *</label>
                     <div class="flex gap-2">
-                        <InputText v-model="partnerForm.image" placeholder="请输入图片URL" class="flex-1"
-                            :class="{ 'p-invalid': !partnerForm.image }" />
+                        <InputText 
+                            :value="selectedImageUrl || '请选择图片'" 
+                            readonly 
+                            placeholder="请点击选择图片" 
+                            class="flex-1"
+                            :class="{ 'p-invalid': !partnerForm.imageId }" 
+                        />
                         <Button 
                             icon="pi pi-images" 
                             label="选择图片" 
@@ -629,8 +645,8 @@ onMounted(() => {
                             v-tooltip="'从图片库选择'"
                         />
                     </div>
-                    <div v-if="partnerForm.image" class="mt-2">
-                        <img :src="partnerForm.image" :alt="partnerForm.name"
+                    <div v-if="selectedImageUrl" class="mt-2">
+                        <img :src="selectedImageUrl" :alt="partnerForm.name"
                             class="w-24 h-24 object-cover rounded-lg border border-gray-200" />
                     </div>
                 </div>

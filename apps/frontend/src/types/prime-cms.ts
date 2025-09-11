@@ -2,6 +2,8 @@
  * PrimeVue CMS 框架类型定义
  */
 
+import type { FormInstance } from '@primevue/forms/form'
+
 
 
 // CRUD 操作模式
@@ -10,12 +12,13 @@ export type CrudMode = 'NEW' | 'EDIT' | 'READ'
 /**
  * CRUD 操作类型枚举
  */
-export enum CurdController {
-  CREATE = 1,
-  REVIEW = 2,
-  UPDATE = 4,
-  DELETE = 8,
-}
+export const CurdController = {
+  CREATE: 1,
+  REVIEW: 2,
+  UPDATE: 4,
+  DELETE: 8,
+} as const
+
 
 /**
  * 数据转换函数类型
@@ -25,33 +28,33 @@ export type TransformSubmitData<T> = (
   mode: CrudMode
 ) => void
 
-/**
- * PrimeVue 版本的 CRUD 处理器接口
- */
-export interface PrimeTemplateCrudHandler<T, TBase, PageQuery, MetaData = any> {
-  // 查询 → 返回带id的数据
-  getList: (query: Partial<PageQuery>) => Promise<PageRes<T>>
-  // 新增 → 必须用 TBase（禁止传入id）
-  create: (data: TBase) => Promise<DataRes<void>>
-  // 修改 → 必须用 TModel（强制要求id）
-  update: (id: string, data: T) => Promise<DataRes<void>>
-  // 删除 - 单个
-  delete?: (id: string) => Promise<any>
-  // 删除 - 批量
-  deletes?: (ids: string[]) => Promise<any>
-  // 外部处理内部弹窗的方法
-  handleCrudDialog?: (data: T, mode: CrudMode, meta?: Partial<MetaData>) => void
-  // 获取删除确认框标题 - 单个
-  getDeleteBoxTitle: (id: string) => string
-  // 获取删除确认框标题 - 批量
-  getDeleteBoxTitles: (ids: Array<string>) => string
-  // 获取空模型的方法
-  getEmptyModel: () => T
-  // 成功获取数据后的回调
-  onFetchSuccess?: () => Promise<void>
-  // 转换提交数据的方法
-  transformSubmitData?: TransformSubmitData<any>
-}
+// /**
+//  * PrimeVue 版本的 CRUD 处理器接口
+//  */
+// export interface PrimeTemplateCrudHandler<T, TBase, PageQuery, MetaData = any> {
+//   // 查询 → 返回带id的数据
+//   getList: (query: Partial<PageQuery>) => Promise<PageRes<T>>
+//   // 新增 → 必须用 TBase（禁止传入id）
+//   create: (data: TBase) => Promise<DataRes<void>>
+//   // 修改 → 必须用 TModel（强制要求id）
+//   update: (id: string, data: T) => Promise<DataRes<void>>
+//   // 删除 - 单个
+//   delete?: (id: string) => Promise<any>
+//   // 删除 - 批量
+//   deletes?: (ids: string[]) => Promise<any>
+//   // 外部处理内部弹窗的方法
+//   handleCrudDialog?: (data: T, mode: CrudMode, meta?: Partial<MetaData>) => void
+//   // 获取删除确认框标题 - 单个
+//   getDeleteBoxTitle: (id: string) => string
+//   // 获取删除确认框标题 - 批量
+//   getDeleteBoxTitles: (ids: Array<string>) => string
+//   // 获取空模型的方法
+//   getEmptyModel: () => T
+//   // 成功获取数据后的回调
+//   onFetchSuccess?: () => Promise<void>
+//   // 转换提交数据的方法
+//   transformSubmitData?: TransformSubmitData<any>
+// }
 
 /**
  * CRUD 对话框选项
@@ -95,11 +98,12 @@ export interface PrimeCmsTemplateResult<T, PageQuery, MetaData = any> {
   __genericTypes: [T, PageQuery, MetaData]
 }
 
-/**
- * 自动提取的模板数据类型
- */
-export type GenPrimeCmsTemplateData<T extends { id: string }, PageQuery, MetaData = any> =
-  UnPromisify<ReturnType<typeof import('./usePrimeTemplateGen').genPrimeCmsTemplateData<T, PageQuery, MetaData>>>
+
+// /**
+//  * 自动提取的模板数据类型
+//  */
+// export type GenPrimeCmsTemplateData<T extends { id: string }, PageQuery, MetaData = any> =
+//   UnPromisify<ReturnType<typeof import('./usePrimeTemplateGen').genPrimeCmsTemplateData<T, PageQuery, MetaData>>>
 
 /**
  * PrimeVue 表单验证规则
@@ -201,15 +205,15 @@ export interface CrudControllerConfig {
   controllerValue?: number
 }
 
-export interface PageModel<T> {
-  items: T[]
-  meta: {
-    total: number
-    page: number
-    pageSize: number
-    totalPages: number
-  }
-}
+// export interface PageModel<T> {
+//   items: T[]
+//   meta: {
+//     total: number
+//     page: number
+//     pageSize: number
+//     totalPages: number
+//   }
+// }
 
 /**
  * PrimeVue CRUD 模板组件属性
