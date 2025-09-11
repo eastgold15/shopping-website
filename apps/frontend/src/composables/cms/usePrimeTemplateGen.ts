@@ -152,19 +152,7 @@ export async function genPrimeCmsTemplateData<T extends { id: number }, PageQuer
   // 搜索表单
   const FormSearch = async (formEl: any, param: Partial<PageQuery> = queryParams.value) => {
     try {
-      // PrimeVue表单验证
-      if (formEl && formEl.validate) {
-        const isValid = await formEl.validate()
-        if (!isValid) {
-          toast.add({
-            severity: 'warn',
-            summary: '表单验证失败',
-            detail: '请检查输入内容',
-            life: 3000
-          })
-          return
-        }
-      }
+      // 表单验证现在由Form组件自动处理，我们只需要调用fetchList
       await fetchList(param)
     } catch (error) {
       console.error('表单搜索错误:', error)
@@ -206,21 +194,7 @@ export async function genPrimeCmsTemplateData<T extends { id: number }, PageQuer
     if (!formEl) return
 
     try {
-      // PrimeVue表单验证
-      let isValid = true
-      if (formEl.validate) {
-        isValid = await formEl.validate()
-      }
-
-      if (!isValid) {
-        toast.add({
-          severity: 'warn',
-          summary: '表单验证失败',
-          detail: '请检查输入内容',
-          life: 3000
-        })
-        return
-      }
+      // 表单验证现在由Form组件自动处理，我们只需要处理提交逻辑
 
       const data = crudDialogOptions.value.data
       if (!data) {

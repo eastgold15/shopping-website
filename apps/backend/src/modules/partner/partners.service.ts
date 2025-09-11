@@ -10,12 +10,10 @@ import {
   sql,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
-import { partnersSchema, imagesSchema } from "../../db/schema";
+import { imagesSchema, partnersSchema } from "../../db/schema";
 import type {
   CreatePartnerDto,
-
-  PartnerQuery,
-
+  PartnerQueryDto,
   UpdatePartnerDto,
   UpdateSortDto,
 } from "./partners.model";
@@ -48,7 +46,7 @@ export class PartnersService {
    * @param params 查询参数
    * @returns 分页的合作伙伴列表
    */
-  async getPartnersList(params: PartnerQuery) {
+  async getPartnersList(params: PartnerQueryDto) {
     const {
       page = 1,
       pageSize = 10,

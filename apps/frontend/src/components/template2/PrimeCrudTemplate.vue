@@ -2,14 +2,18 @@
 
 import type { PageData } from '@backend/types'
 import type { GenCmsTemplateData } from '@frontend/composables/cms/usePrimeTemplateGen'
-import type { FormInstance } from '@primevue/forms'
+import type { FormInstance, FormSubmitEvent } from '@primevue/forms'
+import { Form } from '@primevue/forms'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Paginator from 'primevue/paginator'
 import Panel from 'primevue/panel'
-import Sidebar from 'primevue/sidebar'
+
 import Tag from 'primevue/tag'
+import { useToast } from 'primevue/usetoast'
+
+import Drawer from 'primevue/drawer'
 
 const props = defineProps<{
   name: string
@@ -20,8 +24,8 @@ const props = defineProps<{
   queryForm: Partial<PageQuery>
   tableData: PageData<T[]>
   templateData: GenCmsTemplateData<T, PageQuery, MetaData>
-  rules?: Record<string, any> // PrimeVue 表单验证规则
-  queryRules?: Record<string, any>
+  resolver?: any // PrimeVue 表单验证器（支持zodResolver、yupResolver、valibotResolver或自定义resolver）
+  queryResolver?: any // 查询表单验证器
   crudController?: number
 }>()
 
@@ -61,6 +65,7 @@ const {
 }
 
 const _crudController = computed(() => props.crudController || 15)
+const toast = useToast()
 
 // 表单引用
 const queryFormRef = ref<FormInstance>()
@@ -80,6 +85,34 @@ const onPageChange = (event: any) => {
   tableData.value.meta.pageSize = event.rows
   fetchList()
 }
+
+// 查询表单提交处理
+const onQueryFormSubmit = async (event: FormSubmitEvent) => {
+  if (event.valid) {
+    await FormSearch(queryFormRef.value)
+  } else {
+    toast.add({
+      severity: 'error',
+      summary: '查询表单验证失败',
+      detail: '请检查输入内容',
+      life: 3000
+    })
+  }
+}
+
+// 表单提交处理
+const onFormSubmit = async (event: FormSubmitEvent) => {
+  if (event.valid) {
+    await submitForm(drawerFormRef.value)
+  } else {
+    toast.add({
+      severity: 'error',
+      summary: '表单验证失败',
+      detail: '请检查输入内容',
+      life: 3000
+    })
+  }
+}
 </script>
 
 <template>
@@ -87,9 +120,8 @@ const onPageChange = (event: any) => {
     <!-- 查询表单区域 -->
     <Panel header="查询条件" class="mb-4">
       <slot name="IHeader">
-        <form ref="queryFormRef" @submit.prevent>
+        <Form ref="queryFormRef" :initialValues="queryForm" :resolver="props.queryResolver" @submit="onQueryFormSubmit">
           <div class="    md:flex md:justify-between md:items-center ">
-
 
             <div class="md:flex gap-4">
               <slot name="QueryForm" />
@@ -102,7 +134,7 @@ const onPageChange = (event: any) => {
                     <Button class="md:w-22  " label="重置" icon="pi pi-refresh" severity="secondary"
                       @click="resetForm(queryFormRef)" />
                     <Button class="w-22" label="查询" icon="pi pi-search" :loading="formLoading"
-                      @click="FormSearch(queryFormRef)" />
+                      @click="queryFormRef?.submit?.()" />
                     <Button class="w-42" :label="`新建${name}`" icon="pi pi-plus" severity="success"
                       @click="handleCrudDialog(null, 'NEW')" />
                   </div>
@@ -112,7 +144,7 @@ const onPageChange = (event: any) => {
 
 
           </div>
-        </form>
+        </Form>
       </slot>
     </Panel>
 
@@ -149,7 +181,7 @@ const onPageChange = (event: any) => {
     </Panel>
 
     <!-- 侧边栏对话框 -->
-    <Sidebar v-model:visible="crudDialogOptions.visible" position="right" class="w-full md:w-20rem lg:w-30rem"
+    <Drawer v-model:visible="crudDialogOptions.visible" position="right" class="w-full md:w-40rem lg:w-30rem h-screen"
       :modal="true">
       <template #header>
         <div class="flex align-items-center gap-2">
@@ -165,12 +197,17 @@ const onPageChange = (event: any) => {
         </div>
       </template>
 
-      <template #default>
-        <form v-if="crudDialogOptions.data" ref="drawerFormRef" @submit.prevent class="flex flex-column gap-4">
+
+      <div class="flex justify-center  ">
+
+        <Form v-if="crudDialogOptions.data" ref="drawerFormRef" :initialValues="crudDialogOptions.data"
+          :resolver="props.resolver" @submit="onFormSubmit" class="w-full flex flex-col gap-4 sm:w-56 ">
           <slot :data="(crudDialogOptions.data as T)" :mode="crudDialogOptions.mode"
             :disabled="crudDialogOptions.loading || crudDialogOptions.mode === 'READ'" name="CrudForm" />
-        </form>
-      </template>
+        </Form>
+
+      </div>
+
 
       <template #footer>
         <div class="flex gap-2 justify-content-end">
@@ -187,7 +224,7 @@ const onPageChange = (event: any) => {
           </slot>
         </div>
       </template>
-    </Sidebar>
+    </Drawer>
   </div>
 </template>
 

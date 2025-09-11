@@ -1,12 +1,14 @@
-<template>
+<!-- <template>
 	<div class="p-6">
 		<!-- 页面标题 -->
 		<div class="flex justify-between items-center mb-6">
-			<div>
+		
+    	<div>
 				<h1 class="text-2xl font-bold text-gray-800">支付设置</h1>
 				<p class="text-gray-600 mt-1">配置网站支付方式和相关参数</p>
 			</div>
-			<div class="flex gap-3">
+		
+    <div class="flex gap-3">
 				<Button 
 					label="重置配置" 
 					icon="pi pi-refresh" 
@@ -848,4 +850,4 @@ onMounted(() => {
 .p-fileupload .p-button {
 	@apply bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200;
 }
-</style>
+</style> -->

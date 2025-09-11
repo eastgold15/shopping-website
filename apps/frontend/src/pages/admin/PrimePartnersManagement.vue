@@ -1,25 +1,47 @@
 <script lang="ts" setup>
-import type { PartnerModel, PartnerQuery } from "@backend/modules/partner"
+import type { PartnerModel, PartnerQueryDto } from "@backend/modules/partner"
 import ImageSelector from "@frontend/components/ImageSelector.vue"
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen"
-import { formatDate } from '@frontend/utils/formatUtils'
+import { formatDate, getImageUrl } from '@frontend/utils/formatUtils'
 import { useCmsApi } from "@frontend/utils/handleApi"
+import { FormField } from '@primevue/forms'
+import { zodResolver } from '@primevue/forms/resolvers/zod'
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
 import RadioButton from 'primevue/radiobutton'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
+import { z } from 'zod'
 
 const $crud = useCmsApi.partner
 
+// 使用zod定义表单验证schema
+const partnerSchema = z.object({
+  name: z.string().min(2, '名称至少2个字符').max(100, '名称不能超过100个字符'),
+  description: z.string().min(1, '请输入合作伙伴描述').max(500, '描述不能超过500个字符'),
+  image_id: z.number().min(1, '请选择合作伙伴图片'),
+  sortOrder: z.number().min(0, '排序权重不能小于0').max(9999, '排序权重不能超过9999'),
+  url: z.string().url('请输入有效的URL').optional().or(z.literal('')),
+  isActive: z.boolean(),
+  selectedImageUrl: z.string().optional()
+})
 
+// 查询表单验证schema
+const querySchema = z.object({
+  name: z.string().max(100, '搜索名称不能超过100个字符').optional()
+})
+
+// 创建resolver
+const resolver = zodResolver(partnerSchema)
+const queryResolver = zodResolver(querySchema)
 
 // 响应式数据
-const templateData = await genPrimeCmsTemplateData<PartnerModel, PartnerQuery, null>({
+const templateData = await genPrimeCmsTemplateData<PartnerModel, PartnerQueryDto, null>({
   // 1. 定义查询表单
-  getList: $crud.list,
+  getList: $crud.list as any,
   create: $crud.create,
   update: $crud.update,
   delete: $crud.delete,
@@ -30,6 +52,7 @@ const templateData = await genPrimeCmsTemplateData<PartnerModel, PartnerQuery, n
     name: '',
     description: '',
     image_id: 0,
+    image: '',
     selectedImageUrl: '',
     url: '',
     sortOrder: 0,
@@ -69,54 +92,13 @@ const templateData = await genPrimeCmsTemplateData<PartnerModel, PartnerQuery, n
     pageSize: 20,
   })
 
-
 const { tableData, queryForm, fetchList } = templateData
 
 onMounted(async () => {
   await fetchList()
 })
-// // 将生成的数据赋值给响应式引用
-// templateData.value = generatedData
-// tableData.value = generatedData.tableData.value
-// queryForm.value = generatedData.queryForm.value
-
-// // 初始化数据
-// await generatedData.fetchList()
-// const tableData = ref()
-// const queryForm = ref<Partial<PartnerQuery>>({
-//   page: 1,
-//   pageSize: 20
 
 
-
-// // 表单验证规则
-// const rules = {
-//   name: [
-//     { required: true, message: '请输入合作伙伴名称' },
-//     { minLength: 2, message: '名称至少2个字符' },
-//     { maxLength: 100, message: '名称不能超过100个字符' }
-//   ],
-//   description: [
-//     { required: true, message: '请输入合作伙伴描述' },
-//     { maxLength: 500, message: '描述不能超过500个字符' }
-//   ],
-//   image_id: [
-//     { required: true, message: '请选择合作伙伴图片' },
-//     { type: 'number', message: '图片ID必须为数字' }
-//   ],
-//   sortOrder: [
-//     { required: true, message: '请输入排序权重' },
-//     { min: 0, message: '排序权重不能小于0' },
-//     { max: 9999, message: '排序权重不能超过9999' }
-//   ]
-// }
-
-// // 查询表单验证规则
-// const queryRules = {
-//   name: [
-//     { maxLength: 100, message: '搜索名称不能超过100个字符' }
-//   ]
-// }
 
 // 状态选项
 const statusOptions = [
@@ -127,88 +109,54 @@ const statusOptions = [
 
 // 图片选择相关
 const showImageSelector = ref(false)
-const currentFormData = ref<any>(null)
+const currentFormData = ref<PartnerModel>()
 
 const onImageSelected = (imageUrl: string, imageData: any) => {
+  console.log('imageData:', imageData)
+  console.log('imageUrl:', imageUrl)
+
   if (currentFormData.value) {
     // 设置图片ID（数字类型）
     currentFormData.value.image_id = imageData.id
     // 设置显示用的图片URL
-    currentFormData.value.selectedImageUrl = imageUrl
+    currentFormData.value.image = imageUrl
   }
   showImageSelector.value = false
 }
 
-// 自定义图片选择组件
-const PartnerImageField = defineComponent({
-  props: ['modelValue', 'disabled'],
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    const localImage = ref(props.modelValue)
-    const showSelector = ref(false)
 
-    const onImageSelect = (imageUrl: string, imageData: any) => {
-      localImage.value = imageUrl
-      emit('update:modelValue', imageUrl)
-      showSelector.value = false
-    }
-
-    return () => h('div', { class: 'flex flex-column gap-2' }, [
-      h('label', { class: 'text-sm font-medium' }, '合作伙伴图片 *'),
-      h('div', { class: 'flex gap-2' }, [
-        h(InputText, {
-          modelValue: localImage.value,
-          'onUpdate:modelValue': (value: string) => {
-            localImage.value = value
-            emit('update:modelValue', value)
-          },
-          placeholder: '请输入图片URL',
-          disabled: props.disabled,
-          class: 'flex-1'
-        }),
-        h(Button, {
-          label: '选择图片',
-          icon: 'pi pi-images',
-          severity: 'secondary',
-          outlined: true,
-          disabled: props.disabled,
-          onClick: () => showSelector.value = true
-        })
-      ]),
-      localImage.value && h('div', { class: 'mt-2' }, [
-        h('img', {
-          src: localImage.value,
-          alt: '合作伙伴图片',
-          class: 'w-24 h-24 object-cover rounded-lg border border-gray-200'
-        })
-      ]),
-      h(ImageSelector, {
-        visible: showSelector.value,
-        'onUpdate:visible': (value: boolean) => showSelector.value = value,
-        category: 'partner',
-        onSelect: onImageSelect
-      })
-    ])
+const getImageByID = async (id: number): Promise<String> => {
+  const { code, data } = await useCmsApi.images.getById(id)
+  if (code === 200) {
+    return data!.url
   }
-})
+  return ''
+}
+
 </script>
 
 <template>
 
   <PrimeCrudTemplate name="合作伙伴" identifier="partner" :table-data="tableData" :template-data="templateData"
-    :crud-controller="15" :query-form="queryForm">
+    :crud-controller="15" :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver">
     <!-- 查询表单 -->
     <template #QueryForm>
-      <div class="flex gap-2 items-center">
-        <label for="query-name" class="text-sm font-medium">合作伙伴名称</label>
-        <InputText id="query-name" v-model="queryForm.name" placeholder="搜索合作伙伴名称" />
-      </div>
-      <div class="flex gap-2 items-center">
-        <label for="query-status" class="text-sm font-medium">状态</label>
-        <Select id="query-status" v-model="queryForm.isActive" :options="statusOptions" option-label="label"
-          option-value="value" placeholder="选择状态" clearable />
-      </div>
+      <div class="flex flex-column gap-2">
+        <FormField v-slot="$field" name="name" class="flex flex-column gap-1">
+          <label for="query-name" class="text-sm font-medium">合作伙伴名称</label>
+          <InputText id="query-name" placeholder="搜索合作伙伴名称" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
+        <FormField v-slot="$field" name="isActive" class="flex flex-column gap-1">
+          <label for="query-status" class="text-sm font-medium">状态</label>
+          <Select id="query-status" :options="statusOptions" option-label="label" option-value="value"
+            placeholder="选择状态" clearable />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+      </div>
     </template>
 
     <!-- 表格列 -->
@@ -288,70 +236,74 @@ const PartnerImageField = defineComponent({
 
     <!-- 表单 -->
     <template #CrudForm="{ data, disabled }: { data: PartnerModel, disabled: boolean }">
-      <div class="flex flex-column gap-3">
+      <div class=" h-full ">
         <!-- 合作伙伴名称 -->
-        <div class="flex flex-column gap-1">
-          <label :for="`name-${data.id}`" class="text-sm font-medium">
-            合作伙伴名称 *
-          </label>
-          <InputText :id="`name-${data.id}`" v-model="data.name" placeholder="请输入合作伙伴名称" :disabled="disabled"
-            required />
-        </div>
+        <FormField v-slot="$field" name="name" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">合作伙伴名称 *</label>
+          <InputText fluid size="small" placeholder="请输入合作伙伴名称" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
         <!-- 合作伙伴描述 -->
-        <div class="flex flex-column gap-1">
-          <label :for="`description-${data.id}`" class="text-sm font-medium">
-            合作伙伴描述 *
-          </label>
-          <Textarea :id="`description-${data.id}`" v-model="data.description" placeholder="请输入合作伙伴描述"
-            :disabled="disabled" rows="3" required />
-        </div>
+        <FormField v-slot="$field" name="description" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">合作伙伴描述 *</label>
+          <Textarea fluid placeholder="请输入合作伙伴描述" :disabled="disabled" rows="3" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
         <!-- 合作伙伴图片 -->
-        <div class="flex flex-column gap-1">
+        <FormField v-slot="$field" name="image_id" class="flex flex-col gap-2 mb-4">
           <label class="text-sm font-medium">合作伙伴图片 *</label>
-          <div class="flex gap-2">
-            <InputText :value="data.url || ''" placeholder="请选择图片" :disabled="true" class="flex-1" readonly />
+          <div class="flex flex-col gap-1">
+            <!-- <InputText :value="data.url || ''" placeholder="请选择图片" :disabled="true" class="flex-1" readonly /> -->
+
+
             <!-- 图片选择器 -->
             <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined :disabled="disabled"
               @click="() => { currentFormData = data; showImageSelector = true; }" v-tooltip="'从图片库选择'" />
           </div>
-          <div v-if="data.url" class="mt-2">
-            <img :src="data.url" :alt="data.name" class="w-24 h-24 object-cover rounded-lg border border-gray-200" />
+          <div v-if="data.image" class="flex flex-col gap-2 mb-4">
+            <img :src="getImageUrl(data.image)" :alt="data.name"
+              class="w-24 h-24 object-cover rounded-lg border border-gray-200" />
           </div>
-        </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
         <!-- 网站链接 -->
-        <div class="flex flex-column gap-1">
-          <label :for="`url-${data.id}`" class="text-sm font-medium">
-            网站链接
-          </label>
-          <InputText :id="`url-${data.id}`" v-model="data.url" placeholder="请输入网站链接（可选）" :disabled="disabled" />
-        </div>
+        <FormField v-slot="$field" name="url" class="  flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">网站链接</label>
+          <InputText fluid placeholder="请输入网站链接（可选）" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
         <!-- 排序权重 -->
-        <div class="flex flex-column gap-1">
-          <label :for="`sortOrder-${data.id}`" class="text-sm font-medium">
-            排序权重 *
-          </label>
-          <InputNumber :id="`sortOrder-${data.id}`" v-model="data.sortOrder" placeholder="请输入排序权重" :disabled="disabled"
-            :min="0" :max="9999" class="w-full" required />
-        </div>
+        <FormField v-slot="$field" name="sortOrder" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">排序权重 *</label>
+          <InputNumber placeholder="请输入排序权重" :disabled="disabled" :min="0" :max="9999" class="w-full" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
         <!-- 启用状态 -->
-        <div class="flex flex-column gap-1">
+        <FormField v-slot="$field" name="isActive" class="flex flex-col gap-2 mb-4">
           <label class="text-sm font-medium">启用状态</label>
           <div class="flex gap-4">
             <div class="flex align-items-center gap-2">
-              <RadioButton v-model="data.isActive" :value="true" :disabled="disabled" input-id="active-true" />
+              <RadioButton :value="true" :disabled="disabled" input-id="active-true" />
               <label for="active-true">启用</label>
             </div>
             <div class="flex align-items-center gap-2">
-              <RadioButton v-model="data.isActive" :value="false" :disabled="disabled" input-id="active-false" />
+              <RadioButton :value="false" :disabled="disabled" input-id="active-false" />
               <label for="active-false">禁用</label>
             </div>
           </div>
-        </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
       </div>
     </template>
   </PrimeCrudTemplate>

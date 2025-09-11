@@ -1,7 +1,6 @@
 import { db } from "@backend/db/connection";
 import { partnersSchema } from "@backend/db/schema";
 import { BusinessError, NotFoundError } from "@backend/utils/error/customError";
-import { err_handler } from "@backend/utils/error/err.global";
 import { commonRes, pageRes } from "@backend/utils/Res";
 import {
   asc,
@@ -21,8 +20,6 @@ export const partnersController = new Elysia({
 })
   .model(partnersModel)
   .decorate("partnersService", new PartnersService())
-  .use(err_handler)
-
   // 获取所有合作伙伴（前台用）
   .get(
     "/",
@@ -38,7 +35,6 @@ export const partnersController = new Elysia({
 
         return commonRes(partners, 200, "获取合作伙伴列表成功");
       } catch (error) {
-
         throw new NotFoundError("获取合作伙伴列表失败")
       }
     },
@@ -65,11 +61,12 @@ export const partnersController = new Elysia({
           "获取合作伙伴列表成功",
         );
       } catch (error) {
+        console.log(error);
         throw new NotFoundError("获取合作伙伴列表失败")
       }
     },
     {
-      query: "PartnerQuery",
+      query: "partnerQuery",
       detail: {
         tags: ["Partners"],
         summary: "获取合作伙伴列表（管理后台）",
@@ -106,7 +103,7 @@ export const partnersController = new Elysia({
 
   // 创建合作伙伴
   .post(
-    "",
+    "/",
     async ({ body, partnersService }) => {
       try {
         const newPartner = await partnersService.createPartner(body);

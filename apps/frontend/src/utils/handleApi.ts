@@ -1,5 +1,5 @@
-import type { CreatePartnerDto, PartnerQuery, UpdatePartnerDto, UpdateSortDto } from "@backend/modules/partner";
-import type { UploadImageDto, UploadImagesDto } from "@backend/types";
+import type { CreatePartnerDto, PartnerQueryDto, UpdatePartnerDto, UpdateSortDto } from "@backend/modules/partner";
+import type { ImageQueryDto, UpdateImageDto, UploadImageDto, UploadImagesDto } from "@backend/types";
 import { handleApiRes } from "./handleApiRes";
 import { client } from "./useTreaty";
 
@@ -15,11 +15,11 @@ export const api = {
       handleApiRes(client.api.products.get({ query: params })),
     search: (params?: any) =>
       handleApiRes(client.api.products.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.products({ id }).get()),
+    getById: (id: number) => handleApiRes(client.api.products({ id }).get()),
     getBySlug: (slug: string) =>
       handleApiRes(client.api.products.slug({ slug }).get()),
     create: (data: any) => handleApiRes(client.api.products.post(data)),
-    update: (id: string, data: any) =>
+    update: (id: number, data: any) =>
       handleApiRes(client.api.products({ id }).put(data)),
     delete: (id: string) => handleApiRes(client.api.products({ id }).delete()),
   },
@@ -98,18 +98,7 @@ export const api = {
       handleApiRes(client.api["site-configs"].batch.patch(data)),
   },
 
-  // 图片相关
-  images: {
-    list: (params?: any) =>
-      handleApiRes(client.api.images.get({ query: params })),
-    getById: (id: string) => handleApiRes(client.api.images({ id }).get()),
-    update: (id: string, data: any) =>
-      handleApiRes(client.api.images({ id }).put(data)),
-    delete: (id: string) => handleApiRes(client.api.images({ id }).delete()),
-    batchDelete: (data: any) =>
-      handleApiRes(client.api.images.batch.delete(data)),
-    getStats: () => handleApiRes(client.api.images.stats.overview.get()),
-  },
+
 
   // 广告相关
   advertisements: {
@@ -161,7 +150,7 @@ export const api = {
 
 export const useCmsApi = {
   partner: {
-    list: (params: PartnerQuery) =>
+    list: (params: PartnerQueryDto) =>
       handleApiRes(client.api.partners.list.get({ query: params })),
     getById: (id: number) =>
       handleApiRes(client.api.partners({ id: id }).get()),
@@ -174,7 +163,18 @@ export const useCmsApi = {
       handleApiRes(client.api.partners({ id: id })["toggle-active"].patch()),
     updateSort: (id: number, data: UpdateSortDto) =>
       handleApiRes(client.api.partners({ id: id }).sort.patch(data)),
-  }
+  },
+  // 图片相关
+  images: {
+    list: (params: ImageQueryDto) =>
+      handleApiRes(client.api.images.list.get({ query: params })),
+    getById: (id: number) => handleApiRes(client.api.images({ id }).get()),
+    update: (id: number, data: UpdateImageDto) =>
+      handleApiRes(client.api.images({ id }).put(data)),
+    delete: (id: number) => handleApiRes(client.api.images({ id }).delete()),
+    batchDelete: (body: { ids: number[] }) =>
+      handleApiRes(client.api.images.batch.delete(body))
+  },
 
 }
 
@@ -183,3 +183,6 @@ export const useFrontApi = {
 
 }
 export type UnPromisify<T> = T extends Promise<infer U> ? U : T
+
+
+

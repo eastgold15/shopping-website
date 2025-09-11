@@ -153,7 +153,8 @@ export class OssService {
 	): Promise<string> {
 		const randomStr = Math.random().toString(36).substring(2, 8);
 		const extension = filename ? filename.split(".").pop() : "jpg";
-		const key = `${folder}/${filename}_${randomStr}.${extension}`;
+		const baseFilename = filename ? filename.replace(`.${extension}`, '') : `image_${randomStr}`;
+		const key = `${folder}/${baseFilename}_${randomStr}.${extension}`;
 
 		let contentType = "image/jpeg";
 		if (extension) {

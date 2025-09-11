@@ -7,8 +7,7 @@ import CategoryManagement from "@frontend/pages/admin/CategoryManagement.vue";
 import Dashboard from "@frontend/pages/admin/Dashboard.vue";
 import ImageManager from "@frontend/pages/admin/ImageManager.vue";
 import OrdersManagement from "@frontend/pages/admin/OrdersManagement.vue";
-import PartnersManagement from "@frontend/pages/admin/PartnersManagement.vue";
-import PaymentSettings from "@frontend/pages/admin/PaymentSettings.vue";
+// import PaymentSettings from "@frontend/pages/admin/PaymentSettings.vue";
 import PrimePartnersManagement from '@frontend/pages/admin/PrimePartnersManagement.vue';
 import ProductsManagement from "@frontend/pages/admin/ProductsManagement.vue";
 import RefundsManagement from "@frontend/pages/admin/RefundsManagement.vue";
@@ -22,11 +21,6 @@ const adminRoutes = [
     path: "/admin",
     component: AdminLayout,
     children: [
-      {
-        path: "prime",
-        name: "prime",
-        component: PrimePartnersManagement,
-      },
       {
         path: "dashboard",
         name: "admin-dashboard",
@@ -80,18 +74,18 @@ const adminRoutes = [
       {
         path: "partners",
         name: "partners-management",
-        component: PartnersManagement,
+        component: PrimePartnersManagement,
       },
       {
         path: "refunds",
         name: "refunds-management",
         component: RefundsManagement,
       },
-      {
-        path: "payment-settings",
-        name: "payment-settings",
-        component: PaymentSettings,
-      },
+      // {
+      //   path: "payment-settings",
+      //   name: "payment-settings",
+      //   component: PaymentSettings,
+      // },
       {
         path: "shipping-settings",
         name: "shipping-settings",
