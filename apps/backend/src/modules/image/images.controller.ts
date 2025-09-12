@@ -1,3 +1,4 @@
+import { InternalServerError, NotFoundError } from "@backend/utils/error/customError";
 import { commonRes } from "@backend/utils/Res";
 import { Elysia, t } from "elysia";
 import { ossService } from "../oss";
@@ -21,7 +22,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
     "/list",
     async ({ query, imagesService }) => {
       const result = await imagesService.findImagesByPage(query);
-      return result;
+      return commonRes(result);
     },
     {
       query: "ImageQueryDto",
@@ -37,7 +38,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
     "/:id",
     async ({ params, imagesService }) => {
       const result = await imagesService.findById(params.id);
-      return result
+      return commonRes(result);
     },
     {
       params: t.Object({
@@ -55,7 +56,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
     "/:id",
     async ({ params, body, imagesService }) => {
       const result = await imagesService.updateImage(params.id, body as any);
-      return commonRes(null, 200,"更新成功");
+      return commonRes(result);
     },
     {
       params: t.Object({
@@ -77,11 +78,8 @@ export const imagesController = new Elysia({ prefix: "/images" })
         // 先获取图片信息
         const imageResult = await imagesService.findById(id);
 
-        if (imageResult.code !== 200 || !imageResult.data) {
-          return {
-            success: false,
-            error: "图片不存在",
-          };
+        if (!imageResult) {
+          throw new NotFoundError("图片不存在");
         }
 
         const image = imageResult.data;
@@ -100,20 +98,14 @@ export const imagesController = new Elysia({ prefix: "/images" })
         // 删除数据库记录
         const deleteResult = await imagesService.delete(id);
 
-        if (deleteResult.code !== 200) {
-          return {
-            success: false,
-            error: deleteResult.message || "删除图片记录失败",
-          };
+        if (!deleteResult) {
+          throw new InternalServerError("删除图片记录失败");
         }
 
-        return commonRes(null, 200,"删除成功");
+        return commonRes(null, 410, "删除成功");
       } catch (error) {
         console.error("删除图片失败:", error);
-        return {
-          success: false,
-          error: "删除图片失败",
-        };
+        throw error;
       }
     },
     {
@@ -169,23 +161,14 @@ export const imagesController = new Elysia({ prefix: "/images" })
         // 批量删除数据库记录
         const deleteResult = await imagesService.deleteImages(imageIds);
 
-        if (deleteResult.code !== 200) {
-          return {
-            success: false,
-            error: deleteResult.message || "批量删除图片失败",
-          };
+        if (!deleteResult) {
+          throw new InternalServerError("数据库操作失败");
         }
 
-        return commonRes({
-          success: true,
-          deletedCount: deleteResult.data,
-        });
+        return commonRes(null, 410, "删除成功");
       } catch (error) {
         console.error("批量删除图片失败:", error);
-        return {
-          success: false,
-          error: "批量删除图片失败",
-        };
+        throw error;
       }
     },
     {

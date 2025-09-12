@@ -1,7 +1,7 @@
 import { db } from "@backend/db/connection";
 import { partnersSchema } from "@backend/db/schema";
-import { BusinessError, NotFoundError } from "@backend/utils/error/customError";
-import { commonRes, pageRes } from "@backend/utils/Res";
+import { NotFoundError } from "@backend/utils/error/customError";
+import { commonRes } from "@backend/utils/Res";
 import {
   asc,
   eq,
@@ -53,11 +53,9 @@ export const partnersController = new Elysia({
     async ({ query, partnersService }) => {
       try {
         const result = await partnersService.getPartnersList(query);
-        return pageRes(
-          result.data,
-          result.total,
-          result.page,
-          result.pageSize,
+        return commonRes(
+          result,
+          200,
           "获取合作伙伴列表成功",
         );
       } catch (error) {
@@ -107,10 +105,7 @@ export const partnersController = new Elysia({
     async ({ body, partnersService }) => {
       try {
         const newPartner = await partnersService.createPartner(body);
-        if (!newPartner) {
-          throw new NotFoundError("创建合作伙伴失败")
-        }
-        return commonRes(null, 200, "创建合作伙伴成功");
+        return commonRes(newPartner, 201, "创建合作伙伴成功");
       } catch (error) {
         throw new NotFoundError("创建合作伙伴失败", 'com')
       }
@@ -131,10 +126,7 @@ export const partnersController = new Elysia({
     async ({ params: { id }, body, partnersService }) => {
       try {
         const updatedPartner = await partnersService.updatePartner(id, body);
-        if (!updatedPartner) {
-          throw new BusinessError("合作伙伴更新失败")
-        }
-        return commonRes(null, 200, "更新合作伙伴成功");
+        return commonRes(updatedPartner, 200, "更新合作伙伴成功");
 
       } catch (error) {
         throw new NotFoundError("创建合作伙伴失败")
@@ -159,11 +151,12 @@ export const partnersController = new Elysia({
     async ({ params: { id }, partnersService }) => {
       const rowCount = await partnersService.deletePartner(id);
       if (rowCount === 1) {
-        return commonRes(null, 200, "删除合作伙伴成功");
-      } else if (rowCount === 0) {
+        return commonRes(null, 204, "删除合作伙伴成功");
+      }
+      else {
         return commonRes(null, 200, "合作伙伴不存在");
       }
-      return commonRes(null, 200, "删除合作伙伴失败");
+
     },
     {
       params: t.Object({
@@ -186,9 +179,6 @@ export const partnersController = new Elysia({
           id,
           body,
         );
-        if (!updatedPartner) {
-          return commonRes(null, 404, "合作伙伴不存在");
-        }
         return commonRes(updatedPartner, 200, "更新合作伙伴排序成功");
       } catch (error) {
         throw new NotFoundError("创建合作伙伴失败")
@@ -198,7 +188,7 @@ export const partnersController = new Elysia({
       params: t.Object({
         id: t.Number(),
       }),
-      body: "UpdateSortRequest",
+      body: "UpdateSortDto",
       detail: {
         tags: ["Partners"],
         summary: "更新合作伙伴排序",
@@ -213,9 +203,6 @@ export const partnersController = new Elysia({
     async ({ params: { id }, partnersService }) => {
       try {
         const updatedPartner = await partnersService.togglePartnerActive(id);
-        if (!updatedPartner) {
-          return commonRes(null, 404, "合作伙伴不存在");
-        }
         return commonRes(updatedPartner, 200, "切换合作伙伴状态成功");
       } catch (error) {
         throw new NotFoundError("创建合作伙伴失败")

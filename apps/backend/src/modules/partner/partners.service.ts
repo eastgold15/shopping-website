@@ -1,13 +1,13 @@
-import { DatabaseError } from "@backend/utils/error/customError";
+import { DatabaseError, InternalServerError, NotFoundError } from "@backend/utils/error/customError";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   getTableColumns,
   like,
-  or,
-  sql,
+  or
 } from "drizzle-orm";
 import { db } from "../../db/connection";
 import { imagesSchema, partnersSchema } from "../../db/schema";
@@ -78,9 +78,6 @@ export class PartnersService {
       conditions.push(eq(partnersSchema.isActive, isActive));
     }
 
-    // 构建where条件
-    const whereCondition =
-      conditions.length > 0 ? and(...conditions) : undefined;
 
     // 排序字段映射
     const sortFieldMap: Record<string, any> = {
@@ -89,23 +86,15 @@ export class PartnersService {
       createdAt: partnersSchema.createdAt,
       updatedAt: partnersSchema.updatedAt,
     };
-
+    // 确定排序字段和方向
     const sortField = sortFieldMap[sortBy] || partnersSchema.sortOrder;
     const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
 
-    // 计算总数
-    const totalQuery = db.select({ count: sql`count(*)` }).from(partnersSchema);
 
-    if (whereCondition) {
-      totalQuery.where(whereCondition);
-    }
 
-    const [{ count }] = await totalQuery;
-    const total = Number(count);
 
-    // 分页查询
-    const offset = (page - 1) * pageSize;
-    const dataQuery = db
+    // 构建查询
+    const queryBuilder = db
       .select({
         ...this.columns,
         image: imagesSchema.url, // 添加图片URL字段
@@ -113,21 +102,34 @@ export class PartnersService {
       .from(partnersSchema)
       .leftJoin(imagesSchema, eq(partnersSchema.image_id, imagesSchema.id))
       .orderBy(orderBy)
-      .limit(pageSize)
-      .offset(offset);
 
-    if (whereCondition) {
-      dataQuery.where(whereCondition);
+
+    // 获取总数
+    const totalBuilder = db
+      .select({ count: count() })
+      .from(partnersSchema);
+
+    if (conditions.length > 0) {
+      queryBuilder.where(and(...conditions));
+      totalBuilder.where(and(...conditions));
     }
 
-    const data = await dataQuery;
+    // 分页
+    const offset = (page - 1) * pageSize;
+    queryBuilder.limit(pageSize).offset(offset);
 
+
+    // 开始查询
+    const [partners, [{ count: total }]] = await Promise.all([queryBuilder, totalBuilder]);
     return {
-      data,
-      total,
-      page,
-      pageSize,
-    };
+      items: partners,
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      }
+    }
   }
 
   /**
@@ -145,7 +147,10 @@ export class PartnersService {
       .leftJoin(imagesSchema, eq(partnersSchema.image_id, imagesSchema.id))
       .where(eq(partnersSchema.id, id));
 
-    return partner || null;
+    if (!partner) {
+      throw new NotFoundError('合作伙伴不存在', 'com')
+    }
+    return partner
   }
 
   /**
@@ -158,6 +163,10 @@ export class PartnersService {
       .insert(partnersSchema)
       .values(data)
       .returning(this.columns);
+
+    if (!newPartner) {
+      throw new NotFoundError('创建失败合作伙伴')
+    }
     return newPartner;
   }
 
@@ -177,6 +186,10 @@ export class PartnersService {
       .where(eq(partnersSchema.id, id))
       .returning(this.columns);
 
+    if (!updatedPartner) {
+      throw new InternalServerError('合作伙伴不存在');
+    }
+
     return updatedPartner
   }
 
@@ -190,6 +203,10 @@ export class PartnersService {
       const result = await db
         .delete(partnersSchema)
         .where(eq(partnersSchema.id, id));
+
+      if (!result || result.rowCount == null) {
+        throw new InternalServerError('合作伙伴删除错误');
+      }
       return result.rowCount
     } catch (error) {
       throw new DatabaseError('数据库操作失败')
@@ -212,7 +229,11 @@ export class PartnersService {
       .where(eq(partnersSchema.id, id))
       .returning(this.columns);
 
-    return updatedPartner || null;
+    if (!updatedPartner) {
+      throw new InternalServerError("合作伙伴不存在");
+    }
+
+    return updatedPartner
   }
 
   /**
@@ -224,7 +245,7 @@ export class PartnersService {
     // 先获取当前状态
     const currentPartner = await this.getPartnerById(id);
     if (!currentPartner) {
-      return null;
+      throw new NotFoundError("合作伙伴不存在");
     }
 
     // 切换状态
@@ -237,6 +258,10 @@ export class PartnersService {
       .where(eq(partnersSchema.id, id))
       .returning(this.columns);
 
-    return updatedPartner || null;
+    if (!updatedPartner) {
+      throw new InternalServerError("更新合作伙伴状态失败");
+    }
+
+    return updatedPartner
   }
 }

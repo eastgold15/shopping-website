@@ -6,7 +6,6 @@ import {
 	productImagesSchema,
 	productsSchema,
 } from "../../db/schema";
-import { commonRes } from "../../utils/Res";
 import type {
 	CategorySalesItem,
 	CategorySalesQuery,
@@ -21,7 +20,7 @@ export class StatisticsService {
 	/**
 	 * 获取仪表板统计数据
 	 */
-	async getDashboardStats(query: DashboardQuery) {
+	async getDashboard(query: DashboardQuery): Promise<DashboardStats> {
 		try {
 			// 获取商品统计数据
 			const productStatsResult = await db
@@ -72,10 +71,10 @@ export class StatisticsService {
 				},
 			};
 
-			return commonRes(result, 200, "获取仪表板统计数据成功");
+			return result;
 		} catch (error) {
 			console.error("获取仪表板统计数据失败:", error);
-			return commonRes(null, 50000, `获取仪表板统计数据失败${error as Error}`);
+			throw error;
 		}
 	}
 
@@ -142,25 +141,20 @@ export class StatisticsService {
 					? summary.totalRevenue / summary.totalOrders
 					: 0;
 
-			return commonRes(
-				{
-					trend: mockTrend,
-					summary,
-				},
-				200,
-				"获取销售趋势成功",
-			);
+			return {
+				trend: mockTrend,
+				summary,
+			};
 		} catch (error) {
 			console.error("获取销售趋势数据失败:", error);
-
-			return commonRes(null, 50000, `获取销售趋势数据失败${error as Error}`);
+			throw error;
 		}
 	}
 
 	/**
 	 * 获取热门商品统计
 	 */
-	async getPopularProducts(query: PopularProductsQuery) {
+	async getPopularProducts(query: PopularProductsQuery): Promise<PopularProductItem[]> {
 		try {
 			const { pageSize = 10 } = query;
 
@@ -196,18 +190,17 @@ export class StatisticsService {
 					(Math.floor(Math.random() * 500) + 100) * Number(product.price),
 			}));
 
-			return commonRes(result, 200, "获取热门商品统计成功");
+			return result;
 		} catch (error) {
 			console.error("获取热门商品统计失败:", error);
-
-			return commonRes(null, 50000, `获取热门商品统计失败${error as Error}`);
+			throw error;
 		}
 	}
 
 	/**
 	 * 获取分类销售统计
 	 */
-	async getCategorySales(query: CategorySalesQuery) {
+	async getCategorySales(query: CategorySalesQuery): Promise<CategorySalesItem[]> {
 		try {
 			const { pageSize = 10 } = query;
 
@@ -230,10 +223,10 @@ export class StatisticsService {
 				productCount: Math.floor(Math.random() * 50) + 10,
 			}));
 
-			return commonRes(result, 200, "获取分类销售统计成功");
+			return result;
 		} catch (error) {
 			console.error("获取分类销售统计失败:", error);
-			return commonRes(null, 50000, `获取分类销售统计失败${error as Error}`);
+			throw error;
 		}
 	}
 
@@ -281,18 +274,13 @@ export class StatisticsService {
 						: 0,
 			};
 
-			return commonRes(
-				{
-					growth,
-					summary,
-				},
-				200,
-				"获取用户增长趋势成功",
-			);
+			return {
+				growth,
+				summary,
+			};
 		} catch (error) {
 			console.error("获取用户增长趋势失败:", error);
-
-			return commonRes(null, 50000, `获取用户增长趋势失败${error as Error}`);
+			throw error;
 		}
 	}
 }

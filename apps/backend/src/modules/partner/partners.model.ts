@@ -16,22 +16,17 @@ export const partnersModel = {
     (DbType.typebox.insert.partnersSchema, ['id', 'createdAt', 'updatedAt', 'sortOrder'])),
 
   // 排序更新请求
-  UpdateSortRequest: t.Object({
+  UpdateSortDto: t.Object({
     sortOrder: t.Number({ minimum: 0 }),
   }),
 
   // 统一查询参数
-  partnerQuery: t.Object({
-    ...UnoQuery.properties,
+  partnerQuery: t.Composite([UnoQuery, t.Object({
     name: t.Optional(t.String()), // 合作伙伴名称搜索
     isActive: t.Optional(t.Boolean()), // 启用状态筛选
+  }),])
 
-  })
 
-  // t.Composite([UnoQuery, t.Object({
-  //   name: t.Optional(t.String()), // 合作伙伴名称搜索
-  //   isActive: t.Optional(t.Boolean()), // 启用状态筛选
-  // }),])
 };
 
 // 导出类型

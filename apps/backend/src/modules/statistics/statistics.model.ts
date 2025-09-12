@@ -1,10 +1,13 @@
 import { DbType } from "@backend/db/database.types";
 import { t } from "elysia";
+import { paramId } from "../../db/common.model";
 
 /**
  * 统计模块模型定义
  */
-export const statisticsModel = {
+export const StatisticsModel = {
+	// 路径参数
+	id: paramId,
 	// 仪表板查询参数
 	dashboardQuery: t.Object({
 		startDate: t.Optional(t.String()),
@@ -109,21 +112,19 @@ export const statisticsModel = {
 	}),
 } as const;
 
-// 导出类型
-export type DashboardQuery = typeof statisticsModel.dashboardQuery.static;
-export type SalesTrendQuery = typeof statisticsModel.salesTrendQuery.static;
-export type PopularProductsQuery =
-	typeof statisticsModel.popularProductsQuery.static;
-export type CategorySalesQuery =
-	typeof statisticsModel.categorySalesQuery.static;
-export type UserGrowthQuery = typeof statisticsModel.userGrowthQuery.static;
-export type ProductStats = typeof statisticsModel.productStats.static;
-export type ProductInfo = typeof statisticsModel.productInfo.static;
-export type DashboardStats = typeof statisticsModel.dashboardStats.static;
+// 类型导出
+export type DashboardQuery = typeof StatisticsModel.dashboardQuery.static;
+export type SalesTrendQuery = typeof StatisticsModel.salesTrendQuery.static;
+export type PopularProductsQuery = typeof StatisticsModel.popularProductsQuery.static;
+export type CategorySalesQuery = typeof StatisticsModel.categorySalesQuery.static;
+export type UserGrowthQuery = typeof StatisticsModel.userGrowthQuery.static;
+export type ProductStats = typeof StatisticsModel.productStats.static;
+export type ProductInfo = typeof StatisticsModel.productInfo.static;
+export type DashboardStats = typeof StatisticsModel.dashboardStats.static;
+export type SalesTrendPoint = typeof StatisticsModel.salesTrendPoint.static;
+export type PopularProductItem = typeof StatisticsModel.popularProductItem.static;
+export type CategorySalesItem = typeof StatisticsModel.categorySalesItem.static;
+export type UserGrowthPoint = typeof StatisticsModel.userGrowthPoint.static;
 
-export type SalesTrendPoint = typeof statisticsModel.salesTrendPoint.static;
-
-export type PopularProductItem =
-	typeof statisticsModel.popularProductItem.static;
-export type CategorySalesItem = typeof statisticsModel.categorySalesItem.static;
-export type UserGrowthPoint = typeof statisticsModel.userGrowthPoint.static;
+// 导出模型类型
+export type StatisticsModelType = typeof StatisticsModel;

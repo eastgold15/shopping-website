@@ -2,32 +2,24 @@
 
 import {
   CustomeError,
-  DatabaseError,
   handleDatabaseError,
+  InternalServerError,
   UploadError,
 } from "@backend/utils/error/customError";
-import { commonRes } from "@backend/utils/Res";
-import type { ServiceResponse } from "@backend/utils/services";
+
 import { imageService } from "../image/images.service";
 import { type FileInfo, ossService } from "../oss";
 import type { UploadImagesDto } from "./uploads.model";
 
 export class UploadService {
-  /**
-   * 生成唯一文件名
-   */
-  private generateUniqueName(originalName: string): string {
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    const extension = originalName.split(".").pop() || "jpg";
-    return `${originalName}_${randomStr}.${extension}`;
-  }
+
   /**
    * 批量上传文件
    */
   async uploadFiles({
     files,
     folder,
-  }: UploadImagesDto): Promise<ServiceResponse<FileInfo[]>> {
+  }: UploadImagesDto) {
     try {
       const uploadPromises = files.map(async (file) => {
         try {
@@ -72,7 +64,7 @@ export class UploadService {
       });
 
       if (uploadResults.length === 0) {
-        throw new DatabaseError(`所有文件上传失败: ${errors.join(", ")}`);
+        throw new InternalServerError(`所有文件上传失败: ${errors.join(", ")}`);
       }
 
       // 如果有部分失败，记录警告但返回成功结果
@@ -80,14 +72,11 @@ export class UploadService {
         console.warn(`部分文件上传失败: ${errors.join(", ")}`);
       }
 
-      return commonRes(uploadResults);
+      return uploadResults
     } catch (error) {
       if (error instanceof CustomeError) {
         throw error;
       }
-
-      console.error("批量文件上传失败:", error);
-      throw handleDatabaseError(error);
     }
   }
 
@@ -97,7 +86,7 @@ export class UploadService {
   async uploadImages({
     files,
     folder = "general",
-  }: UploadImagesDto): Promise<ServiceResponse<any[]>> {
+  }: UploadImagesDto) {
     try {
       const uploadPromises = files.map(async (file) => {
         try {
@@ -114,11 +103,11 @@ export class UploadService {
             altText: fileName,
           });
 
-          if (imageRecord.code !== 200 || !imageRecord.data) {
-            throw new Error("创建图片记录失败");
+          if (!imageRecord) {
+            throw new InternalServerError("创建图片记录失败");
           }
 
-          return { success: true, imageData: imageRecord.data, error: null };
+          return imageRecord
         } catch (error) {
           console.error(`图片 ${file.name} 上传失败:`, error);
           return {
@@ -135,15 +124,15 @@ export class UploadService {
       const errors: string[] = [];
 
       results.forEach((result) => {
-        if (result.success && result.imageData) {
-          uploadResults.push(result.imageData);
-        } else if (result.error) {
-          errors.push(result.error);
+        if (result) {
+          uploadResults.push(result);
+        } else if (!result) {
+          errors.push(result);
         }
       });
 
       if (uploadResults.length === 0) {
-        throw new DatabaseError(`所有图片上传失败: ${errors.join(", ")}`);
+        throw new InternalServerError(`所有图片上传失败: ${errors.join(", ")}`);
       }
 
       // 如果有部分失败，记录警告但返回成功结果
@@ -151,14 +140,13 @@ export class UploadService {
         console.warn(`部分图片上传失败: ${errors.join(", ")}`);
       }
 
-      return commonRes(uploadResults);
+      return uploadResults
     } catch (error) {
       if (error instanceof CustomeError) {
         throw error;
       }
-
       console.error("批量图片上传失败:", error);
-      throw handleDatabaseError(error);
+      handleDatabaseError(error);
     }
   }
 
@@ -167,7 +155,7 @@ export class UploadService {
    */
   async deleteFile(
     fileUrl: string,
-  ): Promise<ServiceResponse<{ success: boolean }>> {
+  ) {
     try {
       // 从URL中提取文件key
       const url = new URL(fileUrl);
@@ -185,9 +173,9 @@ export class UploadService {
         }
       }
 
-      await ossService.deleteFile(key);
+      return await ossService.deleteFile(key);
 
-      return commonRes({ success: true });
+
     } catch (error) {
       if (error instanceof CustomeError) {
         throw error;
@@ -202,7 +190,7 @@ export class UploadService {
   /**
    * 检查文件是否存在
    */
-  async fileExists(fileUrl: string): Promise<ServiceResponse<boolean>> {
+  async fileExists(fileUrl: string) {
     try {
       // 从URL中提取文件key
       const url = new URL(fileUrl);
@@ -220,7 +208,7 @@ export class UploadService {
 
       const exists = await ossService.fileExists(key);
 
-      return commonRes(exists);
+      return exists
     } catch (error) {
       if (error instanceof CustomeError) {
         throw error;
@@ -235,7 +223,7 @@ export class UploadService {
   /**
    * 获取文件信息
    */
-  async getFileInfo(fileUrl: string): Promise<ServiceResponse<FileInfo>> {
+  async getFileInfo(fileUrl: string) {
     try {
       // 从URL中提取文件key
       const url = new URL(fileUrl);
@@ -257,7 +245,7 @@ export class UploadService {
         fileName: key.split("/").pop() || "unknown",
         size: stats.size,
       };
-      return commonRes(fileInfo);
+      return fileInfo
     } catch (error) {
       if (error instanceof CustomeError) {
         throw error;

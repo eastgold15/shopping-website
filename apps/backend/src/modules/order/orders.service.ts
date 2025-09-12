@@ -14,6 +14,9 @@ import {
 	ordersSchema,
 	refundsSchema,
 } from "../../db/schema/schema";
+import { NotFoundError } from "../../utils/errors";
+import { UnoQuery } from "../../db/common.model";
+import type { Order, NewOrder, OrderItem, Refund, NewRefund, OrderQuery, RefundQuery, StatisticsQuery, UpdateOrderStatusDto, UpdateShippingDto, CreateRefundDto, ProcessRefundDto } from "./orders.model";
 
 // 订单状态枚举
 export const ORDER_STATUS = {
@@ -49,16 +52,7 @@ export class OrdersService {
 	/**
 	 * 获取订单列表（分页）
 	 */
-	async getOrderList(params: {
-		page?: number;
-		pageSize?: number;
-		status?: string;
-		paymentStatus?: string;
-		customerEmail?: string;
-		orderNumber?: string;
-		sortBy?: string;
-		sortOrder?: "asc" | "desc";
-	}) {
+	async getList(query: OrderQuery) {
 		try {
 			const {
 				page = 1,
@@ -69,7 +63,7 @@ export class OrdersService {
 				orderNumber,
 				sortBy = "createdAt",
 				sortOrder = "desc",
-			} = params;
+			} = query;
 
 			const offset = (page - 1) * pageSize;
 			const conditions = [];
@@ -165,7 +159,7 @@ export class OrdersService {
 				.limit(1);
 
 			if (order.length === 0) {
-				throw new Error("订单不存在");
+				throw new NotFoundError("订单不存在");
 			}
 
 			// 获取订单项
@@ -192,7 +186,7 @@ export class OrdersService {
 
 			return {
 				...order[0],
-				items: orderItems,
+				orderItems,
 				refunds,
 			};
 		} catch (error) {
@@ -204,15 +198,15 @@ export class OrdersService {
 	/**
 	 * 更新订单状态
 	 */
-	async updateOrderStatus(id: number, status: string, notes?: string) {
+	async updateStatus(id: number, data: UpdateOrderStatusDto): Promise<Order> {
 		try {
 			const updateData: any = {
-				status,
+				status: data.status,
 				updatedAt: new Date(),
 			};
 
-			if (notes) {
-				updateData.notes = notes;
+			if (data.notes) {
+				updateData.notes = data.notes;
 			}
 
 			const result = await db
@@ -222,7 +216,7 @@ export class OrdersService {
 				.returning();
 
 			if (result.length === 0) {
-				throw new Error("订单不存在");
+				throw new NotFoundError("订单不存在");
 			}
 
 			return result[0];
@@ -235,19 +229,18 @@ export class OrdersService {
 	/**
 	 * 更新订单物流信息
 	 */
-	async updateOrderShipping(
+	async updateShipping(
 		id: number,
-		trackingNumber: string,
-		shippingMethod?: string,
-	) {
+		data: UpdateShippingDto,
+	): Promise<Order> {
 		try {
 			const updateData: any = {
-				trackingNumber,
+				trackingNumber: data.trackingNumber,
 				updatedAt: new Date(),
 			};
 
-			if (shippingMethod) {
-				updateData.shippingMethod = shippingMethod;
+			if (data.shippingMethod) {
+				updateData.shippingMethod = data.shippingMethod;
 			}
 
 			const result = await db
@@ -257,7 +250,7 @@ export class OrdersService {
 				.returning();
 
 			if (result.length === 0) {
-				throw new Error("订单不存在");
+				throw new NotFoundError("订单不存在");
 			}
 
 			return result[0];
@@ -270,14 +263,9 @@ export class OrdersService {
 	/**
 	 * 获取退款列表
 	 */
-	async getRefundList(params: {
-		page?: number;
-		pageSize?: number;
-		status?: string;
-		orderId?: number;
-	}) {
+	async getRefundList(query: RefundQuery) {
 		try {
-			const { page = 1, pageSize = 20, status, orderId } = params;
+			const { page = 1, pageSize = 20, status, orderId } = query;
 
 			const offset = (page - 1) * pageSize;
 			const conditions = [];
@@ -352,10 +340,8 @@ export class OrdersService {
 	 */
 	async createRefund(
 		orderId: number,
-		amount: string,
-		reason: string,
-		refundMethod?: string,
-	) {
+		data: CreateRefundDto,
+	): Promise<Refund> {
 		try {
 			// 检查订单是否存在
 			const order = await db
@@ -365,7 +351,7 @@ export class OrdersService {
 				.limit(1);
 
 			if (order.length === 0) {
-				throw new Error("订单不存在");
+				throw new NotFoundError("订单不存在");
 			}
 			// 生成退款编号（示例：基于时间戳 + 随机数）
 			const refundNumber = `REFUND-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -373,11 +359,11 @@ export class OrdersService {
 			// 创建退款记录
 			const refundData = {
 				orderId,
-				amount,
+				amount: data.amount,
 				refundNumber,
-				reason,
+				reason: data.reason,
 				status: REFUND_STATUS.PENDING,
-				refundMethod: refundMethod || "original",
+				refundMethod: data.refundMethod || "original",
 				createdAt: new Date(),
 				updatedAt: new Date(),
 			};
@@ -397,29 +383,29 @@ export class OrdersService {
 	/**
 	 * 处理退款申请
 	 */
-	async processRefund(refundId: number, status: string, notes?: string) {
+	async processRefund(id: number, data: ProcessRefundDto): Promise<Refund> {
 		try {
 			const updateData: any = {
-				status,
+				status: data.status,
 				updatedAt: new Date(),
 			};
 
-			if (notes) {
-				updateData.notes = notes;
+			if (data.notes) {
+				updateData.notes = data.notes;
 			}
 
-			if (status === REFUND_STATUS.PROCESSED) {
+			if (data.status === REFUND_STATUS.PROCESSED) {
 				updateData.processedAt = new Date();
 			}
 
 			const result = await db
 				.update(refundsSchema)
 				.set(updateData)
-				.where(eq(refundsSchema.id, refundId))
+				.where(eq(refundsSchema.id, id))
 				.returning();
 
 			if (result.length === 0) {
-				throw new Error("退款申请不存在");
+				throw new NotFoundError("退款申请不存在");
 			}
 
 			return result[0];
@@ -432,8 +418,9 @@ export class OrdersService {
 	/**
 	 * 获取订单统计信息
 	 */
-	async getOrderStatistics(startDate?: string, endDate?: string) {
+	async getOrderStatistics(query: StatisticsQuery) {
 		try {
+			const { startDate, endDate } = query;
 			const conditions = [];
 
 			if (startDate) {

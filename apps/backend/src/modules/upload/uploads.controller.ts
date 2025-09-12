@@ -1,3 +1,4 @@
+import { commonRes } from "@backend/types";
 import { Elysia } from "elysia";
 import { uploadsModel } from "./uploads.model";
 import { uploadService } from "./uploads.service";
@@ -23,7 +24,7 @@ export const uploadsController = new Elysia({ prefix: "/upload" })
         files: [file],
         folder,
       });
-      return result;
+      return commonRes(result);
     },
     {
       body: "UploadImageDto",
@@ -40,7 +41,7 @@ export const uploadsController = new Elysia({ prefix: "/upload" })
     async ({ body }) => {
       // 直接调用批量上传服务
       const result = await uploadService.uploadImages(body);
-      return result;
+      return commonRes(result);
     },
     {
       body: "UploadImagesDto",
@@ -57,7 +58,7 @@ export const uploadsController = new Elysia({ prefix: "/upload" })
     async ({ query }) => {
       const { url } = query;
       const result = await uploadService.deleteFile(url);
-      return result;
+      return commonRes(result);
     },
     {
       detail: {
@@ -78,7 +79,7 @@ export const uploadsController = new Elysia({ prefix: "/upload" })
         };
       }
       const result = await uploadService.fileExists(url);
-      return result;
+      return commonRes(result);
     },
     {
       detail: {
@@ -100,7 +101,7 @@ export const uploadsController = new Elysia({ prefix: "/upload" })
         };
       }
       const result = await uploadService.getFileInfo(url);
-      return result;
+      return commonRes(result);
     },
     {
       detail: {

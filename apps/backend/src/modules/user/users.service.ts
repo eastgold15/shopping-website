@@ -6,7 +6,6 @@ import {
 	NotFoundError,
 	ValidationError,
 } from "@backend/utils/error/customError";
-import { commonRes } from "@backend/utils/Res";
 import { BaseService } from "@backend/utils/services/BaseService";
 import type { ServiceResponse } from "@backend/utils/services/types";
 import { and, count, desc, eq, inArray, like, sql } from "drizzle-orm";
@@ -17,9 +16,9 @@ import {
 	type UserQueryFilters,
 	type UserStats,
 	UserStatus,
-} from "./model";
+} from "./users.model";
 
-export class UserService extends BaseService<
+export class UsersService extends BaseService<
 	UserEntity,
 	CreateUser,
 	UpdateUser
@@ -72,9 +71,7 @@ export class UserService extends BaseService<
 	/**
 	 * 根据用户名查找用户
 	 */
-	async findByUsername(
-		username: string,
-	): Promise<ServiceResponse<UserEntity | null>> {
+	async getByUsername(username: string): Promise<UserEntity> {
 		try {
 			const [result] = await db
 				.select()
@@ -82,10 +79,10 @@ export class UserService extends BaseService<
 				.where(eq(userSchema.username, username));
 
 			if (!result) {
-				return commonRes(null);
+				throw new NotFoundError(`用户名为 ${username} 的用户不存在`);
 			}
 
-			return commonRes(result);
+			return result;
 		} catch (error) {
 			if (error instanceof CustomeError) {
 				throw error;
@@ -94,22 +91,27 @@ export class UserService extends BaseService<
 		}
 	}
 
-	async findActiveUsers() {
-		const result = await db
-			.select()
-			.from(userSchema)
-			.where(eq(userSchema.status, UserStatus.ACTIVE))
-			.orderBy(desc(userSchema.createdAt));
+	async getActiveUsers(): Promise<UserEntity[]> {
+		try {
+			const result = await db
+				.select()
+				.from(userSchema)
+				.where(eq(userSchema.status, UserStatus.ACTIVE))
+				.orderBy(desc(userSchema.createdAt));
 
-		return commonRes(result);
+			return result;
+		} catch (error) {
+			if (error instanceof CustomeError) {
+				throw error;
+			}
+			throw handleDatabaseError(error);
+		}
 	}
 
 	/**
 	 * 根据邮箱查找用户
 	 */
-	async findByEmail(
-		email: string,
-	): Promise<ServiceResponse<UserEntity | null>> {
+	async getByEmail(email: string): Promise<UserEntity> {
 		try {
 			const result = await db
 				.select()
@@ -117,11 +119,11 @@ export class UserService extends BaseService<
 				.where(eq(userSchema.email, email))
 				.limit(1);
 
-			if (!result || result.length === 0) {
-				return commonRes(null);
+			if (!result[0]) {
+				throw new NotFoundError(`邮箱为 ${email} 的用户不存在`);
 			}
 
-			return commonRes(result[0]);
+			return result[0];
 		} catch (error) {
 			if (error instanceof CustomeError) {
 				throw error;
@@ -133,9 +135,7 @@ export class UserService extends BaseService<
 	/**
 	 * 获取用户列表（带搜索和筛选）
 	 */
-	async findUsers(
-		filters: UserQueryFilters,
-	): Promise<ServiceResponse<UserEntity[]>> {
+	async getUsers(filters: UserQueryFilters): Promise<UserEntity[]> {
 		try {
 			const conditions = [];
 
@@ -156,7 +156,7 @@ export class UserService extends BaseService<
 				.where(whereClause)
 				.orderBy(desc(userSchema.createdAt));
 
-			return commonRes(result);
+			return result;
 		} catch (error) {
 			if (error instanceof CustomeError) {
 				throw error;
@@ -168,7 +168,7 @@ export class UserService extends BaseService<
 	/**
 	 * 获取用户统计信息
 	 */
-	async getUserStats(): Promise<ServiceResponse<UserStats>> {
+	async getStatistics(): Promise<UserStats> {
 		try {
 			// 总用户数
 			const [{ totalUsers }] = await db
@@ -207,7 +207,7 @@ export class UserService extends BaseService<
 						: "0.00",
 			};
 
-			return commonRes(stats);
+			return stats;
 		} catch (error) {
 			if (error instanceof CustomeError) {
 				throw error;
@@ -219,13 +219,17 @@ export class UserService extends BaseService<
 	/**
 	 * 批量更新用户状态
 	 */
-	async batchUpdateStatus(
+	async updateStatusBatch(
 		userIds: number[],
 		status: number,
-	): Promise<ServiceResponse<number>> {
+	): Promise<number> {
 		try {
 			if (!userIds || userIds.length === 0) {
 				throw new ValidationError("用户ID列表不能为空");
+			}
+
+			if (!Object.values(UserStatus).includes(status)) {
+				throw new ValidationError("无效的用户状态");
 			}
 
 			const result = await db
@@ -237,8 +241,7 @@ export class UserService extends BaseService<
 				.where(inArray(userSchema.id, userIds))
 				.returning({ id: userSchema.id });
 
-			const updatedCount = result.length;
-			return commonRes(updatedCount);
+			return result.length;
 		} catch (error) {
 			if (error instanceof CustomeError) {
 				throw error;
@@ -250,11 +253,15 @@ export class UserService extends BaseService<
 	/**
 	 * 软删除用户（设置状态为禁用）
 	 */
-	async softDelete(id: number): Promise<ServiceResponse<boolean>> {
+	async softDelete(id: number): Promise<boolean> {
 		try {
+			if (!id || id <= 0) {
+				throw new ValidationError("无效的用户ID");
+			}
+
 			// 检查用户是否存在
-			const existing = await this.findById(id);
-			if (!existing.data || existing.data == null) {
+			const existing = await this.getById(id);
+			if (!existing) {
 				throw new NotFoundError(`用户不存在`);
 			}
 
@@ -267,7 +274,7 @@ export class UserService extends BaseService<
 				})
 				.where(eq(userSchema.id, id));
 
-			return commonRes(true);
+			return true;
 		} catch (error) {
 			if (error instanceof CustomeError) {
 				throw error;
@@ -276,25 +283,7 @@ export class UserService extends BaseService<
 		}
 	}
 
-	/**
-	 * 获取活跃用户列表
-	 */
-	async getActiveUsers(): Promise<ServiceResponse<UserEntity[]>> {
-		try {
-			const result = await db
-				.select()
-				.from(userSchema)
-				.where(eq(userSchema.status, UserStatus.ACTIVE))
-				.orderBy(desc(userSchema.createdAt));
 
-			return commonRes(result);
-		} catch (error) {
-			if (error instanceof CustomeError) {
-				throw error;
-			}
-			throw handleDatabaseError(error);
-		}
-	}
 
 	async getStatistics() {
 		return await db

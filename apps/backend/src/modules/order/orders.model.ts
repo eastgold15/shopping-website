@@ -1,13 +1,15 @@
-import { UnoQuery } from "@backend/db/common.model";
+import { UnoQuery, paramId } from "@backend/db/common.model";
 import { DbType } from "@backend/db/database.types";
-import { Omit } from "@sinclair/typebox";
 import { t } from "elysia";
 
 // 订单模型定义
 export const ordersModel = {
+	// 路径参数
+	id: paramId,
+	refundId: paramId,
+
 	// 订单列表查询参数
-	orderListQuery: t.Composite([
-		Omit(DbType.typebox.select.ordersSchema, ["id", "createdAt", "updatedAt"]),
+	OrderQuery: t.Composite([
 		UnoQuery,
 		t.Object({
 			status: t.Optional(t.String({ description: "订单状态" })),
@@ -18,46 +20,64 @@ export const ordersModel = {
 	]),
 
 	// 更新订单状态请求
-	updateOrderStatus: t.Object({
+	UpdateOrderStatusDto: t.Object({
 		status: t.String({ description: "订单状态" }),
-		notes: t.Optional(t.Union([t.String({ description: "备注" })])),
+		notes: t.Optional(t.String({ description: "备注" })),
 	}),
 
 	// 更新物流信息请求
-	updateShipping: t.Object({
+	UpdateShippingDto: t.Object({
 		trackingNumber: t.String({ description: "物流单号" }),
 		shippingMethod: t.Optional(t.String({ description: "物流方式" })),
 	}),
 
 	// 退款列表查询参数
-	refundListQuery: t.Object({
-		...UnoQuery.properties,
-		status: t.Optional(t.String({ description: "退款状态" })),
-		orderId: t.Optional(t.Number()),
-	}),
+	RefundQuery: t.Composite([
+		UnoQuery,
+		t.Object({
+			status: t.Optional(t.String({ description: "退款状态" })),
+			orderId: t.Optional(t.Number()),
+		}),
+	]),
 
 	// 创建退款申请请求
-	createRefund: t.Object({
+	CreateRefundDto: t.Object({
 		amount: t.String({ description: "退款金额" }),
 		reason: t.String({ description: "退款原因" }),
 		refundMethod: t.Optional(t.String({ description: "退款方式" })),
 	}),
 
 	// 处理退款申请请求
-	processRefund: t.Object({
+	ProcessRefundDto: t.Object({
 		status: t.String({ description: "退款状态" }),
-		notes: t.Optional(t.Union([t.String({ description: "处理备注" })])),
+		notes: t.Optional(t.String({ description: "处理备注" })),
 	}),
 
 	// 统计查询参数
-	statisticsQuery: t.Object({
+	StatisticsQuery: t.Object({
 		startDate: t.Optional(t.String({ description: "开始日期" })),
 		endDate: t.Optional(t.String({ description: "结束日期" })),
 	}),
 };
 
-// 导出类型
-export type UpdateOrderStatusDto = typeof ordersModel.updateOrderStatus.static;
-export type UpdateShippingDto = typeof ordersModel.updateShipping.static;
-export type CreateRefundDto = typeof ordersModel.createRefund.static;
-export type ProcessRefundDto = typeof ordersModel.processRefund.static;
+// 导出实体类型
+export type Order = typeof DbType.typebox.select.ordersSchema.static;
+export type NewOrder = typeof DbType.typebox.insert.ordersSchema.static;
+export type OrderItem = typeof DbType.typebox.select.orderItemsSchema.static;
+export type NewOrderItem = typeof DbType.typebox.insert.orderItemsSchema.static;
+export type Refund = typeof DbType.typebox.select.refundsSchema.static;
+export type NewRefund = typeof DbType.typebox.insert.refundsSchema.static;
+
+// 导出查询类型
+export type OrderQuery = typeof ordersModel.OrderQuery.static;
+export type RefundQuery = typeof ordersModel.RefundQuery.static;
+export type StatisticsQuery = typeof ordersModel.StatisticsQuery.static;
+
+// 导出DTO类型
+export type UpdateOrderStatusDto = typeof ordersModel.UpdateOrderStatusDto.static;
+export type UpdateShippingDto = typeof ordersModel.UpdateShippingDto.static;
+export type CreateRefundDto = typeof ordersModel.CreateRefundDto.static;
+export type ProcessRefundDto = typeof ordersModel.ProcessRefundDto.static;
+
+// 导出模型类型
+export const OrderModel = ordersModel;

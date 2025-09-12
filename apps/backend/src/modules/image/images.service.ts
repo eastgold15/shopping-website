@@ -7,19 +7,14 @@ import { imagesSchema, productImagesSchema } from "../../db/schema";
 // 导入数据库类型
 
 // 导入模型类型
+import { CreateOptions, QueryOptions, UpdateOptions } from "@backend/types";
 import {
   CustomeError,
   handleDatabaseError,
-  NotFoundError,
-  ValidationError
+  NotFoundError
 } from "@backend/utils/error/customError";
 import { commonRes } from "@backend/utils/Res";
-import BaseService, {
-  type CreateOptions,
-  type QueryOptions,
-  type ServiceResponse,
-  type UpdateOptions
-} from "@backend/utils/services";
+import BaseService from "@backend/utils/services";
 import type {
   CreateImageDto,
   ImageModel,
@@ -43,7 +38,7 @@ export class ImageService extends BaseService<
   async createImage(
     data: CreateImageDto,
     options: CreateOptions = {},
-  ): Promise<ServiceResponse<ImageModel>> {
+  ): Promise<ImageModel> {
     try {
 
       const imageData = {
@@ -151,7 +146,7 @@ export class ImageService extends BaseService<
     imageId: number,
     data: UpdateImageDto,
     options: UpdateOptions = {},
-  ): Promise<ServiceResponse<ImageModel>> {
+  ) {
     try {
 
       const existing = await this.findById(imageId);
@@ -171,11 +166,8 @@ export class ImageService extends BaseService<
   /**
    * 批量删除图片
    */
-  async deleteImages(imageIds: number[]): Promise<ServiceResponse<number>> {
+  async deleteImages(imageIds: number[]) {
     try {
-      if (!imageIds || imageIds.length === 0) {
-        throw new ValidationError("No image IDs provided");
-      }
 
       // 检查图片是否存在
       const existingImages = await this.findMany({
@@ -186,11 +178,11 @@ export class ImageService extends BaseService<
         })),
       });
 
-      if (!existingImages.data) {
+      if (!existingImages) {
         throw new NotFoundError("One or more images not found");
       }
 
-      const existingIds = existingImages.data.map((img) => img.id);
+      const existingIds = existingImages.map((img) => img.id);
       const missingIds = imageIds.filter((id) => !existingIds.includes(id));
 
       if (missingIds.length > 0) {
@@ -307,7 +299,7 @@ export class ImageService extends BaseService<
         .where(eq(productImagesSchema.productId, productId));
 
       if (images.length < 0) {
-        throw new CustomeError("未找到该商品图片");
+        throw new NotFoundError("未找到该商品图片");
       }
 
       return commonRes(images);

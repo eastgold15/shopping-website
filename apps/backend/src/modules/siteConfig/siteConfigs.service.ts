@@ -1,10 +1,12 @@
 import { db } from "@backend/db/connection";
 import { siteConfigSchema } from "@backend/db/schema/schema";
-import { eq, getTableColumns } from "drizzle-orm";
+import { eq, getTableColumns, like, or } from "drizzle-orm";
+import { NotFoundError } from "@backend/utils/errors";
 import type {
 	BatchUpdateSiteConfigDto,
 	CreateSiteConfigDto,
 	UpdateSiteConfigDto,
+	SiteConfigQuery,
 } from "./siteConfigs.model";
 
 /**
@@ -15,16 +17,41 @@ export class SiteConfigsService {
 	private readonly columns = getTableColumns(siteConfigSchema);
 
 	/**
-	 * 获取所有配置
+	 * 获取配置列表
 	 */
-	async getAllConfigs() {
-		return await db.select(this.columns).from(siteConfigSchema);
+	async getList(query?: SiteConfigQuery) {
+		let dbQuery = db.select(this.columns).from(siteConfigSchema);
+
+		// 添加筛选条件
+		if (query?.category) {
+			dbQuery = dbQuery.where(eq(siteConfigSchema.category, query.category));
+		}
+
+		if (query?.key) {
+			dbQuery = dbQuery.where(
+				or(
+					like(siteConfigSchema.key, `%${query.key}%`),
+					like(siteConfigSchema.description, `%${query.key}%`)
+				)
+			);
+		}
+
+		// 分页处理
+		if (query?.limit) {
+			dbQuery = dbQuery.limit(query.limit);
+		}
+
+		if (query?.offset) {
+			dbQuery = dbQuery.offset(query.offset);
+		}
+
+		return await dbQuery;
 	}
 
 	/**
 	 * 根据分类获取配置
 	 */
-	async getConfigsByCategory(category: string) {
+	async getByCategory(category: string) {
 		return await db
 			.select(this.columns)
 			.from(siteConfigSchema)
@@ -34,20 +61,24 @@ export class SiteConfigsService {
 	/**
 	 * 根据键获取配置
 	 */
-	async getConfigByKey(key: string) {
+	async getByKey(key: string) {
 		const [config] = await db
 			.select(this.columns)
 			.from(siteConfigSchema)
 			.where(eq(siteConfigSchema.key, key))
 			.limit(1);
 
-		return config || null;
+		if (!config) {
+			throw new NotFoundError(`配置项 ${key} 不存在`);
+		}
+
+		return config;
 	}
 
 	/**
 	 * 创建配置
 	 */
-	async createConfig(data: CreateSiteConfigDto) {
+	async create(data: CreateSiteConfigDto) {
 		const [newConfig] = await db
 			.insert(siteConfigSchema)
 			.values({
@@ -64,57 +95,74 @@ export class SiteConfigsService {
 	/**
 	 * 更新配置
 	 */
-	async updateConfig(key: string, data: UpdateSiteConfigDto) {
+	async updateByKey(key: string, data: UpdateSiteConfigDto) {
+		// 先检查配置是否存在
+		await this.getByKey(key);
+
 		const [updatedConfig] = await db
 			.update(siteConfigSchema)
 			.set({
-				value: data.value,
-				description: data.description,
-				category: data.category,
+				...data,
 				updatedAt: new Date(),
 			})
 			.where(eq(siteConfigSchema.key, key))
 			.returning(this.columns);
 
-		return updatedConfig || null;
+		return updatedConfig;
 	}
 
 	/**
 	 * 删除配置
 	 */
-	async deleteConfig(key: string) {
+	async deleteByKey(key: string) {
+		// 先检查配置是否存在
+		await this.getByKey(key);
+
 		const [deletedConfig] = await db
 			.delete(siteConfigSchema)
 			.where(eq(siteConfigSchema.key, key))
 			.returning(this.columns);
 
-		return deletedConfig || null;
+		return deletedConfig;
 	}
 
 	/**
 	 * 批量更新配置
 	 */
-	async batchUpdateConfigs(configs: BatchUpdateSiteConfigDto) {
+	async batchUpdate(configs: BatchUpdateSiteConfigDto) {
 		const results = [];
 
 		for (const config of configs) {
 			try {
-				const [updatedConfig] = await db
-					.update(siteConfigSchema)
-					.set({
-						value: config.value,
-						description: config.description,
-						category: config.category,
-						updatedAt: new Date(),
-					})
+				// 检查配置是否存在
+				const existing = await db
+					.select(this.columns)
+					.from(siteConfigSchema)
 					.where(eq(siteConfigSchema.key, config.key))
-					.returning(this.columns);
+					.limit(1);
 
-				if (updatedConfig) {
-					results.push(updatedConfig);
+				if (existing.length > 0) {
+					// 更新现有配置
+					const [updated] = await db
+						.update(siteConfigSchema)
+						.set({
+							...config,
+							updatedAt: new Date(),
+						})
+						.where(eq(siteConfigSchema.key, config.key))
+						.returning(this.columns);
+					results.push(updated);
+				} else {
+					// 创建新配置
+					const [created] = await db
+						.insert(siteConfigSchema)
+						.values(config)
+						.returning(this.columns);
+					results.push(created);
 				}
 			} catch (error) {
-				console.error(`批量更新配置 ${config.key} 失败:`, error);
+				// 跳过错误的配置项，继续处理其他项
+				continue;
 			}
 		}
 
@@ -124,7 +172,7 @@ export class SiteConfigsService {
 	/**
 	 * 初始化默认配置
 	 */
-	async initializeDefaultConfigs() {
+	async initialize() {
 		const defaultConfigs = [
 			{
 				key: "site_name",
@@ -193,9 +241,13 @@ export class SiteConfigsService {
 		for (const config of defaultConfigs) {
 			try {
 				// 检查配置是否已存在
-				const existing = await this.getConfigByKey(config.key);
+				const existing = await db
+					.select(this.columns)
+					.from(siteConfigSchema)
+					.where(eq(siteConfigSchema.key, config.key))
+					.limit(1);
 
-				if (!existing) {
+				if (existing.length === 0) {
 					const [newConfig] = await db
 						.insert(siteConfigSchema)
 						.values(config)
@@ -204,7 +256,8 @@ export class SiteConfigsService {
 					results.push(newConfig);
 				}
 			} catch (error) {
-				console.error(`初始化配置 ${config.key} 失败:`, error);
+				// 跳过错误的配置项，继续处理其他项
+				continue;
 			}
 		}
 

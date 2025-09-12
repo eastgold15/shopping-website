@@ -1,9 +1,11 @@
-import { UnoQuery } from "@backend/db/common.model";
+import { UnoQuery, paramId } from "@backend/db/common.model";
 import { DbType } from "@backend/db/database.types";
 import { t } from "elysia";
 
 // 用户模块的TypeBox模型定义
-export const usersModel = {
+export const UsersModel = {
+	// 路径参数
+	id: paramId,
 	// 创建用户 - 需要用户名和密码
 	createUser: t.Composite([
 		DbType.typebox.insert.userSchema,
@@ -31,10 +33,10 @@ export const usersModel = {
 };
 
 // 从TypeBox模型获取TypeScript类型
-export type CreateUser = typeof usersModel.createUser.static;
-export type UpdateUser = typeof usersModel.updateUser.static;
-export type UserQuery = typeof usersModel.userQuery.static;
-export type BatchUpdate = typeof usersModel.batchUpdate.static;
+export type CreateUser = typeof UsersModel.createUser.static;
+export type UpdateUser = typeof UsersModel.updateUser.static;
+export type UserQuery = typeof UsersModel.userQuery.static;
+export type BatchUpdate = typeof UsersModel.batchUpdate.static;
 
 // 从数据库schema获取实体类型
 export type UserEntity = typeof DbType.typebox.select.userSchema.static;
@@ -65,3 +67,6 @@ export const UserRole = {
 	ADMIN: "admin",
 	USER: "user",
 } as const;
+
+// 导出模型类型
+export type UsersModelType = typeof UsersModel;

@@ -1,15 +1,16 @@
 import { NotFoundError } from "@backend/utils/error/customError";
+
 import { commonRes } from "@backend/utils/Res";
 import { Elysia, t } from "elysia";
 import { usersModel } from "./users.model";
-import { UserService } from "./users.service";
+import { UsersService } from "./users.service";
 
 /**
  * 用户管理控制器
  * 处理用户相关的HTTP请求
  */
 export const usersController = new Elysia({ prefix: "/users" })
-	.decorate("usersService", new UserService())
+	.decorate("usersService", new UsersService())
 	.model(usersModel)
 	.guard({
 		detail: {
@@ -21,7 +22,7 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/",
 		async ({ query, usersService }) => {
-			const result = await usersService.findPaginated(
+			const users = await usersService.getUsers(
 				{ page: query.page || 1, pageSize: query.pageSize || 10 },
 				{
 					filters: query.search
@@ -29,15 +30,15 @@ export const usersController = new Elysia({ prefix: "/users" })
 						: [],
 					sort: query.sortBy
 						? [
-								{
-									field: query.sortBy,
-									direction: (query.sortBy as "desc") || "desc",
-								},
-							]
+							{
+								field: query.sortBy,
+								direction: (query.sortBy as "desc") || "desc",
+							},
+						]
 						: [],
 				},
 			);
-			return result;
+			return commonRes(users);
 		},
 		{
 			query: "userQuery",
@@ -52,13 +53,13 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/:id",
 		async ({ params, usersService }) => {
-			const result = await usersService.findById(params.id);
+			const user = await usersService.getById(params.id);
 
-			if (!result.data) {
+			if (!user) {
 				throw new NotFoundError("用户不存在");
 			}
 
-			return result;
+			return commonRes(user);
 		},
 		{
 			params: t.Object({
@@ -75,9 +76,9 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.post(
 		"/",
 		async ({ body, usersService }) => {
-			const result = await usersService.create(body as any);
+			const user = await usersService.create(body);
 
-			return commonRes(result.data);
+			return commonRes(user);
 		},
 		{
 			body: "createUser",
@@ -92,9 +93,9 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.put(
 		"/:id",
 		async ({ params, body, usersService }) => {
-			const result = await usersService.update(params.id, body as any);
+			const user = await usersService.update(params.id, body);
 
-			return commonRes(result.data);
+			return commonRes(user);
 		},
 		{
 			params: t.Object({
@@ -112,8 +113,8 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.delete(
 		"/:id",
 		async ({ params, usersService }) => {
-			const result = await usersService.delete(params.id);
-			return commonRes(result);
+			await usersService.delete(params.id);
+			return commonRes(null, 200, "User deleted successfully");
 		},
 		{
 			params: t.Object({
@@ -130,15 +131,12 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.patch(
 		"/batch-status",
 		async ({ body, usersService }) => {
-			const result = await usersService.batchUpdateStatus(
+			const updatedCount = await usersService.updateStatusBatch(
 				body.userIds,
 				body.status,
 			);
 
-			return commonRes({
-				success: true,
-				updatedCount: result.data,
-			});
+			return commonRes({ updatedCount });
 		},
 		{
 			body: "batchUpdate",
@@ -158,9 +156,9 @@ export const usersController = new Elysia({ prefix: "/users" })
 				{
 					filters: query.search
 						? [
-								{ field: "username", operator: "like", value: query.search },
-								{ field: "role", operator: "eq", value: "admin" },
-							]
+							{ field: "username", operator: "like", value: query.search },
+							{ field: "role", operator: "eq", value: "admin" },
+						]
 						: [],
 				},
 			);
@@ -183,9 +181,9 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/statistics",
 		async ({ usersService }) => {
-			const result = await usersService.getStatistics();
+			const stats = await usersService.getStatistics();
 
-			return result;
+			return commonRes(stats);
 		},
 		{
 			detail: {
@@ -199,13 +197,8 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/by-username/:username",
 		async ({ params, usersService }) => {
-			const result = await usersService.findByUsername(params.username);
-
-			if (!result.data) {
-				throw new NotFoundError("用户不存在");
-			}
-
-			return result;
+			const user = await usersService.getByUsername(params.username);
+			return commonRes(user);
 		},
 		{
 			params: t.Object({

@@ -8,7 +8,7 @@ import { advertisementsController } from "./modules/advertisements";
 import { categoriesController } from "./modules/category";
 import { imagesController } from "./modules/image";
 import { ordersController } from "./modules/order";
-import { ossController } from "./modules/oss";
+
 import { partnersController } from "./modules/partner";
 import { productsController } from "./modules/product";
 import { siteConfigsController } from "./modules/siteConfig";
@@ -20,17 +20,19 @@ import { err_handler } from "./utils/error/err.global";
 import { startupHealthCheck } from "./utils/healthyCheck";
 
 const api = new Elysia({ prefix: "/api" })
-  .use(usersController)
   .use(uploadsController)
   .use(imagesController)
-  .use(ossController)
+  .use(partnersController)
   .use(categoriesController)
+  .use(advertisementsController)
   .use(productsController)
   .use(siteConfigsController)
-  .use(advertisementsController)
+
   .use(ordersController)
   .use(statisticsController)
-  .use(partnersController);
+  .use(usersController)
+
+
 
 export const app = new Elysia()
   .use(cors())

@@ -1,84 +1,83 @@
+import { spreads } from "@backend/utils/dizzle.type";
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
 import { t } from "elysia";
-import { spreads } from "../utils/dizzle.type";
 import { dbSchema } from "./schema/index";
 
+// ==================== 第一步：分别定义所有 insert schemas ====================
+const userInsertSchema = createInsertSchema(dbSchema.userSchema, {
+  email: t.Optional(t.String({ format: "email" })),
+});
+const tokenInsertSchema = createInsertSchema(dbSchema.tokenSchema);
+const categoriesInsertSchema = createInsertSchema(dbSchema.categoriesSchema);
+const productsInsertSchema = createInsertSchema(dbSchema.productsSchema);
+const reviewsInsertSchema = createInsertSchema(dbSchema.reviewsSchema);
+const siteConfigInsertSchema = createInsertSchema(dbSchema.siteConfigSchema);
+const advertisementsInsertSchema = createInsertSchema(dbSchema.advertisementsSchema);
+const imagesInsertSchema = createInsertSchema(dbSchema.imagesSchema);
+const ordersInsertSchema = createInsertSchema(dbSchema.ordersSchema);
+const orderItemsInsertSchema = createInsertSchema(dbSchema.orderItemsSchema);
+const refundsInsertSchema = createInsertSchema(dbSchema.refundsSchema);
+const partnersInsertSchema = createInsertSchema(dbSchema.partnersSchema);
+
+// ==================== 第二步：分别定义所有 select schemas ====================
+const userSelectSchema = createSelectSchema(dbSchema.userSchema, {
+  email: t.Optional(t.String({ format: "email" })),
+});
+const tokenSelectSchema = createSelectSchema(dbSchema.tokenSchema);
+const categoriesSelectSchema = createSelectSchema(dbSchema.categoriesSchema);
+const productsSelectSchema = createSelectSchema(dbSchema.productsSchema);
+const reviewsSelectSchema = createSelectSchema(dbSchema.reviewsSchema);
+const siteConfigSelectSchema = createSelectSchema(dbSchema.siteConfigSchema);
+const advertisementsSelectSchema = createSelectSchema(dbSchema.advertisementsSchema);
+const imagesSelectSchema = createSelectSchema(dbSchema.imagesSchema);
+const ordersSelectSchema = createSelectSchema(dbSchema.ordersSchema);
+const orderItemsSelectSchema = createSelectSchema(dbSchema.orderItemsSchema);
+const refundsSelectSchema = createSelectSchema(dbSchema.refundsSchema);
+const partnersSelectSchema = createSelectSchema(dbSchema.partnersSchema);
+
+// ==================== 第三步：组合 insert 对象 ====================
+const insertSchemas = {
+  userSchema: userInsertSchema,
+  tokenSchema: tokenInsertSchema,
+  categoriesSchema: categoriesInsertSchema,
+  productsSchema: productsInsertSchema,
+  reviewsSchema: reviewsInsertSchema,
+  siteConfigSchema: siteConfigInsertSchema,
+  advertisementsSchema: advertisementsInsertSchema,
+  imagesSchema: imagesInsertSchema,
+  ordersSchema: ordersInsertSchema,
+  orderItemsSchema: orderItemsInsertSchema,
+  refundsSchema: refundsInsertSchema,
+  partnersSchema: partnersInsertSchema,
+};
+
+// ==================== 第四步：组合 select 对象 ====================
+const selectSchemas = {
+  userSchema: userSelectSchema,
+  tokenSchema: tokenSelectSchema,
+  categoriesSchema: categoriesSelectSchema,
+  productsSchema: productsSelectSchema,
+  reviewsSchema: reviewsSelectSchema,
+  siteConfigSchema: siteConfigSelectSchema,
+  advertisementsSchema: advertisementsSelectSchema,
+  imagesSchema: imagesSelectSchema,
+  ordersSchema: ordersSelectSchema,
+  orderItemsSchema: orderItemsSelectSchema,
+  refundsSchema: refundsSelectSchema,
+  partnersSchema: partnersSelectSchema,
+};
+
+// ==================== 第五步：创建最终的 DbType 对象 ====================
 /**
  * 数据库 TypeBox 配置
  */
 export const DbType = {
-	typebox: {
-		insert: {
-			userSchema: createInsertSchema(dbSchema.userSchema, {
-				email: t.Optional(t.String({ format: "email" })),
-			}),
-			tokenSchema: createInsertSchema(dbSchema.tokenSchema),
-			categoriesSchema: createInsertSchema(dbSchema.categoriesSchema),
-			productsSchema: createInsertSchema(dbSchema.productsSchema),
-			reviewsSchema: createInsertSchema(dbSchema.reviewsSchema),
-			siteConfigSchema: createInsertSchema(dbSchema.siteConfigSchema),
-			advertisementsSchema: createInsertSchema(dbSchema.advertisementsSchema),
-			imagesSchema: createInsertSchema(dbSchema.imagesSchema),
-			ordersSchema: createInsertSchema(dbSchema.ordersSchema),
-			orderItemsSchema: createInsertSchema(dbSchema.orderItemsSchema),
-			refundsSchema: createInsertSchema(dbSchema.refundsSchema),
-			partnersSchema: createInsertSchema(dbSchema.partnersSchema),
-		},
-		select: {
-			userSchema: createSelectSchema(dbSchema.userSchema, {
-				email: t.Optional(t.String({ format: "email" })),
-			}),
-			tokenSchema: createSelectSchema(dbSchema.tokenSchema),
-			categoriesSchema: createSelectSchema(dbSchema.categoriesSchema),
-			productsSchema: createSelectSchema(dbSchema.productsSchema),
-			reviewsSchema: createSelectSchema(dbSchema.reviewsSchema),
-			siteConfigSchema: createSelectSchema(dbSchema.siteConfigSchema),
-			advertisementsSchema: createSelectSchema(dbSchema.advertisementsSchema),
-			imagesSchema: createSelectSchema(dbSchema.imagesSchema),
-			ordersSchema: createSelectSchema(dbSchema.ordersSchema),
-			orderItemsSchema: createSelectSchema(dbSchema.orderItemsSchema),
-			refundsSchema: createSelectSchema(dbSchema.refundsSchema),
-			partnersSchema: createSelectSchema(dbSchema.partnersSchema),
-		},
-	},
-	spreads: {
-		insert: spreads(
-			{
-				userSchema: createInsertSchema(dbSchema.userSchema, {
-					email: t.Optional(t.String({ format: "email" })),
-				}),
-				tokenSchema: createInsertSchema(dbSchema.tokenSchema),
-				categoriesSchema: createInsertSchema(dbSchema.categoriesSchema),
-				productsSchema: createInsertSchema(dbSchema.productsSchema),
-				reviewsSchema: createInsertSchema(dbSchema.reviewsSchema),
-				siteConfigSchema: createInsertSchema(dbSchema.siteConfigSchema),
-				advertisementsSchema: createInsertSchema(dbSchema.advertisementsSchema),
-				imagesSchema: createInsertSchema(dbSchema.imagesSchema),
-				ordersSchema: createInsertSchema(dbSchema.ordersSchema),
-				orderItemsSchema: createInsertSchema(dbSchema.orderItemsSchema),
-				refundsSchema: createInsertSchema(dbSchema.refundsSchema),
-				partnersSchema: createInsertSchema(dbSchema.partnersSchema),
-			},
-			"insert",
-		),
-		select: spreads(
-			{
-				userSchema: createSelectSchema(dbSchema.userSchema, {
-					email: t.Optional(t.String({ format: "email" })),
-				}),
-				tokenSchema: createSelectSchema(dbSchema.tokenSchema),
-				categoriesSchema: createSelectSchema(dbSchema.categoriesSchema),
-				productsSchema: createSelectSchema(dbSchema.productsSchema),
-				reviewsSchema: createSelectSchema(dbSchema.reviewsSchema),
-				siteConfigSchema: createSelectSchema(dbSchema.siteConfigSchema),
-				advertisementsSchema: createSelectSchema(dbSchema.advertisementsSchema),
-				imagesSchema: createSelectSchema(dbSchema.imagesSchema),
-				ordersSchema: createSelectSchema(dbSchema.ordersSchema),
-				orderItemsSchema: createSelectSchema(dbSchema.orderItemsSchema),
-				refundsSchema: createSelectSchema(dbSchema.refundsSchema),
-				partnersSchema: createSelectSchema(dbSchema.partnersSchema),
-			},
-			"select",
-		),
-	},
+  typebox: {
+    insert: insertSchemas,
+    select: selectSchemas,
+  },
+  spreads: {
+    insert: spreads(insertSchemas, "insert"),
+    select: spreads(selectSchemas, "select"),
+  },
 } as const;

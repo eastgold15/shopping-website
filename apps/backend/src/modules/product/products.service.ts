@@ -1,25 +1,26 @@
 import {
-	and,
-	asc,
-	count,
-	desc,
-	eq,
-	getTableColumns,
-	like,
-	or,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  like,
+  or,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
 import {
-	categoriesSchema,
-	imagesSchema,
-	productImagesSchema,
-	productsSchema,
+  categoriesSchema,
+  imagesSchema,
+  productImagesSchema,
+  productsSchema,
 } from "../../db/schema";
-import { handleDatabaseError } from "../../utils/error/customError";
+import { handleDatabaseError, NotFoundError } from "../../utils/error/customError";
 import type {
-	CreateProductDto,
-	ProductListQueryDto,
-	UpdateProductDto,
+  CreateProductDto,
+  ProductQuery,
+  UpdateProductDto,
+  UpdateSortDto,
 } from "./products.model";
 
 /**
@@ -27,414 +28,414 @@ import type {
  * 处理所有商品相关的业务逻辑
  */
 export class ProductsService {
-	/**
-	 * 创建商品
-	 */
-	static async createProduct(data: CreateProductDto) {
-		try {
-			const [newProduct] = await db
-				.insert(productsSchema)
-				.values(data)
-				.returning();
+  /**
+   * 创建商品
+   */
+  static async create(data: CreateProductDto) {
+    try {
+      const [newProduct] = await db
+        .insert(productsSchema)
+        .values(data)
+        .returning();
 
-			return { success: true, data: newProduct };
-		} catch (error) {
-			console.error("创建商品失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      return newProduct;
+    } catch (error) {
+      throw handleDatabaseError(error);
+    }
+  }
 
-	/**
-	 * 获取商品列表
-	 */
-	static async getProductList(query: ProductListQueryDto) {
-		try {
-			const {
-				page = 1,
-				pageSize = 10,
-				sortBy = "createdAt",
-				sortOrder = "desc",
-				search,
-				categoryId,
-				isActive,
-				isFeatured,
-			} = query;
+  /**
+   * 更新商品排序
+   */
+  static async updateSort(id: number, data: UpdateSortDto) {
+    try {
+      const [updatedProduct] = await db
+        .update(productsSchema)
+        .set({ 
+          sortOrder: data.sortOrder,
+          updatedAt: new Date() 
+        })
+        .where(eq(productsSchema.id, id))
+        .returning();
 
-			// 搜索条件：支持商品名称、SKU和描述搜索
-			const conditions = [];
-			if (search) {
-				conditions.push(
-					or(
-						like(productsSchema.name, `%${search}%`),
-						like(productsSchema.sku, `%${search}%`),
-						like(productsSchema.description, `%${search}%`),
-					),
-				);
-			}
+      if (!updatedProduct) {
+        throw new NotFoundError("商品不存在");
+      }
 
-			if (categoryId) {
-				conditions.push(
-					eq(productsSchema.categoryId, parseInt(categoryId as string)),
-				);
-			}
+      return updatedProduct;
+    } catch (error) {
+      throw handleDatabaseError(error);
+    }
+  }
 
-			if (isActive !== undefined) {
-				conditions.push(eq(productsSchema.isActive, isActive === true));
-			}
-			if (isFeatured !== undefined) {
-				conditions.push(eq(productsSchema.isFeatured, isFeatured === true));
-			}
+  /**
+   * 获取商品列表
+   */
+  static async getList(query: ProductQuery) {
+    try {
+      const {
+        page = 1,
+        pageSize = 10,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+        search,
+        categoryId,
+        isActive,
+        isFeatured,
+      } = query;
 
-			const whereClause =
-				conditions.length > 0 ? and(...conditions) : undefined;
-			// 定义允许排序的字段（白名单）
-			const sortableFields: Record<string, any> = {
-				id: productsSchema.id,
-				name: productsSchema.name,
-				price: productsSchema.price,
-				createdAt: productsSchema.createdAt,
-				updatedAt: productsSchema.updatedAt,
-				// 可根据需要添加更多字段
-			};
-			// 确保 sortBy 是合法字段
-			const sortField = sortableFields[sortBy];
-			if (!sortField) {
-				throw new Error(`无效的排序字段: ${sortBy}`);
-			}
+      // 搜索条件：支持商品名称、SKU和描述搜索
+      const conditions = [];
+      if (search) {
+        conditions.push(
+          or(
+            like(productsSchema.name, `%${search}%`),
+            like(productsSchema.sku, `%${search}%`),
+            like(productsSchema.description, `%${search}%`),
+          ),
+        );
+      }
 
-			// 排序
-			const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
+      if (categoryId) {
+        conditions.push(
+          eq(productsSchema.categoryId, parseInt(categoryId as string)),
+        );
+      }
 
-			// 计算偏移量
-			const offset = (page - 1) * pageSize;
+      if (isActive !== undefined) {
+        conditions.push(eq(productsSchema.isActive, isActive === true));
+      }
+      if (isFeatured !== undefined) {
+        conditions.push(eq(productsSchema.isFeatured, isFeatured === true));
+      }
 
-			// 查询数据和总数
-			const [products, totalResult] = await Promise.all([
-				db
-					.select({
-						...getTableColumns(productsSchema),
-						categoryName: categoriesSchema.name,
-					})
-					.from(productsSchema)
-					.leftJoin(
-						categoriesSchema,
-						eq(productsSchema.categoryId, categoriesSchema.id),
-					)
-					.where(whereClause)
-					.orderBy(orderBy)
-					.limit(pageSize)
-					.offset(offset),
+      // 定义允许排序的字段（白名单）
+      const sortFieldMap: Record<string, any> = {
+        id: productsSchema.id,
+        name: productsSchema.name,
+        price: productsSchema.price,
+        createdAt: productsSchema.createdAt,
+        updatedAt: productsSchema.updatedAt,
+        // 可根据需要添加更多字段
+      };
 
-				db
-					.select({ count: count() })
-					.from(productsSchema)
-					.leftJoin(
-						categoriesSchema,
-						eq(productsSchema.categoryId, categoriesSchema.id),
-					)
-					.where(whereClause),
-			]);
+      // 确定排序字段和方向
+      const sortField = sortFieldMap[sortBy] || productsSchema.id;
+      // 排序
+      const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
 
-			const total = totalResult[0]?.count || 0;
-			const totalPages = Math.ceil(total / pageSize);
 
-			return {
-				success: true,
-				data: {
-					data: products,
-					pagination: {
-						page,
-						pageSize,
-						total,
-						totalPages,
-						hasNext: page < totalPages,
-						hasPrev: page > 1,
-					},
-				},
-			};
-		} catch (error) {
-			console.error("获取商品列表失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      db  // 构建查询
+      const queryBuilder = db
+        .select({
+          ...getTableColumns(productsSchema),
+          categoryName: categoriesSchema.name,
+        })
+        .from(productsSchema)
+        .leftJoin(
+          categoriesSchema,
+          eq(productsSchema.categoryId, categoriesSchema.id),
+        )
 
-	/**
-	 * 根据ID获取商品详情
-	 */
-	static async getProductById(id: string) {
-		try {
-			const productId = parseInt(id);
-			if (isNaN(productId)) {
-				return { success: false, error: "无效的商品ID", code: 400 };
-			}
 
-			const product = await db
-				.select({
-					...getTableColumns(productsSchema),
-					categoryName: categoriesSchema.name,
-				})
-				.from(productsSchema)
-				.leftJoin(
-					categoriesSchema,
-					eq(productsSchema.categoryId, categoriesSchema.id),
-				)
-				.where(eq(productsSchema.id, productId))
-				.limit(1);
+      // 获取总数
+      const totalBuilder = db
+        .select({ count: count() })
+        .from(productsSchema)
+        .leftJoin(
+          categoriesSchema,
+          eq(productsSchema.categoryId, categoriesSchema.id),
+        )
 
-			if (!product.length) {
-				return { success: false, error: "商品不存在", code: 404 };
-			}
+      if (conditions.length > 0) {
+        queryBuilder.where(and(...conditions));
+        totalBuilder.where(and(...conditions));
+      }
 
-			// 获取商品关联的图片
-			const productImages = await db
-				.select({
-					id: imagesSchema.id,
-					url: imagesSchema.url,
-					fileName: imagesSchema.fileName,
-					altText: imagesSchema.altText,
-					isMain: productImagesSchema.isMain,
-				})
-				.from(productImagesSchema)
-				.leftJoin(
-					imagesSchema,
-					eq(productImagesSchema.imageId, imagesSchema.id),
-				)
-				.where(eq(productImagesSchema.productId, productId));
+      // 分页
+      const offset = (page - 1) * pageSize;
+      queryBuilder.limit(pageSize).offset(offset);
 
-			const productData = {
-				...product[0],
-				images: productImages,
-			};
 
-			return { success: true, data: productData };
-		} catch (error) {
-			console.error("获取商品详情失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      // 查询数据和总数
+      const [products, totalResult] = await Promise.all([
+        queryBuilder,
+        totalBuilder
+      ]);
 
-	/**
-	 * 根据slug获取商品详情
-	 */
-	static async getProductBySlug(slug: string) {
-		try {
-			const product = await db
-				.select({
-					...getTableColumns(productsSchema),
-					categoryName: categoriesSchema.name,
-				})
-				.from(productsSchema)
-				.leftJoin(
-					categoriesSchema,
-					eq(productsSchema.categoryId, categoriesSchema.id),
-				)
-				.where(eq(productsSchema.slug, slug))
-				.limit(1);
+      const total = totalResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / pageSize);
 
-			if (!product.length) {
-				return { success: false, error: "商品不存在", code: 404 };
-			}
+      return {
+        items: products,
+        meta: {
+          total,
+          page,
+          pageSize,
+          totalPages: Math.ceil(total / pageSize),
+        }
+      }
+    } catch (error) {
+      console.error("获取商品列表失败:", error);
+      throw handleDatabaseError(error);
+    }
+  }
 
-			// 获取商品关联的图片
-			const productImages = await db
-				.select({
-					id: imagesSchema.id,
-					url: imagesSchema.url,
-					fileName: imagesSchema.fileName,
-					altText: imagesSchema.altText,
-					isMain: productImagesSchema.isMain,
-				})
-				.from(productImagesSchema)
-				.leftJoin(
-					imagesSchema,
-					eq(productImagesSchema.imageId, imagesSchema.id),
-				)
-				.where(eq(productImagesSchema.productId, product[0].id));
+  /**
+   * 根据ID获取商品详情
+   */
+  static async getById(id: number) {
+    try {
+      const product = await db
+        .select({
+          ...getTableColumns(productsSchema),
+          categoryName: categoriesSchema.name,
+        })
+        .from(productsSchema)
+        .leftJoin(
+          categoriesSchema,
+          eq(productsSchema.categoryId, categoriesSchema.id),
+        )
+        .where(eq(productsSchema.id, id))
+        .limit(1);
 
-			const productData = {
-				...product[0],
-				images: productImages,
-			};
+      if (!product.length) {
+        throw new NotFoundError("商品不存在");
+      }
 
-			return { success: true, data: productData };
-		} catch (error) {
-			console.error("获取商品详情失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      // 获取商品关联的图片
+      const productImages = await db
+        .select({
+          id: imagesSchema.id,
+          url: imagesSchema.url,
+          fileName: imagesSchema.fileName,
+          isMain: productImagesSchema.isMain,
+        })
+        .from(productImagesSchema)
+        .leftJoin(
+          imagesSchema,
+          eq(productImagesSchema.imageId, imagesSchema.id),
+        )
+        .where(eq(productImagesSchema.productId, id));
 
-	/**
-	 * 更新商品
-	 */
-	static async updateProduct(id: string, data: UpdateProductDto) {
-		try {
-			const productId = parseInt(id);
-			if (isNaN(productId)) {
-				return { success: false, error: "无效的商品ID", code: 400 };
-			}
+      const productData = {
+        ...product[0],
+        imageUrls: productImages.map(img => img.url),
+        mainImageUrl: productImages.find(img => img.isMain)?.url,
+      };
 
-			// 准备更新数据，自动设置更新时间
-			const updateData = {
-				...data,
-				updatedAt: new Date(),
-			};
+      return productData;
+    } catch (error) {
+      throw handleDatabaseError(error);
+    }
+  }
 
-			const [updatedProduct] = await db
-				.update(productsSchema)
-				.set(updateData)
-				.where(eq(productsSchema.id, productId))
-				.returning();
+  /**
+   * 根据slug获取商品详情
+   */
+  static async getBySlug(slug: string) {
+    try {
+      const product = await db
+        .select({
+          ...getTableColumns(productsSchema),
+          categoryName: categoriesSchema.name,
+        })
+        .from(productsSchema)
+        .leftJoin(
+          categoriesSchema,
+          eq(productsSchema.categoryId, categoriesSchema.id),
+        )
+        .where(eq(productsSchema.slug, slug))
+        .limit(1);
 
-			if (!updatedProduct) {
-				return { success: false, error: "商品不存在", code: 404 };
-			}
+      if (!product.length) {
+        throw new NotFoundError("商品不存在");
+      }
 
-			return { success: true, data: updatedProduct };
-		} catch (error) {
-			throw handleDatabaseError(error);
-		}
-	}
+      // 获取商品关联的图片
+      const productImages = await db
+        .select({
+          id: imagesSchema.id,
+          url: imagesSchema.url,
+          fileName: imagesSchema.fileName,
+          isMain: productImagesSchema.isMain,
+        })
+        .from(productImagesSchema)
+        .leftJoin(
+          imagesSchema,
+          eq(productImagesSchema.imageId, imagesSchema.id),
+        )
+        .where(eq(productImagesSchema.productId, product[0].id));
 
-	/**
-	 * 删除商品
-	 */
-	static async deleteProduct(id: string) {
-		try {
-			const productId = parseInt(id);
-			if (isNaN(productId)) {
-				throw new Error("无效的商品ID");
-			}
+      const productData = {
+        ...product[0],
+        imageUrls: productImages.map(img => img.url),
+        mainImageUrl: productImages.find(img => img.isMain)?.url,
+      };
 
-			// 先删除商品关联的图片
-			await db
-				.delete(productImagesSchema)
-				.where(eq(productImagesSchema.productId, productId));
+      return productData;
+    } catch (error) {
+      throw handleDatabaseError(error);
+    }
+  }
 
-			// 删除商品
-			const [deletedProduct] = await db
-				.delete(productsSchema)
-				.where(eq(productsSchema.id, productId))
-				.returning();
+  /**
+   * 更新商品
+   */
+  static async update(id: number, data: UpdateProductDto) {
+    try {
+      // 准备更新数据，自动设置更新时间
+      const updateData = {
+        ...data,
+        updatedAt: new Date(),
+      };
 
-			if (!deletedProduct) {
-				throw new Error("商品不存在");
-			}
+      const [updatedProduct] = await db
+        .update(productsSchema)
+        .set(updateData)
+        .where(eq(productsSchema.id, id))
+        .returning();
 
-			return { success: true, message: "商品删除成功", data: deletedProduct };
-		} catch (error) {
-			console.error("删除商品失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      if (!updatedProduct) {
+        throw new NotFoundError("商品不存在");
+      }
 
-	/**
-	 * 为商品添加图片关联
-	 */
-	static async addProductImage(
-		productId: number,
-		imageId: number,
-		isMain: boolean = false,
-	) {
-		try {
-			// 如果设置为主图，先将其他图片的主图状态取消
-			if (isMain) {
-				await db
-					.update(productImagesSchema)
-					.set({ isMain: false })
-					.where(eq(productImagesSchema.productId, productId));
-			}
+      return updatedProduct;
+    } catch (error) {
+      throw handleDatabaseError(error);
+    }
+  }
 
-			const [productImage] = await db
-				.insert(productImagesSchema)
-				.values({ productId, imageId, isMain })
-				.returning();
+  /**
+   * 删除商品
+   */
+  static async delete(id: number) {
+    try {
+      // 先删除商品关联的图片
+      await db
+        .delete(productImagesSchema)
+        .where(eq(productImagesSchema.productId, id));
 
-			return { success: true, data: productImage };
-		} catch (error) {
-			console.error("添加商品图片关联失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      // 删除商品
+      const [deletedProduct] = await db
+        .delete(productsSchema)
+        .where(eq(productsSchema.id, id))
+        .returning();
 
-	/**
-	 * 移除商品图片关联
-	 */
-	static async removeProductImage(productId: number, imageId: number) {
-		try {
-			await db
-				.delete(productImagesSchema)
-				.where(
-					and(
-						eq(productImagesSchema.productId, productId),
-						eq(productImagesSchema.imageId, imageId),
-					),
-				);
+      if (!deletedProduct) {
+        throw new NotFoundError("商品不存在");
+      }
 
-			return { success: true };
-		} catch (error) {
-			console.error("移除商品图片关联失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      return deletedProduct;
+    } catch (error) {
+      throw handleDatabaseError(error);
+    }
+  }
 
-	/**
-	 * 设置商品主图
-	 */
-	static async setProductMainImage(productId: number, imageId: number) {
-		try {
-			// 先将所有图片的主图状态取消
-			await db
-				.update(productImagesSchema)
-				.set({ isMain: false })
-				.where(eq(productImagesSchema.productId, productId));
+  /**
+   * 为商品添加图片关联
+   */
+  static async addProductImage(
+    productId: number,
+    imageId: number,
+    isMain: boolean = false,
+  ) {
+    try {
+      // 如果设置为主图，先将其他图片的主图状态取消
+      if (isMain) {
+        await db
+          .update(productImagesSchema)
+          .set({ isMain: false })
+          .where(eq(productImagesSchema.productId, productId));
+      }
 
-			// 设置指定图片为主图
-			await db
-				.update(productImagesSchema)
-				.set({ isMain: true })
-				.where(
-					and(
-						eq(productImagesSchema.productId, productId),
-						eq(productImagesSchema.imageId, imageId),
-					),
-				);
+      const [productImage] = await db
+        .insert(productImagesSchema)
+        .values({ productId, imageId, isMain })
+        .returning();
 
-			return { success: true };
-		} catch (error) {
-			console.error("设置商品主图失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+      return productImage
+    } catch (error) {
+      console.error("添加商品图片关联失败:", error);
+      throw handleDatabaseError(error);
+    }
+  }
 
-	/**
-	 * 批量设置商品图片
-	 */
-	static async setProductImages(
-		productId: number,
-		imageIds: number[],
-		mainImageId?: number,
-	) {
-		try {
-			// 先删除现有的图片关联
-			await db
-				.delete(productImagesSchema)
-				.where(eq(productImagesSchema.productId, productId));
+  /**
+   * 移除商品图片关联
+   */
+  static async removeProductImage(productId: number, imageId: number) {
+    try {
+      return await db
+        .delete(productImagesSchema)
+        .where(
+          and(
+            eq(productImagesSchema.productId, productId),
+            eq(productImagesSchema.imageId, imageId),
+          ),
+        );
+    } catch (error) {
+      console.error("移除商品图片关联失败:", error);
+      throw handleDatabaseError(error);
+    }
+  }
 
-			// 添加新的图片关联
-			if (imageIds.length > 0) {
-				const imageData = imageIds.map((imageId) => ({
-					productId,
-					imageId,
-					isMain: imageId === mainImageId,
-				}));
+  /**
+   * 设置商品主图
+   */
+  static async setProductMainImage(productId: number, imageId: number) {
+    try {
+      // 先将所有图片的主图状态取消
+      await db
+        .update(productImagesSchema)
+        .set({ isMain: false })
+        .where(eq(productImagesSchema.productId, productId));
 
-				await db.insert(productImagesSchema).values(imageData);
-			}
+      // 设置指定图片为主图
+      return await db
+        .update(productImagesSchema)
+        .set({ isMain: true })
+        .where(
+          and(
+            eq(productImagesSchema.productId, productId),
+            eq(productImagesSchema.imageId, imageId),
+          ),
+        );
+    } catch (error) {
+      console.error("设置商品主图失败:", error);
+      throw handleDatabaseError(error);
+    }
+  }
 
-			return { success: true };
-		} catch (error) {
-			console.error("批量设置商品图片失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
+  /**
+   * 批量设置商品图片
+   */
+  static async setProductImages(
+    productId: number,
+    imageIds: number[],
+    mainImageId?: number,
+  ) {
+    try {
+      // 先删除现有的图片关联
+      await db
+        .delete(productImagesSchema)
+        .where(eq(productImagesSchema.productId, productId));
+
+      // 添加新的图片关联
+      if (imageIds.length > 0) {
+        const imageData = imageIds.map((imageId) => ({
+          productId,
+          imageId,
+          isMain: imageId === mainImageId,
+        }));
+
+        return await db.insert(productImagesSchema).values(imageData);
+      }
+
+
+    } catch (error) {
+      console.error("批量设置商品图片失败:", error);
+      throw handleDatabaseError(error);
+    }
+  }
 }

@@ -51,20 +51,7 @@ const initialValues = reactive({
 	endDate: null as Date | null,
 });
 
-// 表单验证器
-const formResolver = zodResolver(
-	z.object({
-		title: z.string().min(1, { message: "广告标题不能为空" }),
-		type: z.string().min(1, { message: "请选择广告类型" }),
-		image: z.string().min(1, { message: "请上传广告图片" }),
-		link: z.string().optional(),
-		position: z.string().optional(),
-		sortOrder: z.number().min(0, { message: "排序值不能小于0" }),
-		isActive: z.boolean(),
-		startDate: z.date().nullable().optional(),
-		endDate: z.date().nullable().optional(),
-	}),
-);
+
 
 // 单独的字段验证器
 const titleResolver = zodResolver(

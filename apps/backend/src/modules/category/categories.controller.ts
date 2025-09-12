@@ -134,7 +134,7 @@ export const categoriesController = new Elysia({
     async ({ query, categoriesService }) => {
       try {
         const result = await categoriesService.getCategoryList(query);
-        return result;
+        return commonRes(result)
       } catch (error) {
         console.error("获取分类列表失败:", error);
         return commonRes(
@@ -145,7 +145,7 @@ export const categoriesController = new Elysia({
       }
     },
     {
-      query: "UnifiedQueryParams",
+      query: "CategoriesQuery",
       detail: {
         tags: ["Categories"],
         summary: "获取分类列表",
@@ -189,7 +189,7 @@ export const categoriesController = new Elysia({
     "/:id",
     async ({ params: { id }, categoriesService }) => {
       try {
-        await categoriesService.deleteCategory(id);
+        const res = await categoriesService.deleteCategory(id);
         return commonRes(null, 200, "分类删除成功");
       } catch (error) {
         console.error("删除分类失败:", error);
@@ -217,33 +217,33 @@ export const categoriesController = new Elysia({
     },
   )
 
-  // 获取分类的子分类
-  .get(
-    "/:id/children",
-    async ({ params: { id }, categoriesService }) => {
-      try {
-        const children = await categoriesService.getCategoryChildren(id);
-        return commonRes(children, 200, "获取子分类成功");
-      } catch (error) {
-        console.error("获取子分类失败:", error);
-        return commonRes(
-          null,
-          500,
-          error instanceof Error ? error.message : "获取子分类失败",
-        );
-      }
-    },
-    {
-      params: t.Object({
-        id: t.Number(),
-      }),
-      detail: {
-        tags: ["Categories"],
-        summary: "获取子分类",
-        description: "获取指定分类的所有子分类",
-      },
-    },
-  )
+  // // 获取分类的子分类
+  // .get(
+  //   "/:id/children",
+  //   async ({ params: { id }, categoriesService }) => {
+  //     try {
+  //       const children = await categoriesService.getCategoryChildren(id);
+  //       return commonRes(children, 200, "获取子分类成功");
+  //     } catch (error) {
+  //       console.error("获取子分类失败:", error);
+  //       return commonRes(
+  //         null,
+  //         500,
+  //         error instanceof Error ? error.message : "获取子分类失败",
+  //       );
+  //     }
+  //   },
+  //   {
+  //     params: t.Object({
+  //       id: t.Number(),
+  //     }),
+  //     detail: {
+  //       tags: ["Categories"],
+  //       summary: "获取子分类",
+  //       description: "获取指定分类的所有子分类",
+  //     },
+  //   },
+  // )
 
   // 更新分类排序
   .patch(
@@ -270,7 +270,7 @@ export const categoriesController = new Elysia({
       params: t.Object({
         id: t.Number(),
       }),
-      body: "UpdateSortRequest",
+      body: "UpdateSortDto",
       detail: {
         tags: ["Categories"],
         summary: "更新分类排序",
