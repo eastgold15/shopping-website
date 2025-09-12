@@ -1,5 +1,5 @@
 import { UnoQuery } from "@backend/db/common.model";
-import { DbType } from "@backend/db/database.types";
+import { DbType } from "@backend/db/database.typebox";
 import { type Static, t } from "elysia";
 
 // 图片管理模型定义

@@ -4,7 +4,7 @@
 export * from "@backend/modules/image/images.model";
 export * from "../db/common.model";
 // 数据库类型
-export * from "../db/database.types";
+export * from "../db/database.typebox";
 // 模块类型导出
 // export * from '../modules/auth/auth.model'; // auth模块暂未实现
 export * from "../modules/category/categories.model";

@@ -1,5 +1,5 @@
 import { UnoQuery, paramId } from "@backend/db/common.model";
-import { DbType } from "@backend/db/database.types";
+import { DbType } from "@backend/db/database.typebox";
 import { t } from "elysia";
 
 // 网站配置模型定义

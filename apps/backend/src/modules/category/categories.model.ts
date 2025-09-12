@@ -1,6 +1,6 @@
 import { t } from "elysia";
 import { UnoQuery } from "../../db/common.model";
-import { DbType } from "../../db/database.types";
+import { DbType } from "../../db/database.typebox";
 
 // Elysia模型定义
 export const categoriesModel = {

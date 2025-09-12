@@ -1,4 +1,4 @@
-import { DbType } from "@backend/db/database.types";
+import { DbType } from "@backend/db/database.typebox";
 import { t } from "elysia";
 import { paramId } from "../../db/common.model";
 
