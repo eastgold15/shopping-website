@@ -17,9 +17,9 @@ export async function performHealthCheck() {
       console.log("查询结果为空");
       return null;
     }
-    if (result.rowCount > 0) {
-      console.log("数据库连接成功",);
-    }
+
+    console.log("数据库连接成功");
+
     return { success: true, message: "健康检查通过" };
   } catch (error) {
     console.error("数据库连接失败:", error);
@@ -34,11 +34,16 @@ export async function performHealthCheck() {
 export async function startupHealthCheck() {
   console.log("🔍 正在执行启动健康检查...");
   const result = await performHealthCheck();
+  if (result === null) {
+    console.log("数据库连接失败:");
+  }
 
-  if (result.success) {
+  if (result?.success) {
     console.log("✅ 数据库健康检查通过");
   } else {
-    console.warn(`⚠️ 数据库健康检查失败: ${result.message}`);
+    console.warn(
+      `⚠️ 数据库健康检查失败: ${result ? result.message : "未知错误"}`,
+    );
     console.warn("⚠️ 继续启动服务器，但数据库相关功能可能不可用");
   }
 }

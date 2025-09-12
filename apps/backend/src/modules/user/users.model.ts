@@ -1,4 +1,4 @@
-import { UnoQuery, paramId } from "@backend/db/common.model";
+import { paramId, UnoQuery } from "@backend/db/common.model";
 import { DbType } from "@backend/db/database.typebox";
 import { t } from "elysia";
 

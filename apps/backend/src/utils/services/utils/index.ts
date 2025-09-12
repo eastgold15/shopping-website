@@ -1,5 +1,6 @@
 // Service层工具函数
 
+import type { QueryFilter, SortOption } from "@backend/types";
 import {
 	and,
 	asc,
@@ -13,7 +14,6 @@ import {
 	type SQL,
 } from "drizzle-orm";
 import { ValidationError } from "../../error/customError";
-import type { QueryFilter, SortOption } from "../types";
 
 /**
  * 构建查询条件

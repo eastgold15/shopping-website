@@ -1,5 +1,5 @@
-import { UnoQuery, paramId } from "@backend/db/common.model";
-import { DbType } from "@backend/db/database.typebox";
+import { paramId, UnoQuery } from "@backend/db/common.model";
+import type { DbType } from "@backend/db/database.typebox";
 import { t } from "elysia";
 
 // 订单模型定义
@@ -74,7 +74,8 @@ export type RefundQuery = typeof ordersModel.RefundQuery.static;
 export type StatisticsQuery = typeof ordersModel.StatisticsQuery.static;
 
 // 导出DTO类型
-export type UpdateOrderStatusDto = typeof ordersModel.UpdateOrderStatusDto.static;
+export type UpdateOrderStatusDto =
+	typeof ordersModel.UpdateOrderStatusDto.static;
 export type UpdateShippingDto = typeof ordersModel.UpdateShippingDto.static;
 export type CreateRefundDto = typeof ordersModel.CreateRefundDto.static;
 export type ProcessRefundDto = typeof ordersModel.ProcessRefundDto.static;

@@ -1,12 +1,21 @@
 import { db } from "@backend/db/connection";
 import { siteConfigSchema } from "@backend/db/schema/schema";
-import { eq, getTableColumns, like, or } from "drizzle-orm";
-import { NotFoundError } from "@backend/utils/errors";
+import { NotFoundError } from "@backend/utils/error/customError";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	like,
+	or,
+} from "drizzle-orm";
 import type {
 	BatchUpdateSiteConfigDto,
 	CreateSiteConfigDto,
+	SiteConfigQueryDto,
 	UpdateSiteConfigDto,
-	SiteConfigQuery,
 } from "./siteConfigs.model";
 
 /**
@@ -18,34 +27,84 @@ export class SiteConfigsService {
 
 	/**
 	 * 获取配置列表
+	 * @param params 查询参数
+	 * @returns 分页的配置列表
 	 */
-	async getList(query?: SiteConfigQuery) {
-		let dbQuery = db.select(this.columns).from(siteConfigSchema);
+	async getList(params: SiteConfigQueryDto) {
+		const {
+			page = 1,
+			pageSize = 10,
+			sortBy = "createdAt",
+			sortOrder = "desc",
+			search,
+			category,
+			key,
+		} = params;
 
-		// 添加筛选条件
-		if (query?.category) {
-			dbQuery = dbQuery.where(eq(siteConfigSchema.category, query.category));
-		}
+		// 构建查询条件
+		const conditions = [];
 
-		if (query?.key) {
-			dbQuery = dbQuery.where(
+		if (search) {
+			conditions.push(
 				or(
-					like(siteConfigSchema.key, `%${query.key}%`),
-					like(siteConfigSchema.description, `%${query.key}%`)
-				)
+					like(siteConfigSchema.key, `%${search}%`),
+					like(siteConfigSchema.description, `%${search}%`),
+				),
 			);
 		}
 
-		// 分页处理
-		if (query?.limit) {
-			dbQuery = dbQuery.limit(query.limit);
+		if (category) {
+			conditions.push(eq(siteConfigSchema.category, category));
 		}
 
-		if (query?.offset) {
-			dbQuery = dbQuery.offset(query.offset);
+		if (key) {
+			conditions.push(like(siteConfigSchema.key, `%${key}%`));
 		}
 
-		return await dbQuery;
+		// 排序字段映射
+		const sortFieldMap: Record<string, any> = {
+			key: siteConfigSchema.key,
+			category: siteConfigSchema.category,
+			createdAt: siteConfigSchema.createdAt,
+			updatedAt: siteConfigSchema.updatedAt,
+		};
+
+		const sortField = sortFieldMap[sortBy] || siteConfigSchema.createdAt;
+		const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
+
+		// 分页计算
+		const offset = (page - 1) * pageSize;
+
+		// 构建查询
+		const queryBuilder = db
+			.select()
+			.from(siteConfigSchema)
+			.orderBy(orderBy)
+			.limit(pageSize)
+			.offset(offset);
+
+		// 获取总数
+		const totalBuilder = db.select({ count: count() }).from(siteConfigSchema);
+
+		if (conditions.length > 0) {
+			queryBuilder.where(and(...conditions));
+			totalBuilder.where(and(...conditions));
+		}
+
+		const [configs, [{ count: total }]] = await Promise.all([
+			queryBuilder,
+			totalBuilder,
+		]);
+
+		return {
+			items: configs,
+			meta: {
+				total,
+				page,
+				pageSize,
+				totalPages: Math.ceil(total / pageSize),
+			},
+		};
 	}
 
 	/**
@@ -70,6 +129,25 @@ export class SiteConfigsService {
 
 		if (!config) {
 			throw new NotFoundError(`配置项 ${key} 不存在`);
+		}
+
+		return config;
+	}
+
+	/**
+	 * 根据ID获取配置
+	 * @param id 配置ID
+	 * @returns 配置信息
+	 */
+	async getById(id: number) {
+		const [config] = await db
+			.select(this.columns)
+			.from(siteConfigSchema)
+			.where(eq(siteConfigSchema.id, id))
+			.limit(1);
+
+		if (!config) {
+			throw new NotFoundError("配置不存在");
 		}
 
 		return config;
@@ -107,6 +185,26 @@ export class SiteConfigsService {
 			})
 			.where(eq(siteConfigSchema.key, key))
 			.returning(this.columns);
+
+		return updatedConfig;
+	}
+
+	/**
+	 * 根据ID更新配置
+	 */
+	async updateById(id: number, data: UpdateSiteConfigDto) {
+		const [updatedConfig] = await db
+			.update(siteConfigSchema)
+			.set({
+				...data,
+				updatedAt: new Date(),
+			})
+			.where(eq(siteConfigSchema.id, id))
+			.returning(this.columns);
+
+		if (!updatedConfig) {
+			throw new NotFoundError("配置不存在");
+		}
 
 		return updatedConfig;
 	}
@@ -160,10 +258,7 @@ export class SiteConfigsService {
 						.returning(this.columns);
 					results.push(created);
 				}
-			} catch (error) {
-				// 跳过错误的配置项，继续处理其他项
-				continue;
-			}
+			} catch (_error) {}
 		}
 
 		return results;
@@ -255,10 +350,7 @@ export class SiteConfigsService {
 
 					results.push(newConfig);
 				}
-			} catch (error) {
-				// 跳过错误的配置项，继续处理其他项
-				continue;
-			}
+			} catch (_error) {}
 		}
 
 		return results;

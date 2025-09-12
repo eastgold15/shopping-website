@@ -115,14 +115,17 @@ export const StatisticsModel = {
 // 类型导出
 export type DashboardQuery = typeof StatisticsModel.dashboardQuery.static;
 export type SalesTrendQuery = typeof StatisticsModel.salesTrendQuery.static;
-export type PopularProductsQuery = typeof StatisticsModel.popularProductsQuery.static;
-export type CategorySalesQuery = typeof StatisticsModel.categorySalesQuery.static;
+export type PopularProductsQuery =
+	typeof StatisticsModel.popularProductsQuery.static;
+export type CategorySalesQuery =
+	typeof StatisticsModel.categorySalesQuery.static;
 export type UserGrowthQuery = typeof StatisticsModel.userGrowthQuery.static;
 export type ProductStats = typeof StatisticsModel.productStats.static;
 export type ProductInfo = typeof StatisticsModel.productInfo.static;
 export type DashboardStats = typeof StatisticsModel.dashboardStats.static;
 export type SalesTrendPoint = typeof StatisticsModel.salesTrendPoint.static;
-export type PopularProductItem = typeof StatisticsModel.popularProductItem.static;
+export type PopularProductItem =
+	typeof StatisticsModel.popularProductItem.static;
 export type CategorySalesItem = typeof StatisticsModel.categorySalesItem.static;
 export type UserGrowthPoint = typeof StatisticsModel.userGrowthPoint.static;
 

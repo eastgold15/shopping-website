@@ -1,17 +1,18 @@
+import { db } from "@backend/db/connection";
+import { userSchema } from "@backend/db/schema";
 import { NotFoundError } from "@backend/utils/error/customError";
-
 import { commonRes } from "@backend/utils/Res";
+import { eq } from "drizzle-orm";
 import { Elysia, t } from "elysia";
-import { usersModel } from "./users.model";
+import { UsersModel } from "./users.model";
 import { UsersService } from "./users.service";
-
 /**
  * 用户管理控制器
  * 处理用户相关的HTTP请求
  */
 export const usersController = new Elysia({ prefix: "/users" })
 	.decorate("usersService", new UsersService())
-	.model(usersModel)
+	.model(UsersModel)
 	.guard({
 		detail: {
 			tags: ["Users"],
@@ -22,22 +23,10 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/",
 		async ({ query, usersService }) => {
-			const users = await usersService.getUsers(
-				{ page: query.page || 1, pageSize: query.pageSize || 10 },
-				{
-					filters: query.search
-						? [{ field: "username", operator: "like", value: query.search }]
-						: [],
-					sort: query.sortBy
-						? [
-							{
-								field: query.sortBy,
-								direction: (query.sortBy as "desc") || "desc",
-							},
-						]
-						: [],
-				},
-			);
+			const users = await usersService.getUsers({
+				search: query.search,
+				status: undefined, // 可以根据需要添加状态筛选
+			});
 			return commonRes(users);
 		},
 		{
@@ -53,7 +42,10 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/:id",
 		async ({ params, usersService }) => {
-			const user = await usersService.getById(params.id);
+			const user = await db
+				.select()
+				.from(userSchema)
+				.where(eq(userSchema.id, params.id));
 
 			if (!user) {
 				throw new NotFoundError("用户不存在");
@@ -156,9 +148,9 @@ export const usersController = new Elysia({ prefix: "/users" })
 				{
 					filters: query.search
 						? [
-							{ field: "username", operator: "like", value: query.search },
-							{ field: "role", operator: "eq", value: "admin" },
-						]
+								{ field: "username", operator: "like", value: query.search },
+								{ field: "role", operator: "eq", value: "admin" },
+							]
 						: [],
 				},
 			);
@@ -215,7 +207,7 @@ export const usersController = new Elysia({ prefix: "/users" })
 	.get(
 		"/active",
 		async ({ usersService }) => {
-			const result = await usersService.findActiveUsers();
+			const result = await usersService.getActiveUsers();
 
 			return result;
 		},

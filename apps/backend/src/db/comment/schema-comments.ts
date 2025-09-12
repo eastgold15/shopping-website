@@ -113,7 +113,7 @@ pgComments(advertisementsSchema, {
 	id: "广告ID，主键",
 	title: "广告标题",
 	type: "广告类型：banner, carousel",
-	image: "广告图片URL",
+	image_id: "图片ID",
 	link: "广告链接",
 	position: "广告位置",
 	sortOrder: "排序，默认0",

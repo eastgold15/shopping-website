@@ -1,11 +1,11 @@
-import { count, desc, eq, sql } from "drizzle-orm";
-import { db } from "../../db/connection";
 import {
 	categoriesSchema,
 	imagesSchema,
 	productImagesSchema,
 	productsSchema,
-} from "../../db/schema";
+} from "@backend/db/schema/schema";
+import { count, desc, eq, sql } from "drizzle-orm";
+import { db } from "../../db/connection";
 import type {
 	CategorySalesItem,
 	CategorySalesQuery,
@@ -55,7 +55,7 @@ export class StatisticsService {
 
 			const result = {
 				// 商品统计概览
-				productStats: productStats[0],
+				productStats: productStats,
 				// 最新商品列表（可用于生成链接）
 				recentProducts: recentProducts.map((product) => ({
 					...product,
@@ -154,7 +154,9 @@ export class StatisticsService {
 	/**
 	 * 获取热门商品统计
 	 */
-	async getPopularProducts(query: PopularProductsQuery): Promise<PopularProductItem[]> {
+	async getPopularProducts(
+		query: PopularProductsQuery,
+	): Promise<PopularProductItem[]> {
 		try {
 			const { pageSize = 10 } = query;
 
@@ -200,7 +202,9 @@ export class StatisticsService {
 	/**
 	 * 获取分类销售统计
 	 */
-	async getCategorySales(query: CategorySalesQuery): Promise<CategorySalesItem[]> {
+	async getCategorySales(
+		query: CategorySalesQuery,
+	): Promise<CategorySalesItem[]> {
 		try {
 			const { pageSize = 10 } = query;
 
@@ -217,10 +221,11 @@ export class StatisticsService {
 
 			// 模拟销售数据
 			const result = categories.map((category) => ({
-				...category,
+				categoryId: category.id,
+				categoryName: category.name,
 				salesCount: Math.floor(Math.random() * 200) + 50,
 				revenue: Math.floor(Math.random() * 50000) + 10000,
-				productCount: Math.floor(Math.random() * 50) + 10,
+				percentage: Math.floor(Math.random() * 100),
 			}));
 
 			return result;

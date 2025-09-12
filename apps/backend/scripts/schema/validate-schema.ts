@@ -23,7 +23,7 @@ class SchemaValidator {
 		});
 
 		// 重写生成方法以返回内容而不是写入文件
-		const originalGenerate = generator.generate.bind(generator);
+		const _originalGenerate = generator.generate.bind(generator);
 
 		// 创建一个临时的生成器来获取内容
 		const tempGenerator = new (class extends SchemaGenerator {

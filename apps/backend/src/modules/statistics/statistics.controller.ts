@@ -1,6 +1,6 @@
 import { commonRes } from "@backend/utils/Res";
 import { Elysia } from "elysia";
-import { statisticsModel } from "./statistics.model";
+import { StatisticsModel } from "./statistics.model";
 import { statisticsService } from "./statistics.service";
 
 /**
@@ -8,7 +8,7 @@ import { statisticsService } from "./statistics.service";
  * 处理统计报表相关的HTTP请求
  */
 export const statisticsController = new Elysia({ prefix: "/statistics" })
-	.model(statisticsModel)
+	.model(StatisticsModel)
 	.decorate("statisticsService", statisticsService)
 	.guard({
 		detail: {
@@ -20,9 +20,9 @@ export const statisticsController = new Elysia({ prefix: "/statistics" })
 	.get(
 		"/dashboard",
 		async ({ query, statisticsService }) => {
-			const result = await statisticsService.getDashboardStats(query);
+			const result = await statisticsService.getDashboard(query);
 
-			return commonRes(result.data);
+			return commonRes(result);
 		},
 		{
 			query: "dashboardQuery",
@@ -39,7 +39,7 @@ export const statisticsController = new Elysia({ prefix: "/statistics" })
 		async ({ query, statisticsService }) => {
 			const result = await statisticsService.getSalesTrend(query);
 
-			return commonRes(result.data);
+			return commonRes(result);
 		},
 		{
 			query: "salesTrendQuery",
@@ -56,7 +56,7 @@ export const statisticsController = new Elysia({ prefix: "/statistics" })
 		async ({ query, statisticsService }) => {
 			const result = await statisticsService.getPopularProducts(query);
 
-			return commonRes(result.data);
+			return commonRes(result);
 		},
 		{
 			query: "popularProductsQuery",
@@ -73,7 +73,7 @@ export const statisticsController = new Elysia({ prefix: "/statistics" })
 		async ({ query, statisticsService }) => {
 			const result = await statisticsService.getCategorySales(query);
 
-			return commonRes(result.data);
+			return commonRes(result);
 		},
 		{
 			query: "categorySalesQuery",
@@ -90,7 +90,7 @@ export const statisticsController = new Elysia({ prefix: "/statistics" })
 		async ({ query, statisticsService }) => {
 			const result = await statisticsService.getUserGrowth(query);
 
-			return commonRes(result.data);
+			return commonRes(result);
 		},
 		{
 			query: "userGrowthQuery",

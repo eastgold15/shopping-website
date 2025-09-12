@@ -5,5 +5,4 @@ export { BaseService, BaseService as default } from "./BaseService";
 // 分页相关导出
 export * from "./pagination";
 export * from "./pagination-plugin";
-export * from "./types";
 export * from "./utils";

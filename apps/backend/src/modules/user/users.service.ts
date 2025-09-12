@@ -7,8 +7,7 @@ import {
 	ValidationError,
 } from "@backend/utils/error/customError";
 import { BaseService } from "@backend/utils/services/BaseService";
-import type { ServiceResponse } from "@backend/utils/services/types";
-import { and, count, desc, eq, inArray, like, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, like } from "drizzle-orm";
 import {
 	type CreateUser,
 	type UpdateUser,
@@ -219,16 +218,13 @@ export class UsersService extends BaseService<
 	/**
 	 * 批量更新用户状态
 	 */
-	async updateStatusBatch(
-		userIds: number[],
-		status: number,
-	): Promise<number> {
+	async updateStatusBatch(userIds: number[], status: number): Promise<number> {
 		try {
 			if (!userIds || userIds.length === 0) {
 				throw new ValidationError("用户ID列表不能为空");
 			}
 
-			if (!Object.values(UserStatus).includes(status)) {
+			if (!Object.values(UserStatus).includes(status as any)) {
 				throw new ValidationError("无效的用户状态");
 			}
 
@@ -260,7 +256,10 @@ export class UsersService extends BaseService<
 			}
 
 			// 检查用户是否存在
-			const existing = await this.getById(id);
+			const [existing] = await db
+				.select()
+				.from(userSchema)
+				.where(eq(userSchema.id, id));
 			if (!existing) {
 				throw new NotFoundError(`用户不存在`);
 			}
@@ -281,19 +280,5 @@ export class UsersService extends BaseService<
 			}
 			throw handleDatabaseError(error);
 		}
-	}
-
-
-
-	async getStatistics() {
-		return await db
-			.select({
-				totalUsers: sql<number>`count(*)`,
-				activeUsers: sql<number>`count(*)`,
-				disabledUsers: sql<number>`count(*)`,
-				todayNewUsers: sql<number>`count(*)`,
-				userGrowthRate: sql<string>`'0.5'`,
-			})
-			.from(userSchema);
 	}
 }

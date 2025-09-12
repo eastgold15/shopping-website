@@ -1,4 +1,14 @@
 import {
+  categoriesSchema,
+  imagesSchema,
+  productImagesSchema,
+  productsSchema,
+} from "@backend/db/schema/schema";
+import {
+  handleDatabaseError,
+  NotFoundError,
+} from "@backend/utils/error/customError";
+import {
   and,
   asc,
   count,
@@ -9,18 +19,10 @@ import {
   or,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
-import {
-  categoriesSchema,
-  imagesSchema,
-  productImagesSchema,
-  productsSchema,
-} from "../../db/schema";
-import { handleDatabaseError, NotFoundError } from "../../utils/error/customError";
 import type {
   CreateProductDto,
-  ProductQuery,
+  ProductSearchQueryDto,
   UpdateProductDto,
-  UpdateSortDto,
 } from "./products.model";
 
 /**
@@ -45,33 +47,9 @@ export class ProductsService {
   }
 
   /**
-   * 更新商品排序
-   */
-  static async updateSort(id: number, data: UpdateSortDto) {
-    try {
-      const [updatedProduct] = await db
-        .update(productsSchema)
-        .set({ 
-          sortOrder: data.sortOrder,
-          updatedAt: new Date() 
-        })
-        .where(eq(productsSchema.id, id))
-        .returning();
-
-      if (!updatedProduct) {
-        throw new NotFoundError("商品不存在");
-      }
-
-      return updatedProduct;
-    } catch (error) {
-      throw handleDatabaseError(error);
-    }
-  }
-
-  /**
    * 获取商品列表
    */
-  static async getList(query: ProductQuery) {
+  static async getList(query: ProductSearchQueryDto) {
     try {
       const {
         page = 1,
@@ -122,10 +100,9 @@ export class ProductsService {
       // 确定排序字段和方向
       const sortField = sortFieldMap[sortBy] || productsSchema.id;
       // 排序
-      const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
+      const _orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
 
-
-      db  // 构建查询
+      db; // 构建查询
       const queryBuilder = db
         .select({
           ...getTableColumns(productsSchema),
@@ -135,8 +112,7 @@ export class ProductsService {
         .leftJoin(
           categoriesSchema,
           eq(productsSchema.categoryId, categoriesSchema.id),
-        )
-
+        );
 
       // 获取总数
       const totalBuilder = db
@@ -145,7 +121,7 @@ export class ProductsService {
         .leftJoin(
           categoriesSchema,
           eq(productsSchema.categoryId, categoriesSchema.id),
-        )
+        );
 
       if (conditions.length > 0) {
         queryBuilder.where(and(...conditions));
@@ -156,15 +132,14 @@ export class ProductsService {
       const offset = (page - 1) * pageSize;
       queryBuilder.limit(pageSize).offset(offset);
 
-
       // 查询数据和总数
       const [products, totalResult] = await Promise.all([
         queryBuilder,
-        totalBuilder
+        totalBuilder,
       ]);
 
       const total = totalResult[0]?.count || 0;
-      const totalPages = Math.ceil(total / pageSize);
+      const _totalPages = Math.ceil(total / pageSize);
 
       return {
         items: products,
@@ -173,8 +148,8 @@ export class ProductsService {
           page,
           pageSize,
           totalPages: Math.ceil(total / pageSize),
-        }
-      }
+        },
+      };
     } catch (error) {
       console.error("获取商品列表失败:", error);
       throw handleDatabaseError(error);
@@ -220,8 +195,8 @@ export class ProductsService {
 
       const productData = {
         ...product[0],
-        imageUrls: productImages.map(img => img.url),
-        mainImageUrl: productImages.find(img => img.isMain)?.url,
+        imageUrls: productImages.map((img) => img.url),
+        mainImageUrl: productImages.find((img) => img.isMain)?.url,
       };
 
       return productData;
@@ -269,8 +244,8 @@ export class ProductsService {
 
       const productData = {
         ...product[0],
-        imageUrls: productImages.map(img => img.url),
-        mainImageUrl: productImages.find(img => img.isMain)?.url,
+        imageUrls: productImages.map((img) => img.url),
+        mainImageUrl: productImages.find((img) => img.isMain)?.url,
       };
 
       return productData;
@@ -354,7 +329,7 @@ export class ProductsService {
         .values({ productId, imageId, isMain })
         .returning();
 
-      return productImage
+      return productImage;
     } catch (error) {
       console.error("添加商品图片关联失败:", error);
       throw handleDatabaseError(error);
@@ -431,8 +406,6 @@ export class ProductsService {
 
         return await db.insert(productImagesSchema).values(imageData);
       }
-
-
     } catch (error) {
       console.error("批量设置商品图片失败:", error);
       throw handleDatabaseError(error);

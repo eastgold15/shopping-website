@@ -21,6 +21,10 @@
 			"suspicious": "off",
 			"correctness": {
 				"noUnusedFunctionParameters": "off"
+			},
+			"complexity": {
+				"noBannedTypes": "off",
+				"noStaticOnlyClass": "off"
 			}
 		}
 	},

@@ -1,7 +1,7 @@
+import { commonRes } from "@backend/utils/Res";
 import { Elysia, t } from "elysia";
 import { OrderModel } from "./orders.model";
 import { OrdersService } from "./orders.service";
-import { commonRes } from "@backend/utils/Res";
 
 /**
  * 订单控制器
@@ -23,69 +23,111 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 	})
 
 	// 获取订单列表
-	.get("/", async ({ query, ordersService }) => {
-		const result = await ordersService.getList(query);
-		return commonRes(result, 200, "获取订单列表成功");
-	}, {
-		query: "OrderQuery"
-	})
+	.get(
+		"/",
+		async ({ query, ordersService }) => {
+			const result = await ordersService.getList(query);
+			return commonRes(result, 200, "获取订单列表成功");
+		},
+		{
+			query: "OrderQuery",
+		},
+	)
 
 	// 获取订单详情
-	.get("/:id", async ({ params: { id }, ordersService }) => {
-		const result = await ordersService.getById(Number(id));
-		return commonRes(result, 200, "获取订单详情成功");
-	}, {
-		params: "id"
-	})
+	.get(
+		"/:id",
+		async ({ params: { id }, ordersService }) => {
+			const result = await ordersService.getOrderById(Number(id));
+			return commonRes(result, 200, "获取订单详情成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+		},
+	)
 
 	// 更新订单状态
-	.put("/:id/status", async ({ params: { id }, body, ordersService }) => {
-		const result = await ordersService.updateStatus(Number(id), body);
-		return commonRes(result, 200, "更新订单状态成功");
-	}, {
-		params: "id",
-		body: "UpdateOrderStatusDto"
-	})
+	.put(
+		"/:id/status",
+		async ({ params: { id }, body, ordersService }) => {
+			const result = await ordersService.updateStatus(Number(id), body);
+			return commonRes(result, 200, "更新订单状态成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+			body: "UpdateOrderStatusDto",
+		},
+	)
 
 	// 更新物流信息
-	.put("/:id/shipping", async ({ params: { id }, body, ordersService }) => {
-		const result = await ordersService.updateShipping(Number(id), body);
-		return commonRes(result, 200, "更新物流信息成功");
-	}, {
-		params: "id",
-		body: "UpdateShippingDto"
-	})
+	.put(
+		"/:id/shipping",
+		async ({ params: { id }, body, ordersService }) => {
+			const result = await ordersService.updateShipping(Number(id), body);
+			return commonRes(result, 200, "更新物流信息成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+			body: "UpdateShippingDto",
+		},
+	)
 
 	// 获取退款列表
-	.get("/refunds", async ({ query, ordersService }) => {
-		const result = await ordersService.getRefundList(query);
-		return commonRes(result, 200, "获取退款列表成功");
-	}, {
-		query: "RefundQuery"
-	})
+	.get(
+		"/refunds",
+		async ({ query, ordersService }) => {
+			const result = await ordersService.getRefundList(query);
+			return commonRes(result, 200, "获取退款列表成功");
+		},
+		{
+			query: "RefundQuery",
+		},
+	)
 
 	// 创建退款申请
-	.post("/:id/refunds", async ({ params: { id }, body, ordersService }) => {
-		const result = await ordersService.createRefund(Number(id), body);
-		return commonRes(result, 200, "创建退款申请成功");
-	}, {
-		params: "id",
-		body: "CreateRefundDto"
-	})
+	.post(
+		"/:id/refunds",
+		async ({ params: { id }, body, ordersService }) => {
+			const result = await ordersService.createRefund(Number(id), body);
+			return commonRes(result, 200, "创建退款申请成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+			body: "CreateRefundDto",
+		},
+	)
 
 	// 处理退款申请
-	.put("/refunds/:refundId", async ({ params: { refundId }, body, ordersService }) => {
-		const result = await ordersService.processRefund(Number(refundId), body);
-		return commonRes(result, 200, "处理退款申请成功");
-	}, {
-		params: "refundId",
-		body: "ProcessRefundDto"
-	})
+	.put(
+		"/refunds/:id",
+		async ({ params: { id }, body, ordersService }) => {
+			const result = await ordersService.processRefund(id, body);
+			return commonRes(result, 200, "处理退款申请成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+			body: "ProcessRefundDto",
+		},
+	)
 
 	// 获取订单统计数据
-	.get("/statistics", async ({ query, ordersService }) => {
-		const result = await ordersService.getOrderStatistics(query);
-		return commonRes(result, 200, "获取订单统计成功");
-	}, {
-		query: "StatisticsQuery"
-	});
+	.get(
+		"/statistics",
+		async ({ query, ordersService }) => {
+			const result = await ordersService.getOrderStatistics(query);
+			return commonRes(result, 200, "获取订单统计成功");
+		},
+		{
+			query: "StatisticsQuery",
+		},
+	);

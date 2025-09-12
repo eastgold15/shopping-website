@@ -1,4 +1,4 @@
-import { UnoQuery, paramId } from "@backend/db/common.model";
+import { paramId, UnoQuery } from "@backend/db/common.model";
 import { DbType } from "@backend/db/database.typebox";
 import { t } from "elysia";
 
@@ -29,11 +29,13 @@ export const siteConfigsModel = {
 	),
 
 	// 配置查询参数
-	SiteConfigQuery: t.Object({
-		...UnoQuery.properties,
-		category: t.Optional(t.String()),
-		key: t.Optional(t.String()),
-	}),
+	SiteConfigQuery: t.Composite([
+		UnoQuery,
+		t.Object({
+			category: t.Optional(t.String()),
+			key: t.Optional(t.String()),
+		}),
+	]),
 
 	// 路径参数
 	id: paramId,
@@ -49,7 +51,8 @@ export const siteConfigsModel = {
 
 // SiteConfig实体类型
 export type SiteConfig = typeof DbType.typebox.select.siteConfigSchema.static;
-export type NewSiteConfig = typeof DbType.typebox.insert.siteConfigSchema.static;
+export type NewSiteConfig =
+	typeof DbType.typebox.insert.siteConfigSchema.static;
 export type SiteConfigModel = typeof siteConfigsModel;
 
 // 导出类型
@@ -59,6 +62,6 @@ export type UpdateSiteConfigDto =
 	typeof siteConfigsModel.UpdateSiteConfigDto.static;
 export type BatchUpdateSiteConfigDto =
 	typeof siteConfigsModel.BatchUpdateSiteConfigDto.static;
-export type SiteConfigQueryDto = typeof siteConfigsModel.SiteConfigQueryDto;
+export type SiteConfigQueryDto = typeof siteConfigsModel.SiteConfigQuery.static;
 export type KeyParams = typeof siteConfigsModel.KeyParams;
 export type CategoryParams = typeof siteConfigsModel.CategoryParams;
