@@ -143,12 +143,12 @@ const UnoSearchQuery = t.Object({
 
 ---
 
-## 五、路由类型应用 (knowledge.ts)
+## 五、路由类型应用 ([entity].controller.ts)
 
 ### 模型注册
 
 ```typescript
-export const [entity]Routes = new Elysia({ prefix: '/[entity]' })
+export const [entity]Controller = new Elysia({ prefix: '/[entity]' })
   .model([entity]Model)  // 注册模型
 ```
 

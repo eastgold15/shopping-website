@@ -45,6 +45,16 @@
 ### 2.1 项目结构
 
 ```TypeScript
+src/
+├── modules/
+│   └── [entity]/
+│       ├── [entity].controller.ts  // Controller层
+│       ├── [entity].service.ts     // Service层
+│       └── [entity].model.ts       // 类型定义
+├── db/
+│   ├── schema.ts
+│   └── database.typebox.ts
+└── utils/
 ```
 
 ### 2.2 文件命名规则
@@ -170,7 +180,15 @@ getUserData()
 // 类 PascalCase
 UserService
 
-// 接口 PascalCase IUserRequest
+// Controller导出 PascalCase
+export const UserController = new Elysia()
+
+// Model对象 PascalCase
+export const UserModel = {
+  user: DbType.typebox.select.users
+}
+
+// 接口 PascalCase
 // 统一接口命名风格。
 // 建议遵循TypeScript社区惯例，移除前缀I，统一使用PascalCase（如UserRequest）。
 ```
@@ -187,6 +205,50 @@ const fetchUser = async (userId: string): Promise<User> => {
 function getUser(id) {
 
 }
+```
+
+### 4.3 错误处理规范
+
+```typescript
+// ❌ 错误示例 - Service层返回null
+async getUserById(id: number): Promise<UserEntity | null> {
+  const user = await db.select().from(usersSchema).where(eq(usersSchema.id, id)).get();
+  return user || null;
+}
+
+// ✅ 正确示例 - Service层抛出错误
+async getUserById(id: number): Promise<UserEntity> {
+  const user = await db.select().from(usersSchema).where(eq(usersSchema.id, id)).get();
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+  return user;
+}
+```
+
+### 4.4 API 响应格式
+
+#### 统一响应格式（使用 commonRes）
+
+```typescript
+// 成功响应 - 单个数据
+return commonRes(user);
+// 输出: { success: true, data: user }
+
+// 成功响应 - 分页数据
+return commonRes({
+  data: users,
+  pagination: {
+    page: 1,
+    limit: 10,
+    total: 100,
+    totalPages: 10
+  }
+});
+
+// 错误响应（自动处理）
+throw new NotFoundError('User not found');
+// 输出: { success: false, error: { message: 'User not found' } }
 ```
 
 ## 5. 🚨 安全规范
@@ -379,7 +441,57 @@ app.get(
 
 ## 7. 📦 类型复用规范
 
-（文档中未提供具体内容）
+### 7.1 数据库类型导出（新规范）
+
+
+
+### 7.2 API 模型定义
+
+```typescript
+// modules/users/users.model.ts
+import { DbType } from '@/db/database.types';
+import { t } from 'elysia';
+
+export const UsersModel = {
+  // 直接使用数据库类型
+  user: DbType.typebox.select.users,
+  
+  // 使用 Pick/Omit 选择字段
+  userUpdate: t.Omit(DbType.typebox.insert.users, ['id', 'createdAt', 'updatedAt']),
+  
+  // 分页返回格式
+  usersList: t.Object({
+    items: t.Array(DbType.typebox.select.users),
+    meta: t.Object({
+      page: t.Number(),
+      pageSize: t.Number(),
+      total: t.Number(),
+      totalPages: t.Number()
+    })
+  })
+};
+```
+
+### 7.3 类型复用最佳实践
+
+```typescript
+// ✅ 正确 - 复用数据库类型
+export const PostModel = {
+  post: DbType.typebox.select.posts,
+  createPost: t.Omit(DbType.typebox.insert.posts, ['id', 'createdAt', 'updatedAt']),
+  updatePost: t.Partial(t.Omit(DbType.typebox.insert.posts, ['id', 'createdAt', 'updatedAt']))
+};
+
+// ❌ 错误 - 重复定义类型
+export const PostModel = {
+  post: t.Object({
+    id: t.Number(),
+    title: t.String(),
+    content: t.String()
+    // 违反类型复用原则
+  })
+};
+```
 
 ## 8. 🗄️ Drizzle ORM 数据库规范
 
@@ -497,4 +609,35 @@ export type schema = typeof schema;
 ### 9.2 自动检查命令
 
 - 类型检查: `npm run check`
+
+## 10. ✅ 合规检查表
+
+### 代码提交前检查清单：
+
+#### 基础规范
+- [ ] 所有函数都有适当的类型注解
+- [ ] 代码通过 ESLint 和 Prettier 检查
+- [ ] 敏感信息不在代码中硬编码
+- [ ] 所有 TODO 注释都有对应的任务跟踪
+
+#### API 响应格式
+- [ ] 使用 `commonRes()` 统一响应格式
+- [ ] 分页接口返回标准分页格式
+- [ ] 错误处理使用统一的错误类（NotFoundError等）
+
+#### Service 层规范
+- [ ] Service 方法不返回 null，改为抛出错误
+- [ ] Service 层无需进行数据验证（由 Controller 层处理）
+- [ ] 查询不到数据时抛出 NotFoundError
+
+#### Controller 层规范
+- [ ] Controller 导出使用 `[Entity]Controller` 命名
+- [ ] 使用 Model 中定义的类型进行验证
+- [ ] 所有响应使用 `commonRes()` 包装
+
+#### 数据库和类型规范
+- [ ] 使用 `database.types.ts` 统一类型转换
+- [ ] Model 类型使用 `DbType.typebox` 复用数据库类型
+- [ ] 数据库查询使用 Drizzle ORM
+- [ ] Schema 文件正确导出类型
 ```
