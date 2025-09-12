@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ImageSelector from "@frontend/components/ImageSelector.vue";
-import { handleApiRes } from "@frontend/utils/handleApi";
-import { client } from "@frontend/utils/useTreaty";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { Form, FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
 import { useConfirm } from "primevue/useconfirm";
@@ -99,9 +98,8 @@ const loadAdvertisements = async () => {
 		};
 
 		console.log("Loading advertisements with params:", params);
-		const res = await handleApiRes(
-			client.api.advertisements.get({ query: params }),
-		);
+		const api = useCmsApi();
+		const res = await api.advertisements.list(params);
 		console.log("API response:", res);
 		if (!res) {
 			advertisements.value = [];
@@ -235,11 +233,8 @@ const editAdvertisement = (advertisement: Advertisement) => {
  */
 const toggleStatus = async (advertisement: Advertisement) => {
 	try {
-		const res = await handleApiRes(
-			client.api
-				.advertisements({ id: advertisement.id })
-				.toggle.patch({ isActive: !advertisement.isActive }),
-		);
+		const api = useCmsApi();
+		const res = await api.advertisements.toggle(advertisement.id.toString(), { isActive: !advertisement.isActive });
 
 		if (res && res.code === 200) {
 			toast.add({
@@ -276,9 +271,8 @@ const deleteAdvertisement = (advertisement: Advertisement) => {
 		acceptLabel: "删除",
 		accept: async () => {
 			try {
-				const res = await handleApiRes(
-					client.api.advertisements({ id: advertisement.id }).delete(),
-				);
+				const api = useCmsApi();
+			const res = await api.advertisements.delete(advertisement.id.toString());
 
 				if (res && res.code === 200) {
 					toast.add({
@@ -362,16 +356,13 @@ const onFormSubmit = async ({
 		};
 
 		let result;
+		const api = useCmsApi();
 		if (editingAdvertisement.value) {
 			// 更新广告
-			result = await handleApiRes(
-				client.api
-					.advertisements({ id: editingAdvertisement.value.id })
-					.put(requestData),
-			);
+			result = await api.advertisements.update(editingAdvertisement.value.id.toString(), requestData);
 		} else {
 			// 创建广告
-			result = await handleApiRes(client.api.advertisements.post(requestData));
+			result = await api.advertisements.create(requestData);
 		}
 
 		if (result && result.code === 200) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { api } from "@frontend/utils/handleApi";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 
@@ -156,6 +156,7 @@ const loadOrders = async () => {
 		};
 
 		// 实际API调用
+		const api = useCmsApi();
 		const response = await api.orders.list(params);
 
 		if (response.code === 200) {
@@ -315,6 +316,7 @@ const updateOrderStatus = async () => {
 
 	try {
 		// 实际API调用
+		const api = useCmsApi();
 		const response = await api.orders.updateStatus(
 			selectedOrder.value.id.toString(),
 			{

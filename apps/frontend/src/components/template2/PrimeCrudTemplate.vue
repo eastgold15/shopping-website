@@ -14,8 +14,9 @@ import Drawer from "primevue/drawer";
 import Paginator from "primevue/paginator";
 import Panel from "primevue/panel";
 import Tag from "primevue/tag";
+import TreeTable from "primevue/treetable";
 import { useToast } from "primevue/usetoast";
-import { computed, ref, toRaw } from "vue";
+import { computed, onMounted, ref, toRaw } from "vue";
 
 const props = defineProps<{
   name: string;
@@ -29,6 +30,18 @@ const props = defineProps<{
   resolver: FormResolver | any;
   queryResolver: FormResolver | any;
   crudController?: number;
+  /**
+   * 是否使用树形表格
+   */
+  useTreeTable?: boolean;
+  /**
+   * 树形表格的展开状态控制
+   */
+  expandedKeys?: Record<string, boolean>;
+  /**
+   * 树形表格数据
+   */
+  treeData?: any[];
 }>();
 
 
@@ -39,6 +52,7 @@ const {
   handleCrudDialog,
   tableData: templateTableData,
   fetchList,
+  fetchData, // 新增统一数据获取方法
   crudDialogOptions,
   resetForm,
   submitForm,
@@ -70,8 +84,15 @@ const paginationOptions = computed(() => ({
 const onPageChange = (event: { first: number; rows: number }) => {
   tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
   tableData.value.meta.pageSize = event.rows;
-  fetchList();
+  // 根据表格类型调用对应的数据获取方法
+  fetchData(props.useTreeTable || false);
 };
+
+// 组件挂载时自动加载数据
+onMounted(async () => {
+  // 根据useTreeTable属性自动选择数据获取方式
+  await fetchData(props.useTreeTable || false);
+});
 
 // 查询表单提交处理
 const onQueryFormSubmit = async (event: FormSubmitEvent) => {
@@ -214,8 +235,9 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
     <!-- 表格区域 -->
     <Panel header="数据列表" class="mb-4">
       <slot name="ITable">
-        <DataTable v-if="tableData" :value="tableData.items" :loading="formLoading" dataKey="id" stripedRows
-          showGridlines responsiveLayout="scroll" class="p-datatable-sm">
+        <!-- 普通数据表格 -->
+        <DataTable v-if="tableData && !props.useTreeTable" :value="tableData.items" :loading="formLoading" dataKey="id"
+          stripedRows showGridlines responsiveLayout="scroll" class="p-datatable-sm">
           <slot name="TableColumn" />
 
           <slot name="TableColumnAction">
@@ -233,10 +255,31 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
             </Column>
           </slot>
         </DataTable>
+
+        <!-- 树形数据表格 -->
+        <TreeTable v-else-if="props.useTreeTable && props.treeData" :value="props.treeData" :loading="formLoading"
+          :expandedKeys="props.expandedKeys" dataKey="key" class="p-treetable-sm" tableStyle="min-width: 50rem">
+          <slot name="TreeTableColumn" />
+
+          <slot name="TreeTableColumnAction">
+            <Column header="操作" :frozen="true" alignFrozen="right" style="min-width: 250px">
+              <template #body="{ node }">
+                <div class="flex gap-2">
+                  <Button v-if="_crudController & 2" icon="pi pi-eye" severity="info" size="small" v-tooltip="'详情'"
+                    @click="handleCrudDialog(node.data, 'READ')" />
+                  <Button v-if="_crudController & 4" icon="pi pi-pencil" severity="warning" size="small"
+                    v-tooltip="'编辑'" @click="handleCrudDialog(node.data, 'EDIT')" />
+                  <Button v-if="_crudController & 8" icon="pi pi-trash" severity="danger" size="small" v-tooltip="'删除'"
+                    @click="handleDeletes([node.data.id])" />
+                </div>
+              </template>
+            </Column>
+          </slot>
+        </TreeTable>
       </slot>
 
-      <!-- 分页器 -->
-      <Paginator v-if="tableData && tableData.meta.total > 0" :first="paginationOptions.first"
+      <!-- 分页器 (仅在非树形表格时显示) -->
+      <Paginator v-if="tableData && tableData.meta.total > 0 && !props.useTreeTable" :first="paginationOptions.first"
         :rows="paginationOptions.rows" :totalRecords="paginationOptions.totalRecords"
         :rowsPerPageOptions="paginationOptions.rowsPerPageOptions"
         template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"

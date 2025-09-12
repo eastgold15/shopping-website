@@ -49,6 +49,7 @@ declare module 'vue' {
     ProductSearch: typeof import('./src/components/ProductSearch.vue')['default']
     ProgressBar: typeof import('primevue/progressbar')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
+    RadioButton: typeof import('primevue/radiobutton')['default']
     Rating: typeof import('primevue/rating')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

@@ -11,7 +11,7 @@ import {
 	getImageUrl,
 	openInNewTab,
 } from "@frontend/utils/formatUtils";
-import { api } from "@frontend/utils/handleApi";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { computed, onMounted, ref } from "vue";
@@ -98,6 +98,7 @@ const totalPages = computed(() => {
 const loadImages = async () => {
 	loading.value = true;
 	try {
+		const api = useCmsApi();
 		const res = await api.images.list();
 		if (!res) {
 			toast.add({
@@ -173,6 +174,7 @@ const saveImageEdit = async () => {
 			altText: editImageData.value.altText,
 		};
 
+		const api = useCmsApi();
 		const response = await api.images.update(
 			editImageData.value.id,
 			updateData,
@@ -271,6 +273,7 @@ const confirmBatchDelete = () => {
  */
 const deleteImage = async (imageId: string) => {
 	try {
+		const api = useCmsApi();
 		await api.images.delete(imageId);
 
 		// 从列表中移除
@@ -305,6 +308,7 @@ const batchDeleteImages = async () => {
 			imageIds: selectedImages.value,
 		};
 
+		const api = useCmsApi();
 		const response = await api.images.batchDelete(batchDeleteData);
 
 		// 从列表中移除

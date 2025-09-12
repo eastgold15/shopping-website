@@ -65,8 +65,9 @@ export interface PrimeTemplateCrudHandler<
   TBase,
   PageQuery extends BaseQueryParams,
 > {
-  // 查询 → 返回带id的数据
-  getList: (query: Partial<PageQuery>) => Promise<PageRes<T[]>>;
+  // 查询 → 返回带id的数据 (二选一：普通列表或树形数据)
+  getList?: (query: Partial<PageQuery>) => Promise<PageRes<T[]>>;
+  getTree?: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>>;
   // 新增 → 必须用 TBase（禁止传入id）
   create: (data: TBase) => Promise<CommonRes<null>>;
   // 修改 → 必须用 TModel（强制要求id）
@@ -94,6 +95,7 @@ export interface GenCmsTemplateData<
   PageQuery extends BaseQueryParams,
 > {
   tableData: Ref<PageData<T[]>>;
+  treeData: Ref<T[]>;
   queryForm: Partial<PageQuery>;
   formLoading: Ref<boolean>;
   crudDialogOptions: Ref<CrudDialogOptions<T>>;
@@ -104,6 +106,8 @@ export interface GenCmsTemplateData<
   ) => Promise<void>;
   handleCrudDialog: (data: T | null, mode: CrudMode) => void;
   fetchList: (param?: Partial<PageQuery>) => Promise<void>;
+  fetchTree: (param?: Partial<PageQuery>) => Promise<void>;
+  fetchData: (useTreeTable?: boolean, param?: Partial<PageQuery>) => Promise<void>; // 统一数据获取方法
   submitForm: (formEl: FormInstance | null) => Promise<void>;
   handleDeletes: (ids: Array<number>) => Promise<void>;
   // 添加CRUD操作方法

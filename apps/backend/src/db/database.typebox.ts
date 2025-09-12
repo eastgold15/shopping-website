@@ -16,10 +16,7 @@ const advertisementsInsertSchema = createInsertSchema(
 	dbSchema.advertisementsSchema,
 );
 const imagesInsertSchema = createInsertSchema(dbSchema.imagesSchema);
-const ordersInsertSchema = createInsertSchema(dbSchema.ordersSchema, {
-	shippingAddress: t.Any(),
-	billingAddress: t.Any(),
-});
+const ordersInsertSchema = createInsertSchema(dbSchema.ordersSchema);
 const orderItemsInsertSchema = createInsertSchema(dbSchema.orderItemsSchema);
 const refundsInsertSchema = createInsertSchema(dbSchema.refundsSchema);
 const partnersInsertSchema = createInsertSchema(dbSchema.partnersSchema);
@@ -37,10 +34,7 @@ const advertisementsSelectSchema = createSelectSchema(
 	dbSchema.advertisementsSchema,
 );
 const imagesSelectSchema = createSelectSchema(dbSchema.imagesSchema);
-const ordersSelectSchema = createSelectSchema(dbSchema.ordersSchema, {
-	shippingAddress: t.Any(),
-	billingAddress: t.Any(),
-});
+const ordersSelectSchema = createSelectSchema(dbSchema.ordersSchema);
 const orderItemsSelectSchema = createSelectSchema(dbSchema.orderItemsSchema);
 const refundsSelectSchema = createSelectSchema(dbSchema.refundsSchema);
 const partnersSelectSchema = createSelectSchema(dbSchema.partnersSchema);

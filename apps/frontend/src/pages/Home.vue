@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import { api } from "../utils/handleApi";
+import { useCmsApi } from "../utils/handleApi";
+import type { Products } from "@backend/types";
+import type { Advertisement } from "@backend/types";
 
 // 路由
 const router = useRouter();
@@ -25,6 +29,7 @@ const pageMeta = ref({
 const loadHotProducts = async () => {
 	loadingProducts.value = true;
 	try {
+		const api = useCmsApi();
 		const res = await api.products.list({
 			page: 1,
 			pageSize: 10,

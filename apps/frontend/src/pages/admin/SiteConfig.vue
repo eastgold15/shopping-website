@@ -293,7 +293,7 @@
 </template>
 
 <script setup lang="ts">
-import { api } from "@frontend/utils/handleApi";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import Dropdown from "primevue/dropdown";
@@ -415,6 +415,7 @@ const loadConfigs = async () => {
 	try {
 		loading.value = true;
 
+		const api = useCmsApi();
 		const response = await api.siteConfigs.list();
 		if (
 			response.data &&
@@ -530,6 +531,7 @@ const saveConfigs = async () => {
 			};
 		});
 
+		const api = useCmsApi();
 		const response = await api.siteConfigs.batchUpdate(updateData);
 
 		if (response.data && response.data.code === 200) {

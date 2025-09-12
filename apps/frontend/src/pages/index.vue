@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { api } from "@frontend/utils/handleApi";
+import { useCmsApi } from "@frontend/utils/handleApi";
+import { ref } from "vue";
 
 // 合作伙伴数据
 const partners = ref([]);
@@ -19,6 +20,7 @@ console.log(JSON.stringify(defaultIntroParagraphs));
 // 加载合作伙伴数据
 const loadPartners = async () => {
   try {
+    const api = useCmsApi();
     const { code, data, message } = (await api.partners.list()) as any;
 
 
@@ -34,6 +36,7 @@ const loadPartners = async () => {
 // 加载当前界面配置数据
 const loadViewConfig = async () => {
   try {
+    const api = useCmsApi();
     const { data: response } = await api.siteConfigs.getByCategory("partners");
     if (response.code == 200 && response.data) {
       // 将配置数组转换为对象，便于模板使用

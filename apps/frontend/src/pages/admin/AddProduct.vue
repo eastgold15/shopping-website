@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // PrimeVue 组件
 import ImageSelector from "@frontend/components/ImageSelector.vue";
-import { client } from "@frontend/utils/useTreaty";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { Form, FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
 import Button from "primevue/button";
@@ -227,7 +227,8 @@ const onFormSubmit = async ({
 			saving.value = true;
 
 			// 调用API创建商品
-			const data = await handleApiRes(client.api.products.post(values));
+			const api = useCmsApi();
+		const data = await (api.products.create(values));
 
 			if (data) {
 				toast.add({
@@ -287,7 +288,8 @@ const saveDraft = async ({
 		};
 
 		// 调用API创建商品
-		const data = await handleApiRes(client.api.products.post(productData));
+		const api = useCmsApi();
+		const data = await api.products.create(productData)
 
 		if (data) {
 			toast.add({
@@ -343,7 +345,8 @@ const publishProduct = async ({
 		};
 
 		// 调用API创建商品
-		const data = await handleApiRes(client.api.products.post(productData));
+		const api = useCmsApi();
+		const data = await api.products.create(productData)
 
 		if (data) {
 			toast.add({
@@ -457,7 +460,8 @@ const removeImage = (index: number) => {
 // 加载商品分类
 const loadCategories = async () => {
 	try {
-		const data = await handleApiRes(client.api.categories.tree.get());
+		const api = useCmsApi();
+		const data = await api.categories.tree()
 		if (data && data.code === 200) {
 			categories.value = data.data || [];
 		} else {

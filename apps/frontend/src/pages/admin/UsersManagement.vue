@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { api } from "@frontend/utils/handleApi";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 
@@ -184,6 +184,7 @@ const loadUsers = async () => {
 		};
 
 		// 实际API调用
+		const api = useCmsApi();
 		const response = await api.users.list(params);
 
 		if (response.code === 200) {
@@ -368,6 +369,7 @@ const saveUser = async () => {
 
 		if (editingUser.value) {
 			// 更新用户
+			const api = useCmsApi();
 			const response = await api.users.update(
 				editingUser.value.id.toString(),
 				userForm.value,
@@ -384,6 +386,7 @@ const saveUser = async () => {
 			}
 		} else {
 			// 创建用户
+			const api = useCmsApi();
 			const response = await api.users.create(userForm.value);
 			if (response.code === 200) {
 				toast.add({
@@ -426,6 +429,7 @@ const confirmDelete = (user: User) => {
 // 删除用户
 const deleteUser = async (id: number) => {
 	try {
+		const api = useCmsApi();
 		const response = await api.users.delete(id.toString());
 		if (response.code === 200) {
 			toast.add({
@@ -453,6 +457,7 @@ const deleteUser = async (id: number) => {
 const toggleUserStatus = async (user: User) => {
 	try {
 		const newStatus = user.status === "active" ? "inactive" : "active";
+		const api = useCmsApi();
 		const response = await api.users.update(user.id.toString(), {
 			status: newStatus,
 		});

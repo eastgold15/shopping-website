@@ -2,7 +2,7 @@
 import type { Category } from "@frontend/app/types/category";
 import type { Product, ProductForm } from "@frontend/app/types/product";
 import ImageSelector from "@frontend/components/ImageSelector.vue";
-import { api } from "@frontend/utils/handleApi";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -118,6 +118,7 @@ const loadProducts = async () => {
 		if (searchKeyword.value) {
 			params.search = searchKeyword.value;
 		}
+		const api = useCmsApi();
 		const response = await api.products.list(params);
 		if (response.code === 200) {
 			const data = response.data;
@@ -145,6 +146,7 @@ const loadProducts = async () => {
 
 const loadCategories = async () => {
 	try {
+		const api = useCmsApi();
 		const response = await api.categories.list();
 
 		if (response.code === 200) {
@@ -304,6 +306,7 @@ const saveProduct = async () => {
 
 		if (editingProduct.value) {
 			// 更新商品
+			const api = useCmsApi();
 			const response = await api.products.update(
 				editingProduct.value.id.toString(),
 				submitData,
@@ -321,6 +324,7 @@ const saveProduct = async () => {
 			}
 		} else {
 			// 创建商品
+			const api = useCmsApi();
 			const response = await api.products.create(submitData);
 
 			if (response.code === 200) {
@@ -364,6 +368,7 @@ const confirmDelete = (product: Product) => {
 // 删除商品
 const deleteProduct = async (id: number) => {
 	try {
+		const api = useCmsApi();
 		const response = await api.products.delete(id.toString());
 
 		if (response.code === 200) {
@@ -394,6 +399,7 @@ const toggleActive = async (product: Product) => {
 	try {
 		product.isActive = !product.isActive;
 
+		const api = useCmsApi();
 		const response = await api.products.update(product.id.toString(), {
 			isActive: product.isActive,
 		});
@@ -425,6 +431,7 @@ const toggleFeatured = async (product: Product) => {
 	try {
 		product.isFeatured = !product.isFeatured;
 
+		const api = useCmsApi();
 		const response = await api.products.update(product.id.toString(), {
 			isFeatured: product.isFeatured,
 		});

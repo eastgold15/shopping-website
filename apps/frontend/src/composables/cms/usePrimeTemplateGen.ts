@@ -64,6 +64,9 @@ export async function genPrimeCmsTemplateData<
     },
   });
 
+  /**树形数据 */
+  const treeData = ref<T[]>([]);
+
   /**
    * 搜索表单
    */
@@ -107,6 +110,39 @@ export async function genPrimeCmsTemplateData<
       }
     } catch (error) {
       console.error("fetchList error:", error);
+      toast.add({
+        severity: "error",
+        summary: "查询异常",
+        detail: "网络异常，请稍后重试",
+        life: 3000,
+      });
+    } finally {
+      formLoading.value = false;
+    }
+  };
+
+  // 获取树形数据方法
+  const fetchTree = async (params: Partial<PageQuery> = queryParams.value) => {
+    try {
+      formLoading.value = true;
+      const safeParams = omitBy(
+        params,
+        (v) => v == null || v === "",
+      ) as Partial<PageQuery>;
+      const { code, data, message } = await dataCrudHandler.getTree(safeParams);
+
+      if (code === 200) {
+        treeData.value = data;
+      } else {
+        toast.add({
+          severity: "error",
+          summary: "查询失败",
+          detail: message || "树形数据获取失败",
+          life: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("fetchTree error:", error);
       toast.add({
         severity: "error",
         summary: "查询异常",
@@ -209,8 +245,32 @@ export async function genPrimeCmsTemplateData<
     });
   }
 
+  /**
+   * 统一数据获取方法 - 根据表格类型自动选择getList或getTree
+   * @param useTreeTable 是否使用树形表格
+   * @param params 查询参数
+   */
+  const fetchData = async (useTreeTable: boolean = false, params: Partial<PageQuery> = queryParams.value) => {
+    if (useTreeTable) {
+      // 树形表格使用getTree方法
+      if (dataCrudHandler.getTree) {
+        await fetchTree(params);
+      } else {
+        console.warn('树形表格模式需要提供getTree方法');
+      }
+    } else {
+      // 普通表格使用getList方法
+      if (dataCrudHandler.getList) {
+        await fetchList(params);
+      } else {
+        console.warn('列表表格模式需要提供getList方法');
+      }
+    }
+  };
+
   const result = {
     tableData,
+    treeData,
     queryForm,
     formLoading,
     crudDialogOptions,
@@ -218,6 +278,8 @@ export async function genPrimeCmsTemplateData<
     FormSearch,
     handleCrudDialog,
     fetchList,
+    fetchTree,
+    fetchData, // 新增统一数据获取方法
     submitForm,
     handleDeletes,
     // 添加CRUD操作方法

@@ -103,7 +103,7 @@ export const categoriesController = new Elysia({
 				),
 	)
 
-	// 获取分类树形结构
+	// 获取分类树形分页结构
 	.get(
 		"/tree",
 		async ({ categoriesService }) => {
@@ -127,6 +127,9 @@ export const categoriesController = new Elysia({
 			},
 		},
 	)
+
+
+	
 
 	// 获取分类列表（分页）
 	.get(

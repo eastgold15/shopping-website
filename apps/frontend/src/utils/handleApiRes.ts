@@ -4,29 +4,6 @@
  * @param showToast 是否显示错误提示（默认为 true）
  * @returns 如果成功返回 response.data，失败抛出错误并显示错误消息
  */
-export async function handleApiRes<T>(apiPromise: T) {
-  try {
-    const { status, data, message } = await apiPromise;
-
-    if (status !== 200) {
-      const errorMessage = message || "请求失败";
-      if (showToast) {
-        showErrorToast(errorMessage);
-      }
-      throw new Error(errorMessage);
-    }
-
-    if (data === undefined) {
-      throw new Error("响应数据为空");
-    }
-    return data;
-  } catch (error) {
-    if (showToast && error instanceof Error) {
-      showErrorToast(error.message);
-    }
-    throw error;
-  }
-}
 
 /**
  * 显示错误提示的辅助函数

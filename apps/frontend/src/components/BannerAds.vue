@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { client } from "@frontend/utils/useTreaty";
 import type { Advertisement } from "../types/advertisement";
-import { handleApiRes } from "../utils/handleApi";
+
 
 // Props
 interface Props {
@@ -143,8 +143,8 @@ const loadBannerAds = async () => {
 	try {
 		const query = props.position ? { position: props.position } : {};
 
-		const { data, error } = await handleApiRes(
-			client.api.advertisements.banner.get({ query }),
+		const { data, error } = await 
+			client.api.advertisements.banner.get({ query }
 		);
 
 		if (data) {
