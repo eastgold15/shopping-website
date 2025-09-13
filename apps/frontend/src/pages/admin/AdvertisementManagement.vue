@@ -1,639 +1,388 @@
-<script setup lang="ts">
+<script lang="ts" setup>
+import type { ADModel, ADQueryDto } from "@backend/modules/advertisements";
 import ImageSelector from "@frontend/components/ImageSelector.vue";
+import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
+import { formatDate, getImageUrl } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
-import { Form, FormField } from "@primevue/forms";
+import { FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
-import { onMounted, reactive, ref } from "vue";
+import Button from "primevue/button";
+import Checkbox from "primevue/checkbox";
+import DatePicker from "primevue/datepicker";
+import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Select from "primevue/select";
+import Tag from "primevue/tag";
+import { onMounted, ref } from "vue";
 import { z } from "zod";
-import type {
-	Advertisement,
-	AdvertisementQuery,
-} from "../../types/advertisement";
 
-// 组合式API
-const toast = useToast();
-const confirm = useConfirm();
+const $crud = useCmsApi().advertisements;
+
+// 表单验证器
+const ADSchema = z.object({
+  title: z.string().min(1, { message: "广告标题不能为空" }),
+  type: z.string().min(1, { message: "请选择广告类型" }),
+  link: z.string().optional(),
+  position: z.string().optional(),
+  sortOrder: z.number().min(0, { message: "排序值不能小于0" }),
+  isActive: z.boolean(),
+  startDate: z.date().nullable().optional(),
+  endDate: z.date().nullable().optional(),
+});
+
+// 查询表单验证schema
+const querySchema = z.object({
+  type: z.string().optional(),
+  position: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+// 创建resolver
+const resolver = zodResolver(ADSchema);
+const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
-const loading = ref(false);
-const saving = ref(false);
-const showCreateDialog = ref(false);
-const showImageSelector = ref(false);
-const editingAdvertisement = ref<Advertisement | null>(null);
-const advertisements = ref<Advertisement[]>([]);
-const formRef = ref<any>(null);
+const templateData = await genPrimeCmsTemplateData<
+  ADModel,
+  ADQueryDto
+>(
+  {
+    // 1. 定义查询表单
+    // @ts-ignore
+    getList: $crud.list,
+    create: $crud.create,
+    update: $crud.update,
+    delete: $crud.delete,
 
-// 分页信息
-const page = ref(1);
-const pageSize = ref(10);
-const total = ref(0);
+    // 2. 定义初始表格列 初始值
+    getEmptyModel: () => ({
+      id: 0,
+      title: "",
+      type: "carousel",
+      image_id: -1,
+      link: "",
+      position: "",
+      sortOrder: 0,
+      isActive: true,
+      startDate: null,
+      endDate: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }),
 
-// 筛选器
-const filters = reactive<AdvertisementQuery>({
-	type: undefined,
-	position: undefined,
-	isActive: undefined,
+    // 3. 定义删除框标题
+    getDeleteBoxTitle(id: number) {
+      return `删除广告${id}`;
+    },
+    getDeleteBoxTitles(ids: Array<number>) {
+      return ` 广告#${ids.join(",")} `;
+    },
+
+    // 5. 数据转换
+    transformSubmitData: (data, type) => {
+
+      // 确保数字类型正确
+      if (typeof data.sortOrder === "string") {
+        data.sortOrder = parseInt(data.sortOrder) || 0;
+      }
+      // @ts-ignore
+      delete data.image
+      // @ts-ignore
+      delete data.createdAt
+      // @ts-ignore
+      delete data.updatedAt
+
+      data.image_id = currentFormData.value?.image_id || data.image_id;
+
+    },
+  },
+  // 6. 定义查询表单
+  {
+    type: undefined,
+    position: undefined,
+    isActive: undefined,
+    page: 1,
+    pageSize: 20,
+  },
+);
+
+const { tableData, queryForm, fetchList } = templateData;
+
+onMounted(async () => {
+  await fetchList();
 });
 
-// 表单数据
-const initialValues = reactive({
-	title: "",
-	type: "carousel",
-	image: "",
-	link: "",
-	position: "",
-	sortOrder: 0,
-	isActive: true,
-	startDate: null as Date | null,
-	endDate: null as Date | null,
-});
-
-
-
-// 单独的字段验证器
-const titleResolver = zodResolver(
-	z.string().min(1, { message: "广告标题不能为空" }),
-);
-const typeResolver = zodResolver(
-	z.string().min(1, { message: "请选择广告类型" }),
-);
-const imageResolver = zodResolver(
-	z.string().min(1, { message: "请上传广告图片" }),
-);
-const sortOrderResolver = zodResolver(
-	z.number().min(0, { message: "排序值不能小于0" }),
-);
-
-// 选项数据
-const typeOptions = ref([{ label: "轮播图", value: "carousel" }]);
-const positionOptions = ref([
-	{ label: "首页轮播", value: "home-hero" },
-	{ label: "分类页顶部", value: "category-top" },
-]);
+// 状态选项
 const statusOptions = [
-	{ label: "启用", value: true },
-	{ label: "禁用", value: false },
+  { label: "全部", value: undefined },
+  { label: "启用", value: true },
+  { label: "禁用", value: false },
 ];
 
-const removeImage = () => {
-	initialValues.image = ""; // 直接清空
-	formRef.value.setFieldValue("image", "");
+// 图片选择相关
+const showImageSelector = ref(false);
+const currentFormData = ref<ADModel>();
+
+const onImageSelected = (imageUrl: string, imageData: any) => {
+  console.log("imageData:", imageData);
+  console.log("imageUrl:", imageUrl);
+
+  if (currentFormData.value) {
+    // 设置图片ID（数字类型）
+    currentFormData.value.image_id = imageData.id;
+    // 设置显示用的图片URL
+    // @ts-ignore
+    currentFormData.value.image = imageUrl;
+  }
+  showImageSelector.value = false;
 };
-
-// 方法
-/**
- * 加载广告列表
- */
-const loadAdvertisements = async () => {
-	loading.value = true;
-	try {
-		const params = {
-			page: page.value,
-			pageSize: pageSize.value,
-			type: filters.type || undefined,
-			position: filters.position || undefined,
-			isActive: filters.isActive !== undefined ? filters.isActive : undefined,
-		};
-
-		console.log("Loading advertisements with params:", params);
-		const api = useCmsApi();
-		const res = await api.advertisements.list(params);
-		console.log("API response:", res);
-		if (!res) {
-			advertisements.value = [];
-			total.value = 0;
-			toast.add({
-				severity: "error",
-				summary: "错误",
-				detail: "加载广告列表失败",
-				life: 1000,
-			});
-			return;
-		}
-
-		const resData: any = res.data;
-		if (res.code === 200) {
-			// 处理分页数据结构 {items: [], meta: {total: number}}
-			if (Array.isArray(resData.items)) {
-				advertisements.value = resData.items;
-				total.value = resData.meta?.total || 0;
-			} else {
-				advertisements.value = [];
-				total.value = 0;
-				toast.add({
-					severity: "error",
-					summary: "错误",
-					detail: "数据格式错误",
-					life: 1000,
-				});
-			}
-		}
-	} catch (error) {
-		console.error("加载广告列表失败:", error);
-		advertisements.value = [];
-		total.value = 0;
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "加载广告列表失败",
-			life: 1000,
-		});
-	} finally {
-		loading.value = false;
-	}
-};
-
-/**
- * 页面变化处理
- */
-const onPageChange = (event: any) => {
-	page.value = event.page + 1; // DataTable的page从0开始，API从1开始
-	pageSize.value = event.rows;
-	loadAdvertisements();
-};
-
-/**
- * 重置筛选器
- */
-const resetFilters = () => {
-	filters.type = undefined;
-	filters.position = undefined;
-	filters.isActive = undefined;
-	page.value = 1;
-	loadAdvertisements();
-};
-
-/**
- * 获取类型标签
- */
-const getTypeLabel = (type: string) => {
-	return (
-		typeOptions.value.find((option) => option.value === type)?.label || type
-	);
-};
-
-/**
- * 获取位置标签
- */
-const getPositionLabel = (position?: string) => {
-	if (!position) return "-";
-	return (
-		positionOptions.value.find((option) => option.value === position)?.label ||
-		position
-	);
-};
-
-/**
- * 关闭对话框
- */
-const closeDialog = () => {
-	showCreateDialog.value = false;
-	editingAdvertisement.value = null;
-	// 重置表单初始值
-	Object.assign(initialValues, {
-		title: "",
-		type: "carousel",
-		image: "",
-		link: "",
-		position: "",
-		sortOrder: 0,
-		isActive: true,
-		startDate: null,
-		endDate: null,
-	});
-};
-
-/**
- * 编辑广告
- */
-const editAdvertisement = (advertisement: Advertisement) => {
-	editingAdvertisement.value = advertisement;
-	// 更新表单初始值
-	Object.assign(initialValues, {
-		title: advertisement.title || "",
-		type: advertisement.type || "carousel",
-		image: advertisement.image || "",
-		link: advertisement.link || "",
-		position: advertisement.position || "",
-		sortOrder: Number(advertisement.sortOrder) || 0,
-		isActive: Boolean(advertisement.isActive),
-		startDate: advertisement.startDate
-			? new Date(advertisement.startDate)
-			: null,
-		endDate: advertisement.endDate ? new Date(advertisement.endDate) : null,
-	});
-	console.log("aaaa", initialValues);
-	showCreateDialog.value = true;
-};
-
-/**
- * 切换广告状态
- */
-const toggleStatus = async (advertisement: Advertisement) => {
-	try {
-		const api = useCmsApi();
-		const res = await api.advertisements.toggle(advertisement.id.toString(), { isActive: !advertisement.isActive });
-
-		if (res && res.code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "成功",
-				detail: res.message,
-				life: 3000,
-			});
-			loadAdvertisements();
-		} else {
-			throw new Error(res?.message || "操作失败");
-		}
-	} catch (error) {
-		console.error("切换广告状态失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "切换广告状态失败",
-			life: 3000,
-		});
-	}
-};
-
-/**
- * 删除广告
- */
-const deleteAdvertisement = (advertisement: Advertisement) => {
-	confirm.require({
-		message: `确定要删除广告 "${advertisement.title}" 吗？`,
-		header: "确认删除",
-		icon: "pi pi-exclamation-triangle",
-		rejectClass: "p-button-secondary p-button-outlined",
-		rejectLabel: "取消",
-		acceptLabel: "删除",
-		accept: async () => {
-			try {
-				const api = useCmsApi();
-			const res = await api.advertisements.delete(advertisement.id.toString());
-
-				if (res && res.code === 200) {
-					toast.add({
-						severity: "success",
-						summary: "成功",
-						detail: "广告删除成功",
-						life: 3000,
-					});
-					loadAdvertisements();
-				} else {
-					throw new Error(res?.message || "删除失败");
-				}
-			} catch (error) {
-				console.error("删除广告失败:", error);
-				toast.add({
-					severity: "error",
-					summary: "错误",
-					detail: "删除广告失败",
-					life: 3000,
-				});
-			}
-		},
-	});
-};
-
-/**
- * 打开图片选择器
- */
-const openImageSelector = () => {
-	showImageSelector.value = true;
-};
-
-/**
- * 图片选择处理
- */
-const onImageSelected = (imageUrl: string) => {
-	initialValues.image = imageUrl;
-	// 如果表单已经初始化，也更新表单字段值
-	if (formRef.value) {
-		formRef.value.setFieldValue("image", imageUrl);
-	}
-	showImageSelector.value = false;
-};
-
-/**
- * 图片加载错误处理
- */
-// const handleImageError = (event: Event) => {
-// 	const img = event.target as HTMLImageElement;
-// 	img.src = "/placeholder-image.png"; // 设置默认图片
-// };
-
-/**
- * 表单提交处理
- */
-const onFormSubmit = async ({
-	valid,
-	values,
-}: {
-	valid: boolean;
-	values: any;
-}) => {
-	if (!valid) {
-		toast.add({ severity: "warn", summary: "警告", detail: "请检查表单输入" });
-		return;
-	}
-
-	try {
-		saving.value = true;
-
-		const requestData = {
-			title: values.title?.trim() || "",
-			type: values.type || "carousel",
-			image: values.image?.trim() || "",
-			link: values.link?.trim() || undefined,
-			position: values.position?.trim() || undefined,
-			sortOrder: Number(values.sortOrder) || 0,
-			isActive: Boolean(values.isActive),
-			startDate: values.startDate || undefined,
-			endDate: values.endDate || undefined,
-		};
-
-		let result;
-		const api = useCmsApi();
-		if (editingAdvertisement.value) {
-			// 更新广告
-			result = await api.advertisements.update(editingAdvertisement.value.id.toString(), requestData);
-		} else {
-			// 创建广告
-			result = await api.advertisements.create(requestData);
-		}
-
-		if (result && result.code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "成功",
-				detail: editingAdvertisement.value ? "广告更新成功" : "广告创建成功",
-			});
-			closeDialog();
-			await loadAdvertisements();
-		} else {
-			toast.add({
-				severity: "error",
-				summary: "错误",
-				detail: result?.message || "操作失败",
-			});
-		}
-	} catch (error) {
-		console.error("保存广告失败:", error);
-		toast.add({ severity: "error", summary: "错误", detail: "保存广告失败" });
-	} finally {
-		saving.value = false;
-	}
-};
-
-/**
- * 显示创建对话框
- */
-const showCreateDialogHandler = () => {
-	editingAdvertisement.value = null;
-	// 重置表单初始值
-	Object.assign(initialValues, {
-		title: "",
-		type: "carousel",
-		image: "",
-		link: "",
-		position: "",
-		sortOrder: 0,
-		isActive: true,
-		startDate: null,
-		endDate: null,
-	});
-	showCreateDialog.value = true;
-};
-
-// 生命周期
-onMounted(() => {
-	loadAdvertisements();
-});
 </script>
 
 <template>
-	<div class="advertisement-management">
-		<!-- 页面标题 -->
-		<div class="flex justify-between items-center mb-6">
-			<h1 class="text-2xl font-bold text-gray-800">广告管理</h1>
-			<Button @click="showCreateDialogHandler" icon="pi pi-plus" label="新增广告" class="p-button-success" />
-		</div>
+  <PrimeCrudTemplate name="广告管理" identifier="advertisement" :table-data="tableData" :template-data="templateData"
+    :crud-controller="15" :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver">
+    <!-- 查询表单 -->
+    <template #QueryForm>
+      <div class="flex flex-column gap-2">
+        <FormField v-slot="$field" name="type" class="flex flex-column gap-1">
+          <div class="flex  items-center gap-2">
+            <label for="query-type" class="text-sm font-medium  ">广告类型</label>
+            <Select id="query-type" :options="[
+              { label: '全部', value: undefined },
+              { label: '轮播图', value: 'carousel' },
+              { label: '横幅', value: 'banner' },
+              { label: '弹窗', value: 'popup' },
+            ]" option-label="label" option-value="value" placeholder="选择广告类型" clearable />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-		<!-- 筛选器 -->
-		<Card class="mb-6">
-			<template #content>
-				<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<div>
-						<label class="block text-sm font-medium mb-2">广告类型</label>
-						<Select v-model="filters.type" :options="typeOptions" optionLabel="label" optionValue="value"
-							placeholder="选择类型" showClear @change="loadAdvertisements" class="w-full" />
-					</div>
-					<div>
-						<label class="block text-sm font-medium mb-2">广告位置</label>
-						<Select v-model="filters.position" :options="positionOptions" optionLabel="label"
-							optionValue="value" placeholder="选择位置" showClear @change="loadAdvertisements"
-							class="w-full" />
-					</div>
-					<div>
-						<label class="block text-sm font-medium mb-2">状态</label>
-						<Select v-model="filters.isActive" :options="statusOptions" optionLabel="label"
-							optionValue="value" placeholder="选择状态" showClear @change="loadAdvertisements"
-							class="w-full" />
-					</div>
-					<div class="flex items-end">
-						<Button @click="resetFilters" icon="pi pi-refresh" label="重置" class="p-button-outlined" />
-					</div>
-				</div>
-			</template>
-		</Card>
+        <FormField v-slot="$field" name="position" class="flex flex-column gap-1">
+          <div class="flex  items-center gap-2">
+            <label for="query-position" class="text-sm font-medium">广告位置</label>
+            <Select id="query-position" :options="[
+              { label: '全部', value: undefined },
+              { label: '首页顶部', value: 'home-top' },
+              { label: '首页中部', value: 'home-middle' },
+              { label: '侧边栏', value: 'sidebar' },
+            ]" option-label="label" option-value="value" placeholder="选择广告位置" clearable />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-		<!-- 广告列表 -->
-		<Card>
-			<template #content>
-				<DataTable :value="advertisements" :loading="loading" paginator :rows="pageSize" :totalRecords="total"
-					:lazy="true" @page="onPageChange" responsiveLayout="scroll" stripedRows
-					:rowsPerPageOptions="[5, 10, 20, 50]" :first="(page - 1) * pageSize">
-					<Column field="id" header="ID" :sortable="true" style="width: 80px" />
+        <FormField v-slot="$field" name="isActive" class="flex flex-column gap-1">
+          <div class="flex  items-center gap-2">
+            <label for="query-status" class="text-sm font-medium">状态</label>
+            <Select id="query-status" :options="statusOptions" option-label="label" option-value="value"
+              placeholder="选择状态" clearable />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+      </div>
+    </template>
 
-					<Column header="预览图" style="width: 120px">
-						<template #body="{ data }">
-							<img :src="data.image" :alt="data.title" class="w-16 h-10 object-cover rounded border" />
-						</template>
-					</Column>
+    <!-- 表格列 -->
+    <template #TableColumn>
+      <Column field="id" header="ID" style="width: 80px" />
 
-					<Column field="title" header="标题" :sortable="true" />
+      <Column field="image" header="广告图片" style="width: 120px">
+        <template #body="{ data }">
+          <div class="flex justify-center">
+            <img v-if="data.image" :src="getImageUrl(data.image)" :alt="data.title"
+              class="w-12 h-12 object-cover rounded-lg border border-gray-200" />
+            <div v-else class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-image text-gray-400 text-sm"></i>
+            </div>
+          </div>
+        </template>
+      </Column>
 
-					<Column field="type" header="类型" style="width: 100px">
-						<template #body="{ data }">
-							<Tag :value="getTypeLabel(data.type)"
-								:severity="data.type === 'carousel' ? 'info' : 'warning'" />
-						</template>
-					</Column>
+      <Column field="title" header="广告标题" style="width: 200px">
+        <template #body="{ data }">
+          <div class="flex items-center gap-2">
+            <span class="font-medium">{{ data.title }}</span>
+            <Tag v-if="data.link" value="有链接" severity="info" class="text-xs" />
+          </div>
+        </template>
+      </Column>
 
-					<Column field="position" header="位置" style="width: 120px">
-						<template #body="{ data }">
-							{{ getPositionLabel(data.position) }}
-						</template>
-					</Column>
+      <Column field="type" header="广告类型" style="width: 120px">
+        <template #body="{ data }">
+          <Tag :value="data.type === 'carousel' ? '轮播图' : data.type === 'banner' ? '横幅' : '弹窗'"
+            :severity="data.type === 'carousel' ? 'info' : data.type === 'banner' ? 'warning' : 'secondary'" />
+        </template>
+      </Column>
 
-					<Column field="sortOrder" header="排序" :sortable="true" style="width: 80px" />
+      <Column field="position" header="广告位置" style="width: 120px">
+        <template #body="{ data }">
+          <span v-if="data.position" class="text-sm">
+            {{ data.position === 'home-top' ? '首页顶部' : data.position === 'home-middle' ? '首页中部' : '侧边栏' }}
+          </span>
+          <span v-else class="text-gray-400 text-sm">未设置</span>
+        </template>
+      </Column>
 
-					<Column field="isActive" header="状态" style="width: 100px">
-						<template #body="{ data }">
-							<Tag :value="data.isActive ? '启用' : '禁用'"
-								:severity="data.isActive ? 'success' : 'danger'" />
-						</template>
-					</Column>
+      <Column field="link" header="链接地址" style="width: 200px">
+        <template #body="{ data }">
+          <div v-if="data.link" class="flex items-center gap-2">
+            <a :href="data.link" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm truncate max-w-32"
+              v-tooltip.top="data.link">
+              {{ data.link }}
+            </a>
+            <i class="pi pi-external-link text-gray-400 text-xs"></i>
+          </div>
+          <span v-else class="text-gray-400 text-sm">-</span>
+        </template>
+      </Column>
 
-					<Column header="操作" style="width: 200px">
-						<template #body="{ data }">
-							<div class="flex gap-2">
-								<Button @click="editAdvertisement(data)" icon="pi pi-pencil" size="small"
-									class="p-button-outlined p-button-info" v-tooltip="'编辑'" />
-								<Button @click="toggleStatus(data)"
-									:icon="data.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'" size="small"
-									:class="data.isActive ? 'p-button-outlined p-button-warning' : 'p-button-outlined p-button-success'"
-									v-tooltip="data.isActive ? '禁用' : '启用'" />
-								<Button @click="deleteAdvertisement(data)" icon="pi pi-trash" size="small"
-									class="p-button-outlined p-button-danger" v-tooltip="'删除'" />
-							</div>
-						</template>
-					</Column>
-				</DataTable>
-			</template>
-		</Card>
+      <Column field="sortOrder" header="排序" style="width: 100px">
+        <template #body="{ data }">
+          <span class="text-sm">{{ data.sortOrder }}</span>
+        </template>
+      </Column>
 
-		<!-- 创建/编辑对话框 -->
-		<Dialog v-model:visible="showCreateDialog" :header="editingAdvertisement ? '编辑广告' : '新增广告'" modal
-			class="w-full max-w-2xl" @hide="closeDialog">
-			<Form ref="formRef" :resolver="formResolver" :initialValues @submit="onFormSubmit" class="space-y-4">
-				<!-- 基本信息 -->
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<FormField v-slot="$field" name="title" :resolver="titleResolver" class="flex flex-col gap-1">
-						<label class="block text-sm font-medium mb-2">广告标题 *</label>
-						<InputText v-model="$field.value" placeholder="请输入广告标题" class="w-full"
-							:class="{ 'p-invalid': $field.invalid }" />
-						<Message v-if="$field.invalid" severity="error" size="small" variant="simple">
-							{{ $field.error?.message }}
-						</Message>
-					</FormField>
+      <Column field="isActive" header="状态" style="width: 100px">
+        <template #body="{ data }">
+          <Tag :value="data.isActive ? '启用' : '禁用'" :severity="data.isActive ? 'success' : 'danger'" />
+        </template>
+      </Column>
 
-					<FormField v-slot="$field" name="type" :resolver="typeResolver" class="flex flex-col gap-1">
-						<label class="block text-sm font-medium mb-2">广告类型 *</label>
-						<Select v-model="$field.value" :options="typeOptions" optionLabel="label" optionValue="value"
-							placeholder="请选择广告类型" class="w-full" :class="{ 'p-invalid': $field.invalid }" />
-						<Message v-if="$field.invalid" severity="error" size="small" variant="simple">
-							{{ $field.error?.message }}
-						</Message>
-					</FormField>
-				</div>
+      <Column field="createdAt" header="创建时间" style="width: 150px">
+        <template #body="{ data }">
+          <span class="text-gray-500 text-sm">
+            {{ formatDate(data.createdAt) }}
+          </span>
+        </template>
+      </Column>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<FormField v-slot="$field" name="position" class="flex flex-col gap-1">
-						<label class="block text-sm font-medium mb-2">显示位置</label>
-						<Select v-model="$field.value" :options="positionOptions" optionLabel="label"
-							optionValue="value" placeholder="请选择显示位置" class="w-full" />
-					</FormField>
+      <Column field="updatedAt" header="更新时间" style="width: 150px">
+        <template #body="{ data }">
+          <span class="text-gray-500 text-sm">
+            {{ formatDate(data.updatedAt) }}
+          </span>
+        </template>
+      </Column>
+    </template>
 
-					<FormField v-slot="$field" name="sortOrder" :resolver="sortOrderResolver"
-						class="flex flex-col gap-1">
-						<label class="block text-sm font-medium mb-2">排序 *</label>
-						<InputNumber v-model="$field.value" placeholder="请输入排序" class="w-full"
-							:class="{ 'p-invalid': $field.invalid }" />
-						<Message v-if="$field.invalid" severity="error" size="small" variant="simple">
-							{{ $field.error?.message }}
-						</Message>
-					</FormField>
-				</div>
+    <!-- 表单 -->
+    <template #CrudForm="{ data, disabled }: { data: ADModel, disabled: boolean }">
+      <div class="h-full">
+        <!-- 广告标题 -->
+        <FormField v-slot="$field" name="title" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">广告标题 *</label>
+          <InputText fluid size="small" placeholder="请输入广告标题" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-				<!-- 图片选择 -->
-				<FormField v-slot="$field" name="image" :resolver="imageResolver" class="flex flex-col gap-1">
-					<label class="block text-sm font-medium mb-2">广告图片 *</label>
-					<div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
-						<div v-if="$field.value" class="text-center">
-							<img :src="$field.value" alt="预览图" class="max-w-full max-h-48 mx-auto mb-2 rounded" />
-							<div class="flex gap-2 justify-center">
-								<Button @click="openImageSelector" icon="pi pi-pencil" label="更换图片"
-									class="p-button-outlined p-button-info" size="small" />
-								<Button @click="removeImage" icon="pi pi-times" label="移除图片"
-									class="p-button-outlined p-button-danger" size="small" />
-							</div>
-						</div>
-						<div v-else class="text-center">
-							<i class="pi pi-images text-4xl text-gray-400 mb-2"></i>
-							<p class="text-gray-500 mb-2">点击选择轮播图片</p>
-							<Button @click="openImageSelector" icon="pi pi-plus" label="选择图片"
-								class="p-button-outlined" />
-						</div>
-					</div>
-					<Message v-if="$field.invalid" severity="error" size="small" variant="simple">
-						{{ $field.error?.message }}
-					</Message>
-				</FormField>
+        <!-- 广告类型 -->
+        <FormField v-slot="$field" name="type" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">广告类型 *</label>
+          <Select fluid :options="[
+            { label: '轮播图', value: 'carousel' },
+            { label: '横幅', value: 'banner' },
+            { label: '弹窗', value: 'popup' },
+          ]" option-label="label" option-value="value" placeholder="请选择广告类型" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-				<!-- 链接地址 -->
-				<FormField v-slot="$field" name="link" class="flex flex-col gap-1">
-					<label class="block text-sm font-medium mb-2">链接地址</label>
-					<InputText v-model="$field.value" placeholder="请输入点击跳转的链接地址" class="w-full" />
-					<small class="text-gray-500">可选，点击广告时跳转的链接</small>
-				</FormField>
+        <!-- 广告位置 -->
+        <FormField v-slot="$field" name="position" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">广告位置</label>
+          <Select fluid :options="[
+            { label: '首页顶部', value: 'home-top' },
+            { label: '首页中部', value: 'home-middle' },
+            { label: '侧边栏', value: 'sidebar' },
+          ]" option-label="label" option-value="value" placeholder="请选择广告位置" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-				<!-- 时间设置 -->
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<FormField v-slot="$field" name="startDate" class="flex flex-col gap-1">
-						<label class="block text-sm font-medium mb-2">开始时间</label>
-						<DatePicker v-model="$field.value" showTime hourFormat="24" placeholder="选择开始时间" class="w-full"
-							showButtonBar />
-					</FormField>
+        <!-- 广告图片 -->
+        <FormField v-slot="$field" name="image_id" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">广告图片 *</label>
+          <div class="flex flex-col gap-1">
+            <InputNumber v-model="data.image_id" fluid placeholder="请输入选择图片" :disabled="true" />
+            <!-- 图片选择器 -->
+            <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined :disabled="disabled"
+              @click="() => { currentFormData = data; showImageSelector = true; }" v-tooltip="'从图片库选择'" />
+          </div>
+          <!--  @ts-ignore -->
+          <div v-if="data.image" class="flex flex-col gap-2 mb-4">
+            <img :src="getImageUrl(data.image)" :alt="data.title"
+              class="w-24 h-24 object-cover rounded-lg border border-gray-200" />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-					<FormField v-slot="$field" name="endDate" class="flex flex-col gap-1">
-						<label class="block text-sm font-medium mb-2">结束时间</label>
-						<DatePicker v-model="$field.value" showTime hourFormat="24" placeholder="选择结束时间" class="w-full"
-							showButtonBar />
-					</FormField>
-				</div>
+        <!-- 链接地址 -->
+        <FormField v-slot="$field" name="link" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">链接地址</label>
+          <InputText fluid placeholder="请输入链接地址（可选）" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-				<!-- 状态设置 -->
-				<FormField v-slot="$field" name="isActive" class="flex flex-col gap-1">
-					<div class="flex items-center gap-2">
-						<Checkbox v-model="$field.value" inputId="isActive" binary />
-						<label for="isActive" class="text-sm font-medium">启用广告</label>
-					</div>
-				</FormField>
-			</Form>
+        <!-- 时间设置 -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <FormField v-slot="$field" name="startDate" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">开始时间</label>
+            <DatePicker fluid placeholder="请选择开始时间" :disabled="disabled" showTime hourFormat="24" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
 
-			<template #footer>
-				<div class="flex justify-end gap-2">
-					<Button @click="closeDialog" label="取消" class="p-button-outlined" />
-					<Button @click="formRef?.submit()" :label="editingAdvertisement ? '更新' : '创建'" :loading="saving"
-						class="p-button-success" />
-				</div>
-			</template>
-		</Dialog>
+          <FormField v-slot="$field" name="endDate" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">结束时间</label>
+            <DatePicker fluid placeholder="请选择结束时间" :disabled="disabled" showTime hourFormat="24" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
+        </div>
 
-		<!-- 图片选择器 -->
-		<ImageSelector v-model:visible="showImageSelector" category="carousel" @select="onImageSelected" />
+        <!-- 排序权重 -->
+        <FormField v-slot="$field" name="sortOrder" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">排序权重 *</label>
+          <InputNumber placeholder="请输入排序权重" :disabled="disabled" :min="0" :max="9999" class="w-full" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-		<!-- 确认对话框 -->
-		<ConfirmDialog />
-	</div>
+        <!-- 启用状态 -->
+        <FormField v-slot="$field" name="isActive" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">启用状态</label>
+          <div class="flex align-items-center gap-2">
+            <Checkbox :disabled="disabled" inputId="isActive" :binary="true" />
+            <label for="isActive">启用广告</label>
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+      </div>
+    </template>
+  </PrimeCrudTemplate>
+
+  <!-- 图片选择器 -->
+  <ImageSelector v-model:visible="showImageSelector" category="advertisement" @select="onImageSelected" />
 </template>
 
-
-
 <style scoped>
-.advertisement-management {
-	@apply p-6;
+/* 文本截断样式 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.p-datatable .p-datatable-tbody>tr>td {
-	@apply py-3;
-}
-
-.p-dialog .p-dialog-content {
-	@apply p-6;
+/* 确保表单项有合适的间距 */
+.flex.flex-column.gap-3>* {
+  margin-bottom: 0.5rem;
 }
 </style>

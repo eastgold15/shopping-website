@@ -145,9 +145,9 @@ export const advertisementsSchema = pgTable("advertisements", {
 	id: serial("id").primaryKey(), // 广告唯一标识
 	title: varchar("title", { length: 255 }).notNull(), // 广告标题
 	type: varchar("type", { length: 50 }).notNull(), // 广告类型(banner, popup, sidebar等)
-	image_id: text("image_id")
+	image_id: integer("image_id")
 		.notNull()
-		.references(() => imagesSchema.id), // 广告图片URL - 引用imagesSchema.url
+		.references(() => imagesSchema.id), // 广告图片ID - 引用imagesSchema.id
 	link: varchar("link", { length: 500 }).default(""), // 广告链接地址
 	position: varchar("position", { length: 100 }).default(""), // 广告显示位置
 	sortOrder: integer("sort_order").default(0), // 排序权重
@@ -164,7 +164,7 @@ export const advertisementsRelations = relations(
 		// 广告图片关联到图片管理表 - 外键在advertisements表中
 		imageRef: one(imagesSchema, {
 			fields: [advertisementsSchema.image_id],
-			references: [imagesSchema.url],
+			references: [imagesSchema.id],
 		}),
 	}),
 );

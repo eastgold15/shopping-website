@@ -1,3 +1,285 @@
+<script setup lang="ts">
+import { useCmsApi } from "@frontend/utils/handleApi";
+import { useToast } from "primevue/usetoast";
+// 组合式API
+const toast = useToast();
+
+// 响应式数据
+const activeTab = ref(0);
+const saving = ref(false);
+const loading = ref(false);
+
+// 配置数据
+const configs = reactive({
+  // 基本设置
+  site_name: "",
+  site_logo: "",
+  site_keywords: "",
+  site_description: "",
+
+  icp_number: "",
+  copyright: "",
+  header_notice: "",
+  free_shipping_threshold: 59,
+  currency: "USD",
+
+  // 导航页配置
+  nav_home_enabled: true,
+  nav_products_enabled: true,
+  nav_categories_enabled: true,
+  nav_about_enabled: true,
+  nav_contact_enabled: true,
+
+  // 网站顶部配置
+  header_banner_text: "",
+  header_banner_link: "",
+  header_track_order_text: "",
+  header_track_order_link: "",
+  header_help_links: [{ text: "Help", url: "/help" }],
+  header_search_enabled: true,
+  header_cart_enabled: true,
+  header_user_menu_enabled: true,
+
+  // 底部配置
+  footer_copyright: "",
+  footer_back_to_top_text: "",
+  footer_sections: [
+    {
+      title: "For You",
+      links: [{ text: "Favorites", url: "/favorites" }],
+    },
+  ],
+});
+
+
+// 表单验证错误
+const errors = reactive({
+  site_name: "",
+});
+
+// 货币选项
+const currencyOptions = [
+  { label: "美元 (USD)", value: "USD" },
+  { label: "人民币 (CNY)", value: "CNY" },
+  { label: "欧元 (EUR)", value: "EUR" },
+  { label: "英镑 (GBP)", value: "GBP" },
+];
+
+// 添加顶部帮助链接
+const addHeaderHelpLink = () => {
+  configs.header_help_links.push({ text: "", url: "" });
+};
+
+// 删除顶部帮助链接
+const removeHeaderHelpLink = (index: number) => {
+  if (configs.header_help_links.length > 1) {
+    configs.header_help_links.splice(index, 1);
+  }
+};
+
+// 添加底部栏目
+const addFooterSection = () => {
+  configs.footer_sections.push({
+    title: "",
+    links: [{ text: "", url: "" }],
+  });
+};
+
+// 删除底部栏目
+const removeFooterSection = (index: number) => {
+  if (configs.footer_sections.length > 1) {
+    configs.footer_sections.splice(index, 1);
+  }
+};
+
+// 添加底部链接
+const addFooterLink = (sectionIndex: number) => {
+  configs.footer_sections[sectionIndex].links.push({ text: "", url: "" });
+};
+
+// 删除底部链接
+const removeFooterLink = (sectionIndex: number, linkIndex: number) => {
+  const section = configs.footer_sections[sectionIndex];
+  if (section.links.length > 1) {
+    section.links.splice(linkIndex, 1);
+  }
+};
+
+// 加载配置数据
+const loadConfigs = async () => {
+  try {
+    loading.value = true;
+
+    const api = useCmsApi();
+    const response = await api.siteConfigs.list();
+    if (
+      response.data &&
+      response.data.code === 200 &&
+      Array.isArray(response.data.data)
+    ) {
+      // 将配置数组转换为对象
+      response.data.data.forEach((config: any) => {
+        if (config.key in configs) {
+          // 处理特殊类型
+          if (config.key === "free_shipping_threshold") {
+            configs[config.key as keyof typeof configs] =
+              Number(config.value) || 59;
+          } else if (
+            config.key === "header_help_links" ||
+            config.key === "footer_sections"
+          ) {
+            try {
+              configs[config.key as keyof typeof configs] = JSON.parse(
+                config.value || "[]",
+              );
+            } catch {
+              // 如果解析失败，使用默认值
+              if (config.key === "header_help_links") {
+                configs.header_help_links = [{ text: "Help", url: "/help" }];
+              } else if (config.key === "footer_sections") {
+                configs.footer_sections = [
+                  {
+                    title: "For You",
+                    links: [{ text: "Favorites", url: "/favorites" }],
+                  },
+                ];
+              }
+            }
+          } else if (config.key.includes("_enabled")) {
+            configs[config.key as keyof typeof configs] =
+              config.value === "true";
+          } else {
+            configs[config.key as keyof typeof configs] = config.value || "";
+          }
+        }
+      });
+
+      // 保存原始数据
+      Object.assign(originalConfigs, configs);
+    } else {
+      console.error("API返回的数据格式错误:", response.data);
+      toast.add({
+        severity: "error",
+        summary: "错误",
+        detail: "配置数据格式错误",
+        life: 1000,
+      });
+    }
+  } catch (error) {
+    console.error("加载配置失败:", error);
+    toast.add({
+      severity: "error",
+      summary: "错误",
+      detail: "加载配置失败",
+      life: 1000,
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 验证表单
+const validateForm = () => {
+  let isValid = true;
+
+  // 清空错误
+  errors.site_name = "";
+
+  // 验证网站名称
+  if (!configs.site_name.trim()) {
+    errors.site_name = "网站名称不能为空";
+    isValid = false;
+  }
+
+  return isValid;
+};
+
+// 保存配置
+const saveConfigs = async () => {
+  if (!validateForm()) {
+    toast.add({
+      severity: "warn",
+      summary: "验证失败",
+      detail: "请检查表单中的错误",
+      life: 1000,
+    });
+    return;
+  }
+
+  try {
+    saving.value = true;
+
+    // 准备批量更新数据
+    const updateData = Object.entries(configs).map(([key, value]) => {
+      let stringValue = String(value);
+
+      // 处理特殊类型
+      if (key === "header_help_links" || key === "footer_sections") {
+        stringValue = JSON.stringify(value);
+      } else if (typeof value === "boolean") {
+        stringValue = value ? "true" : "false";
+      }
+
+      return {
+        key,
+        value: stringValue,
+      };
+    });
+
+    const api = useCmsApi();
+    const response = await api.siteConfigs.batchUpdate(updateData);
+
+    if (response.data && response.data.code === 200) {
+      toast.add({
+        severity: "success",
+        summary: "成功",
+        detail: "配置保存成功",
+        life: 1000,
+      });
+
+      // 更新原始数据
+      Object.assign(originalConfigs, configs);
+    } else {
+      throw new Error(response.data?.message || "保存失败");
+    }
+  } catch (error) {
+    console.error("保存配置失败:", error);
+    toast.add({
+      severity: "error",
+      summary: "错误",
+      detail: "保存配置失败",
+      life: 1000,
+    });
+  } finally {
+    saving.value = false;
+  }
+};
+
+// 重置配置
+const resetConfigs = () => {
+  Object.assign(configs, originalConfigs);
+
+  // 清空错误
+  errors.site_name = "";
+
+  toast.add({
+    severity: "info",
+    summary: "提示",
+    detail: "配置已重置",
+    life: 1000,
+  });
+};
+
+
+
+// 组件挂载时加载数据
+onMounted(async () => {
+  await loadConfigs();
+
+});
+</script>
+
+
 <template>
   <div class="site-config-page">
     <!-- 页面标题 -->
@@ -292,318 +574,6 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { useCmsApi } from "@frontend/utils/handleApi";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dropdown from "primevue/dropdown";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import TabPanel from "primevue/tabpanel";
-import TabView from "primevue/tabview";
-import Textarea from "primevue/textarea";
-import { useToast } from "primevue/usetoast";
-
-// 组合式API
-const toast = useToast();
-
-// 响应式数据
-const activeTab = ref(0);
-const saving = ref(false);
-const loading = ref(false);
-
-// 配置数据
-const configs = reactive({
-	// 基本设置
-	site_name: "",
-	site_logo: "",
-	site_keywords: "",
-	site_description: "",
-
-	icp_number: "",
-	copyright: "",
-	header_notice: "",
-	free_shipping_threshold: 59,
-	currency: "USD",
-
-	// 导航页配置
-	nav_home_enabled: true,
-	nav_products_enabled: true,
-	nav_categories_enabled: true,
-	nav_about_enabled: true,
-	nav_contact_enabled: true,
-
-	// 网站顶部配置
-	header_banner_text: "",
-	header_banner_link: "",
-	header_track_order_text: "",
-	header_track_order_link: "",
-	header_help_links: [{ text: "Help", url: "/help" }],
-	header_search_enabled: true,
-	header_cart_enabled: true,
-	header_user_menu_enabled: true,
-
-	// 底部配置
-	footer_copyright: "",
-	footer_back_to_top_text: "",
-	footer_sections: [
-		{
-			title: "For You",
-			links: [{ text: "Favorites", url: "/favorites" }],
-		},
-	],
-});
-
-// 原始配置数据（用于重置）
-const originalConfigs = reactive({ ...configs });
-
-// 表单验证错误
-const errors = reactive({
-	site_name: "",
-});
-
-// 货币选项
-const currencyOptions = [
-	{ label: "美元 (USD)", value: "USD" },
-	{ label: "人民币 (CNY)", value: "CNY" },
-	{ label: "欧元 (EUR)", value: "EUR" },
-	{ label: "英镑 (GBP)", value: "GBP" },
-];
-
-// 添加顶部帮助链接
-const addHeaderHelpLink = () => {
-	configs.header_help_links.push({ text: "", url: "" });
-};
-
-// 删除顶部帮助链接
-const removeHeaderHelpLink = (index: number) => {
-	if (configs.header_help_links.length > 1) {
-		configs.header_help_links.splice(index, 1);
-	}
-};
-
-// 添加底部栏目
-const addFooterSection = () => {
-	configs.footer_sections.push({
-		title: "",
-		links: [{ text: "", url: "" }],
-	});
-};
-
-// 删除底部栏目
-const removeFooterSection = (index: number) => {
-	if (configs.footer_sections.length > 1) {
-		configs.footer_sections.splice(index, 1);
-	}
-};
-
-// 添加底部链接
-const addFooterLink = (sectionIndex: number) => {
-	configs.footer_sections[sectionIndex].links.push({ text: "", url: "" });
-};
-
-// 删除底部链接
-const removeFooterLink = (sectionIndex: number, linkIndex: number) => {
-	const section = configs.footer_sections[sectionIndex];
-	if (section.links.length > 1) {
-		section.links.splice(linkIndex, 1);
-	}
-};
-
-// 加载配置数据
-const loadConfigs = async () => {
-	try {
-		loading.value = true;
-
-		const api = useCmsApi();
-		const response = await api.siteConfigs.list();
-		if (
-			response.data &&
-			response.data.code === 200 &&
-			Array.isArray(response.data.data)
-		) {
-			// 将配置数组转换为对象
-			response.data.data.forEach((config: any) => {
-				if (config.key in configs) {
-					// 处理特殊类型
-					if (config.key === "free_shipping_threshold") {
-						configs[config.key as keyof typeof configs] =
-							Number(config.value) || 59;
-					} else if (
-						config.key === "header_help_links" ||
-						config.key === "footer_sections"
-					) {
-						try {
-							configs[config.key as keyof typeof configs] = JSON.parse(
-								config.value || "[]",
-							);
-						} catch {
-							// 如果解析失败，使用默认值
-							if (config.key === "header_help_links") {
-								configs.header_help_links = [{ text: "Help", url: "/help" }];
-							} else if (config.key === "footer_sections") {
-								configs.footer_sections = [
-									{
-										title: "For You",
-										links: [{ text: "Favorites", url: "/favorites" }],
-									},
-								];
-							}
-						}
-					} else if (config.key.includes("_enabled")) {
-						configs[config.key as keyof typeof configs] =
-							config.value === "true";
-					} else {
-						configs[config.key as keyof typeof configs] = config.value || "";
-					}
-				}
-			});
-
-			// 保存原始数据
-			Object.assign(originalConfigs, configs);
-		} else {
-			console.error("API返回的数据格式错误:", response.data);
-			toast.add({
-				severity: "error",
-				summary: "错误",
-				detail: "配置数据格式错误",
-				life: 1000,
-			});
-		}
-	} catch (error) {
-		console.error("加载配置失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "加载配置失败",
-			life: 1000,
-		});
-	} finally {
-		loading.value = false;
-	}
-};
-
-// 验证表单
-const validateForm = () => {
-	let isValid = true;
-
-	// 清空错误
-	errors.site_name = "";
-
-	// 验证网站名称
-	if (!configs.site_name.trim()) {
-		errors.site_name = "网站名称不能为空";
-		isValid = false;
-	}
-
-	return isValid;
-};
-
-// 保存配置
-const saveConfigs = async () => {
-	if (!validateForm()) {
-		toast.add({
-			severity: "warn",
-			summary: "验证失败",
-			detail: "请检查表单中的错误",
-			life: 1000,
-		});
-		return;
-	}
-
-	try {
-		saving.value = true;
-
-		// 准备批量更新数据
-		const updateData = Object.entries(configs).map(([key, value]) => {
-			let stringValue = String(value);
-
-			// 处理特殊类型
-			if (key === "header_help_links" || key === "footer_sections") {
-				stringValue = JSON.stringify(value);
-			} else if (typeof value === "boolean") {
-				stringValue = value ? "true" : "false";
-			}
-
-			return {
-				key,
-				value: stringValue,
-			};
-		});
-
-		const api = useCmsApi();
-		const response = await api.siteConfigs.batchUpdate(updateData);
-
-		if (response.data && response.data.code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "成功",
-				detail: "配置保存成功",
-				life: 1000,
-			});
-
-			// 更新原始数据
-			Object.assign(originalConfigs, configs);
-		} else {
-			throw new Error(response.data?.message || "保存失败");
-		}
-	} catch (error) {
-		console.error("保存配置失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "保存配置失败",
-			life: 1000,
-		});
-	} finally {
-		saving.value = false;
-	}
-};
-
-// 重置配置
-const resetConfigs = () => {
-	Object.assign(configs, originalConfigs);
-
-	// 清空错误
-	errors.site_name = "";
-
-	toast.add({
-		severity: "info",
-		summary: "提示",
-		detail: "配置已重置",
-		life: 1000,
-	});
-};
-
-// // 初始化默认配置
-// const initializeConfigs = async () => {
-//   try {
-//     const response = await client.api['site-configs'].initialize.post()
-
-//     if (response.data && response.data.code === 200) {
-//       await loadConfigs()
-//       toast.add({
-//         severity: 'success',
-//         summary: '成功',
-//         detail: '默认配置初始化成功',
-//         life: 1000
-//       })
-//     }
-//   } catch (error) {
-//     console.error('初始化配置失败:', error)
-//   }
-// }
-
-// 组件挂载时加载数据
-onMounted(async () => {
-	await loadConfigs();
-
-	// // 如果没有配置数据，初始化默认配置
-	// if (!configs.site_name) {
-	//   await initializeConfigs()
-	// }
-});
-</script>
 
 <style scoped>
 .site-config-page {

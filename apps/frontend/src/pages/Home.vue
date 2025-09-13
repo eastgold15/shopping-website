@@ -3,8 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useCmsApi } from "../utils/handleApi";
-import type { Products } from "@backend/types";
-import type { Advertisement } from "@backend/types";
+
 
 // 路由
 const router = useRouter();

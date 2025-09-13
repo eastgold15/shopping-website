@@ -10,6 +10,7 @@ import type {
 } from "@backend/types";
 
 
+import type { SiteConfigQueryDto } from "@backend/modules/siteConfig";
 import { client } from "./useTreaty";
 
 
@@ -53,6 +54,8 @@ export const useCmsApi = () => {
         }
         return data
       },
+
+
 
       getById: async (id: number) => {
         const { data, error } = await client.api.partners({ id: id }).get()
@@ -438,147 +441,97 @@ export const useCmsApi = () => {
 
     // 产品相关
     products: {
-      async list(params?: any) {
-        try {
-          const response = await client.api.products.get({ query: params });
-          if (response.error) {
-            console.error('获取产品列表失败:', response.error);
-            return pageDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('获取产品列表失败:', error);
-          return pageDefaultValue;
+      list: async (params?: any) => {
+        const { data, error } = await client.api.products.get({ query: params })
+        if (error) {
+          console.error('Products list error:', error)
+          return pageDefaultValue
         }
+        return data
       },
 
-      async search(params?: any) {
-        try {
-          const response = await client.api.products.get({ query: params });
-          if (response.error) {
-            console.error('搜索产品失败:', response.error);
-            return pageDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('搜索产品失败:', error);
-          return pageDefaultValue;
+      search: async (params?: any) => {
+        const { data, error } = await client.api.products.get({ query: params })
+        if (error) {
+          console.error('Products search error:', error)
+          return pageDefaultValue
         }
+        return data
       },
 
-      async getById(id: number) {
-        try {
-          const response = await client.api.products({ id }).get();
-          if (response.error) {
-            console.error('获取产品详情失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('获取产品详情失败:', error);
-          return comDefaultValue;
+      getById: async (id: number) => {
+        const { data, error } = await client.api.products({ id }).get()
+        if (error) {
+          console.error('Products getById error:', error)
+          return comDefaultValue
         }
+        return data
       },
 
-      async getBySlug(slug: string) {
-        try {
-          const response = await client.api.products.slug({ slug }).get();
-          if (response.error) {
-            console.error('根据slug获取产品失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('根据slug获取产品失败:', error);
-          return comDefaultValue;
+      getBySlug: async (slug: string) => {
+        const { data, error } = await client.api.products.slug({ slug }).get()
+        if (error) {
+          console.error('Products getBySlug error:', error)
+          return comDefaultValue
         }
+        return data
       },
 
-      async create(data: any) {
-        try {
-          const response = await client.api.products.post(data);
-          if (response.error) {
-            console.error('创建产品失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('创建产品失败:', error);
-          return comDefaultValue;
+      create: async (data: any) => {
+        const { data: result, error } = await client.api.products.post(data)
+        if (error) {
+          console.error('Products create error:', error)
+          return comDefaultValue
         }
+        return result
       },
 
-      async update(id: number, data: any) {
-        try {
-          const response = await client.api.products({ id }).put(data);
-          if (response.error) {
-            console.error('更新产品失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('更新产品失败:', error);
-          return comDefaultValue;
+      update: async (id: number, data: any) => {
+        const { data: result, error } = await client.api.products({ id }).put(data)
+        if (error) {
+          console.error('Products update error:', error)
+          return comDefaultValue
         }
+        return result
       },
 
-      async delete(id: string) {
-        try {
-          const response = await client.api.products({ id }).delete();
-          if (response.error) {
-            console.error('删除产品失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('删除产品失败:', error);
-          return comDefaultValue;
+      delete: async (id: string) => {
+        const { data: result, error } = await client.api.products({ id }).delete()
+        if (error) {
+          console.error('Products delete error:', error)
+          return comDefaultValue
         }
+        return result
       },
     },
 
     // 站点配置相关
     siteConfigs: {
-      async list(params?: any) {
-        try {
-          const response = await client.api["site-configs"].get({ query: params });
-          if (response.error) {
-            console.error('获取站点配置列表失败:', response.error);
-            return pageDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('获取站点配置列表失败:', error);
-          return pageDefaultValue;
+      list: async (params: SiteConfigQueryDto) => {
+        const { data, error } = await client.api["site-configs"].list.get({ query: params })
+        if (error) {
+          console.error('SiteConfigs list error:', error)
+          return pageDefaultValue
         }
+        return data
       },
 
-      async getByCategory(category: string) {
-        try {
-          const response = await client.api["site-configs"].key({ key: category }).get()
-          if (response.error) {
-            console.error('根据分类获取站点配置失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('根据分类获取站点配置失败:', error);
-          return comDefaultValue;
+      getByCategory: async (category: string) => {
+        const { data, error } = await client.api["site-configs"].key({ key: category }).get()
+        if (error) {
+          console.error('SiteConfigs getByCategory error:', error)
+          return comDefaultValue
         }
+        return data
       },
 
-      async batchUpdate(data: any) {
-        try {
-          const response = await client.api["site-configs"].batch.post(data);
-          if (response.error) {
-            console.error('批量更新站点配置失败:', response.error);
-            return comDefaultValue;
-          }
-          return response.data;
-        } catch (error) {
-          console.error('批量更新站点配置失败:', error);
-          return comDefaultValue;
+      batchUpdate: async (data: any) => {
+        const { data: result, error } = await client.api["site-configs"].batch.post(data)
+        if (error) {
+          console.error('SiteConfigs batchUpdate error:', error)
+          return comDefaultValue
         }
+        return result
       },
     },
 
@@ -635,5 +588,43 @@ export const useCmsApi = () => {
   };
 }
 
-export const useFrontApi = {};
+export const useFrontApi = () => {
+
+  return {
+    partner: {
+      // 请求所有数据
+      all: async () => {
+        const { data, error } = await client.api.partners.all.get()
+        if (error) {
+          console.error('Partner list error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+    },
+    siteConfigs: {
+      getByCategory: async (category: string) => {
+        const { data, error } = await client.api["site-configs"].Category({ Category: category }).get()
+        if (error) {
+          console.error('SiteConfigs getByCategory error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+
+      getByKeys: async (keys: string[]) => {
+        const { data, error } = await client.api["site-configs"].keys.get({ query: { keys } })
+        if (error) {
+          console.error('SiteConfigs getByCategory error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+    }
+  }
+
+
+
+
+};
 export type UnPromisify<T> = T extends Promise<infer U> ? U : T;

@@ -17,7 +17,7 @@ export const siteConfigsController = new Elysia({ prefix: "/site-configs" })
   })
 
   .get(
-    "/",
+    "/list",
     async ({ query, siteConfigsService }) => {
       const configs = await siteConfigsService.getList(query);
       return commonRes(configs, 200, "获取配置成功");
@@ -31,7 +31,7 @@ export const siteConfigsController = new Elysia({ prefix: "/site-configs" })
     "/:id",
     async ({ params: { id }, siteConfigsService }) => {
       const config = await siteConfigsService.getById(id);
-      return commonRes(config, 200, "获取配置成功");
+      return commonRes(config, 200, "获取详细配置成功");
     },
     {
       params: t.Object({
@@ -40,9 +40,24 @@ export const siteConfigsController = new Elysia({ prefix: "/site-configs" })
     },
   )
 
-  .get("/key/:key", async ({ params: { key }, siteConfigsService }) => {
-    const config = await siteConfigsService.getByKey(key);
-    return commonRes(config, 200, "获取配置成功");
+  .get("/keys", async ({ query: { keys }, siteConfigsService }) => {
+    const config = await siteConfigsService.getByKeys(keys);
+    return commonRes(config, 200, "获取分类配置成功");
+  }, {
+    query: t.Object({
+      keys: t.Array(t.String()),
+    }),
+  })
+
+
+  // 获取分类配置
+  .get("/Category/:Category", async ({ params: { Category }, siteConfigsService }) => {
+    const config = await siteConfigsService.getByCategory(Category);
+    return commonRes(config, 200, "获取分类配置成功");
+  }, {
+    params: t.Object({
+      Category: t.String(),
+    })
   })
 
   .put(
@@ -63,7 +78,7 @@ export const siteConfigsController = new Elysia({ prefix: "/site-configs" })
     "/key/:key",
     async ({ params: { key }, body, siteConfigsService }) => {
       const config = await siteConfigsService.updateByKey(key, body);
-      return commonRes(config, 200, "更新配置成功");
+      return commonRes(config, 200, "更新分类配置成功");
     },
     {
       body: "UpdateSiteConfigDto",

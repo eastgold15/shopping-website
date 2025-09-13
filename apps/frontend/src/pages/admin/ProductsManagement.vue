@@ -1,861 +1,413 @@
 <script setup lang="ts">
-import type { Category } from "@frontend/app/types/category";
-import type { Product, ProductForm } from "@frontend/app/types/product";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+
 import ImageSelector from "@frontend/components/ImageSelector.vue";
+
+import type { ProductModel } from "@backend/types";
+import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { useCmsApi } from "@frontend/utils/handleApi";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
-import { useRouter } from "vue-router";
+import z from "zod";
+
+
+// 表单验证schema
+const productSchema = z.object({
+  id: z.number().optional(),
+  name: z.string().min(1, "商品名称不能为空"),
+  slug: z.string().min(1, "URL别名不能为空"),
+  description: z.string().min(1, "商品描述不能为空"),
+  shortDescription: z.string().min(1, "简短描述不能为空"),
+  price: z.number().min(0.01, "价格必须大于0"),
+  comparePrice: z.number().optional(),
+  cost: z.number().optional(),
+  sku: z.string().min(1, "SKU不能为空"),
+  barcode: z.string().optional(),
+  weight: z.number().optional(),
+  dimensions: z.any().optional(),
+  images: z.array(z.string()).default([]),
+  videos: z.array(z.string()).default([]),
+  colors: z.array(z.string()).default([]),
+  sizes: z.array(z.string()).default([]),
+  materials: z.array(z.string()).default([]),
+  careInstructions: z.string().optional(),
+  features: z.any().optional(),
+  specifications: z.any().optional(),
+  categoryId: z.number().nullable(),
+  stock: z.number().min(0, "库存不能为负数"),
+  minStock: z.number().optional(),
+  isActive: z.boolean().default(true),
+  isFeatured: z.boolean().default(false),
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
+  metaKeywords: z.string().optional(),
+});
+
+const querySchema = z.object({
+  name: z.string().optional(),
+  categoryId: z.number().optional(),
+  isActive: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
+});
+const $crud = useCmsApi().products;
+const resolver = zodResolver(productSchema);
+const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
-const loading = ref(false);
-const saving = ref(false);
-const products = ref<Product[]>([]);
-const selectedProducts = ref<Product[]>([]);
-const categories = ref<Category[]>([]);
-// 初始化元数据 页码
-const initMeta = ref({
-	total: 0,
-	page: 1,
-	pageSize: 10,
-	totalPages: 1,
-});
-const sortField = ref("createdAt");
-const sortOrder = ref(-1); // 1 for asc, -1 for desc
-const searchKeyword = ref("");
-const filterCategory = ref<number | null>(null);
-const filterStatus = ref("all");
-const showCreateDialog = ref(false);
-const editingProduct = ref<Product | null>(null);
-const showImageSelector = ref(false);
+const templateData = await genPrimeCmsTemplateData<
+  ProductModel,
+  any
+>(
+  {
+    // 1. 定义查询表单
+    getList: $crud.list,
+    create: $crud.create,
+    update: $crud.update,
+    delete: $crud.delete,
+    // 2. 定义初始表格列 初始值
+    getEmptyModel: () => ({
+      id: 0,
+      name: "",
+      slug: "",
+      description: "",
+      shortDescription: "",
+      price: 0,
+      comparePrice: 0,
+      cost: 0,
+      sku: "",
+      barcode: "",
+      weight: 0,
+      dimensions: null,
+      images: [],
+      videos: [],
+      colors: [],
+      sizes: [],
+      materials: [],
+      careInstructions: "",
+      features: null,
+      specifications: null,
+      categoryId: null,
+      stock: 0,
+      minStock: 0,
+      isActive: true,
+      isFeatured: false,
+      metaTitle: "",
+      metaDescription: "",
+      metaKeywords: "",
+      createdAt: "",
+      updatedAt: "",
+    }),
 
-// 表单数据
-const productForm = ref<ProductForm>({
-	name: "",
-	slug: "",
-	description: "",
-	shortDescription: "",
-	price: 0,
-	comparePrice: 0,
-	cost: 0,
-	sku: "",
-	barcode: "",
-	weight: 0,
-	dimensions: null,
-	images: [],
-	videos: [],
-	colors: [],
-	sizes: [],
-	materials: [],
-	careInstructions: "",
-	features: null,
-	specifications: null,
-	categoryId: null,
-	stock: 0,
-	minStock: 0,
-	isActive: true,
-	isFeatured: false,
-	metaTitle: "",
-	metaDescription: "",
-	metaKeywords: "",
+    // 3. 定义删除框标题
+    getDeleteBoxTitle(id: number) {
+      return `删除商品${id}`;
+    },
+    getDeleteBoxTitles(ids: Array<number>) {
+      return ` 商品#${ids.join(",")} `;
+    },
+
+    // 5. 数据转换
+    transformSubmitData: (data, type) => {
+      // 确保数组字段不为null
+      return {
+        ...data,
+        images: data.images || [],
+        videos: data.videos || [],
+        colors: data.colors || [],
+        sizes: data.sizes || [],
+        materials: data.materials || [],
+      };
+    },
+  },
+  // 6. 定义查询表单
+  {
+    name: "",
+    categoryId: undefined,
+    isActive: undefined,
+    isFeatured: undefined,
+    page: 1,
+    pageSize: 20,
+  },
+);
+
+const { tableData, queryForm, fetchList } = templateData;
+
+onMounted(async () => {
+  await fetchList();
 });
 
-// 选项数据
+// 状态选项
 const statusOptions = [
-	{ label: "全部", value: "all" },
-	{ label: "上架", value: true },
-	{ label: "下架", value: false },
+  { label: "全部", value: undefined },
+  { label: "启用", value: true },
+  { label: "禁用", value: false },
 ];
 
-const availableTags = ref(["热销", "新品", "推荐", "限时优惠", "包邮", "精选"]);
+// 图片选择相关
+const showImageSelector = ref(false);
+const currentFormData = ref<ProductModel>();
 
-// 工具函数
-const router = useRouter();
-const confirm = useConfirm();
-const toast = useToast();
+const onImageSelected = (imageUrl: string, imageData: any) => {
+  console.log("imageData:", imageData);
+  console.log("imageUrl:", imageUrl);
 
-// 计算属性
-const isFormValid = computed(() => {
-	return (
-		productForm.value.name.trim() &&
-		productForm.value.slug.trim() &&
-		productForm.value.description.trim() &&
-		productForm.value.shortDescription.trim() &&
-		productForm.value.price > 0 &&
-		productForm.value.stock >= 0 &&
-		productForm.value.sku.trim() &&
-		productForm.value.categoryId !== null
-	);
-});
-
-const categoryOptions = computed(() => {
-	return categories.value.map((cat) => ({
-		label: cat.name,
-		value: cat.id,
-	}));
-});
-
-const tagOptions = computed(() => {
-	return availableTags.value.map((tag) => ({
-		label: tag,
-		value: tag,
-	}));
-});
-
-// 方法
-const loadProducts = async () => {
-	try {
-		loading.value = true;
-		const params = {
-			page: initMeta.value.page,
-			pageSize: initMeta.value.pageSize,
-			sortBy: sortField.value,
-			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
-			categoryId: filterCategory.value || undefined,
-			isActive: filterStatus.value !== "all" ? filterStatus.value : undefined,
-		};
-		// 添加搜索参数
-		if (searchKeyword.value) {
-			params.search = searchKeyword.value;
-		}
-		const api = useCmsApi();
-		const response = await api.products.list(params);
-		if (response.code === 200) {
-			const data = response.data;
-			// 根据新的API返回格式，直接从data中获取商品数据
-			products.value = data.items || [];
-			initMeta.value = data.meta;
-			console.log("init", products.value, initMeta.value);
-		} else {
-			throw new Error(response.message || "获取商品列表失败");
-		}
-	} catch (error) {
-		console.error("加载商品失败:", error);
-		products.value = [];
-		initMeta.value.total = 0;
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "加载商品失败",
-			life: 1000,
-		});
-	} finally {
-		loading.value = false;
-	}
-};
-
-const loadCategories = async () => {
-	try {
-		const api = useCmsApi();
-		const response = await api.categories.list();
-
-		if (response.code === 200) {
-			categories.value = response.data || [];
-		} else {
-			throw new Error(response.message || "获取分类列表失败");
-		}
-	} catch (error) {
-		console.error("加载分类失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "加载分类失败",
-			life: 1000,
-		});
-	}
-};
-
-// 组件挂载时加载数据
-onMounted(() => {
-	loadCategories();
-	loadProducts();
-});
-
-// 分页处理
-const onPage = (event: any) => {
-	initMeta.value.page = event.page + 1;
-	initMeta.value.pageSize = event.rows;
-	loadProducts();
-};
-
-// 排序处理
-const onSort = (event: any) => {
-	sortField.value = event.sortField;
-	sortOrder.value = event.sortOrder;
-	loadProducts();
-};
-
-// 搜索处理
-const handleSearch = (searchTerm?: string) => {
-	if (searchTerm !== undefined) {
-		searchKeyword.value = searchTerm;
-	}
-	initMeta.value.page = 1;
-	loadProducts();
-};
-
-// 筛选处理
-const handleFilter = (filters?: any) => {
-	if (filters) {
-		if (filters.category !== undefined) {
-			filterCategory.value = filters.category;
-		}
-		if (filters.status !== undefined) {
-			filterStatus.value = filters.status;
-		}
-	}
-	initMeta.value.page = 1;
-	loadProducts();
-};
-
-// 显示编辑对话框
-const showEditDialog = (product: Product) => {
-	editingProduct.value = product;
-	productForm.value = {
-		name: product.name,
-		slug: product.slug,
-		description: product.description,
-		shortDescription: product.shortDescription,
-		price: product.price,
-		comparePrice: product.comparePrice,
-		cost: product.cost,
-		sku: product.sku,
-		barcode: product.barcode,
-		weight: product.weight,
-		dimensions: product.dimensions,
-		images: [...(product.images || [])],
-		videos: [...(product.videos || [])],
-		colors: [...(product.colors || [])],
-		sizes: [...(product.sizes || [])],
-		materials: [...(product.materials || [])],
-		careInstructions: product.careInstructions || "",
-		features: product.features,
-		specifications: product.specifications,
-		categoryId: product.categoryId,
-		stock: product.stock,
-		minStock: product.minStock,
-		isActive: product.isActive,
-		isFeatured: product.isFeatured,
-		metaTitle: product.metaTitle || "",
-		metaDescription: product.metaDescription || "",
-		metaKeywords: product.metaKeywords || "",
-	};
-	showCreateDialog.value = true;
-};
-
-// 关闭对话框
-const closeDialog = () => {
-	showCreateDialog.value = false;
-	editingProduct.value = null;
-	productForm.value = {
-		name: "",
-		slug: "",
-		description: "",
-		shortDescription: "",
-		price: 0,
-		comparePrice: 0,
-		cost: 0,
-		sku: "",
-		barcode: "",
-		weight: 0,
-		dimensions: null,
-		images: [],
-		videos: [],
-		colors: [],
-		sizes: [],
-		materials: [],
-		careInstructions: "",
-		features: null,
-		specifications: null,
-		categoryId: null,
-		stock: 0,
-		minStock: 0,
-		isActive: true,
-		isFeatured: false,
-		metaTitle: "",
-		metaDescription: "",
-		metaKeywords: "",
-	};
-};
-
-// 保存商品
-const saveProduct = async () => {
-	if (!isFormValid.value) {
-		toast.add({
-			severity: "warn",
-			summary: "警告",
-			detail: "请填写必填字段",
-			life: 1000,
-		});
-		return;
-	}
-
-	try {
-		saving.value = true;
-
-		// 准备提交数据
-		const submitData = {
-			...productForm.value,
-			// 确保数组字段不为null
-			images: productForm.value.images || [],
-			videos: productForm.value.videos || [],
-			colors: productForm.value.colors || [],
-			sizes: productForm.value.sizes || [],
-			materials: productForm.value.materials || [],
-		};
-
-		if (editingProduct.value) {
-			// 更新商品
-			const api = useCmsApi();
-			const response = await api.products.update(
-				editingProduct.value.id.toString(),
-				submitData,
-			);
-
-			if (response.code === 200) {
-				toast.add({
-					severity: "success",
-					summary: "成功",
-					detail: "更新商品成功",
-					life: 1000,
-				});
-			} else {
-				throw new Error(response.message || "更新商品失败");
-			}
-		} else {
-			// 创建商品
-			const api = useCmsApi();
-			const response = await api.products.create(submitData);
-
-			if (response.code === 200) {
-				toast.add({
-					severity: "success",
-					summary: "成功",
-					detail: "创建商品成功",
-					life: 1000,
-				});
-			} else {
-				throw new Error(response.message || "创建商品失败");
-			}
-		}
-
-		closeDialog();
-		loadProducts();
-	} catch (error) {
-		console.error("保存商品失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: error.message || "保存商品失败",
-			life: 1000,
-		});
-	} finally {
-		saving.value = false;
-	}
-};
-
-// 确认删除
-const confirmDelete = (product: Product) => {
-	confirm.require({
-		message: `确定要删除商品 "${product.name}" 吗？`,
-		header: "删除确认",
-		icon: "pi pi-exclamation-triangle",
-		acceptClass: "p-button-danger",
-		accept: () => deleteProduct(product.id),
-	});
-};
-
-// 删除商品
-const deleteProduct = async (id: number) => {
-	try {
-		const api = useCmsApi();
-		const response = await api.products.delete(id.toString());
-
-		if (response.code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "成功",
-				detail: response.message,
-				life: 1000,
-			});
-			loadProducts();
-		} else {
-			throw new Error(response.message || "删除商品失败");
-		}
-	} catch (error) {
-		console.error("删除商品失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: error.message || "删除商品失败",
-			life: 1000,
-		});
-	}
-};
-
-// 切换上架状态
-const toggleActive = async (product: Product) => {
-	const originalStatus = product.isActive;
-	try {
-		product.isActive = !product.isActive;
-
-		const api = useCmsApi();
-		const response = await api.products.update(product.id.toString(), {
-			isActive: product.isActive,
-		});
-
-		if (response.code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "成功",
-				detail: `${product.isActive ? "上架" : "下架"}商品成功`,
-			});
-		} else {
-			throw new Error(response.message || "切换状态失败");
-		}
-	} catch (error) {
-		product.isActive = originalStatus;
-		console.error("切换状态失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: error.message || "切换状态失败",
-			life: 1000,
-		});
-	}
-};
-
-// 切换推荐状态
-const toggleFeatured = async (product: Product) => {
-	const originalStatus = product.isFeatured;
-	try {
-		product.isFeatured = !product.isFeatured;
-
-		const api = useCmsApi();
-		const response = await api.products.update(product.id.toString(), {
-			isFeatured: product.isFeatured,
-		});
-
-		if (response.code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "成功",
-				detail: `${product.isFeatured ? "设为推荐" : "取消推荐"}成功`,
-			});
-		} else {
-			throw new Error(response.message || "切换推荐状态失败");
-		}
-	} catch (error) {
-		product.isFeatured = originalStatus;
-		console.error("切换推荐状态失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: error.message || "切换推荐状态失败",
-			life: 1000,
-		});
-	}
-};
-
-// 格式化金额
-const formatCurrency = (amount: number) => {
-	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
-};
-
-// 格式化日期
-const formatDate = (date: Date | string) => {
-	const d = new Date(date);
-	return d.toLocaleDateString("zh-CN", {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-};
-
-// 打开图片选择器
-const openImageSelector = () => {
-	showImageSelector.value = true;
-};
-
-// 处理图片选择
-const onImageSelected = (imageUrl: string) => {
-	if (!productForm.value.images.includes(imageUrl)) {
-		productForm.value.images.push(imageUrl);
-		toast.add({
-			severity: "success",
-			summary: "成功",
-			detail: "图片添加成功",
-			life: 1000,
-		});
-	} else {
-		toast.add({
-			severity: "warn",
-			summary: "提示",
-			detail: "图片已存在",
-			life: 1000,
-		});
-	}
-	showImageSelector.value = false;
-};
-
-// 移除图片
-const removeImage = (index: number) => {
-	productForm.value.images.splice(index, 1);
-	toast.add({
-		severity: "info",
-		summary: "提示",
-		detail: "图片已移除",
-		life: 1000,
-	});
-};
-
-// 跳转到添加商品页面
-const goToAddProduct = () => {
-	router.push("/admin/products/add");
+  if (currentFormData.value) {
+    // 设置图片ID（数字类型）
+    currentFormData.value.image_id = imageData.id;
+    // 设置显示用的图片URL
+    currentFormData.value.image = imageUrl;
+  }
+  showImageSelector.value = false;
 };
 </script>
 
 <template>
-    <div class="products-management">
-        <!-- 页面标题和操作栏 -->
-        <div class="header-section">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">商品管理</h1>
-                    <p class="text-gray-600 mt-1">管理商品信息，包括价格、库存、分类等</p>
-                </div>
-                <div class="flex gap-3">
-                    <Button label="添加商品" icon="pi pi-plus" @click="goToAddProduct" class="p-button-success" />
-                    <Button label="批量导入" icon="pi pi-upload" class="p-button-outlined" />
-                </div>
-            </div>
+  <PrimeCrudTemplate name="商品管理" identifier="product" :table-data="templateData.tableData" :template-data="templateData"
+    :crud-controller="15" :resolver="resolver" :query-resolver="queryResolver">
+    <!-- 查询表单 -->
+    <template #QueryForm>
+      <div class="flex flex-column gap-2">
+        <FormField v-slot="$field" name="name" class="flex flex-column gap-1">
+          <div class="flex items-center gap-2">
+            <label for="query-name" class="text-sm font-medium">商品名称</label>
+            <InputText id="query-name" placeholder="搜索商品名称" />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-            <!-- 工具栏 -->
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadProducts" class="p-button-outlined"
-                        size="small" />
-                    <Button label="批量上架" icon="pi pi-check" class="p-button-outlined" size="small"
-                        :disabled="!selectedProducts.length" />
-                    <Button label="批量下架" icon="pi pi-times" class="p-button-outlined" size="small"
-                        :disabled="!selectedProducts.length" />
-                </div>
-                <div class="flex gap-3">
-                    <InputText v-model="searchKeyword" placeholder="搜索商品名称或SKU..." class="w-64"
-                        @update:modelValue="handleSearch" />
-                    <Select v-model="filterCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选分类" class="w-32" @change="handleFilter" showClear />
-                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                </div>
+        <FormField v-slot="$field" name="categoryId" class="flex flex-column gap-1">
+          <div class="flex items-center gap-2">
+            <label for="query-category" class="text-sm font-medium">商品分类</label>
+            <InputNumber id="query-category" placeholder="分类ID" />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <FormField v-slot="$field" name="isActive" class="flex flex-column gap-1">
+          <div class="flex items-center gap-2">
+            <label for="query-status" class="text-sm font-medium">状态</label>
+            <Select id="query-status" :options="statusOptions" option-label="label" option-value="value"
+              placeholder="选择状态" clearable />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <FormField v-slot="$field" name="isFeatured" class="flex flex-column gap-1">
+          <div class="flex items-center gap-2">
+            <label for="query-featured" class="text-sm font-medium">是否推荐</label>
+            <Select id="query-featured"
+              :options="[{ label: '全部', value: undefined }, { label: '推荐', value: true }, { label: '普通', value: false }]"
+              option-label="label" option-value="value" placeholder="选择推荐状态" clearable />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+      </div>
+    </template>
+
+    <!-- 表格列 -->
+    <template #TableColumn>
+      <Column field="id" header="ID" style="width: 80px" />
+
+      <Column field="images" header="商品图片" style="width: 120px">
+        <template #body="{ data }">
+          <div class="flex justify-center">
+            <img v-if="data.images && data.images.length > 0" :src="data.images[0]" :alt="data.name"
+              class="w-12 h-12 object-cover rounded-lg border border-gray-200" />
+            <div v-else class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-image text-gray-400 text-sm"></i>
             </div>
+          </div>
+        </template>
+      </Column>
+
+      <Column field="name" header="商品名称" style="width: 200px">
+        <template #body="{ data }">
+          <div class="flex items-center gap-2">
+            <span class="font-medium">{{ data.name }}</span>
+            <Tag v-if="data.isFeatured" value="推荐" severity="success" class="text-xs" />
+          </div>
+        </template>
+      </Column>
+
+      <Column field="sku" header="SKU" style="width: 120px">
+        <template #body="{ data }">
+          <span class="text-gray-600 text-sm font-mono">
+            {{ data.sku || '-' }}
+          </span>
+        </template>
+      </Column>
+
+      <Column field="price" header="价格" style="width: 100px">
+        <template #body="{ data }">
+          <div class="flex flex-col">
+            <span class="font-medium text-green-600">¥{{ data.price }}</span>
+            <span v-if="data.comparePrice && data.comparePrice > data.price" class="text-xs text-gray-400 line-through">
+              ¥{{ data.comparePrice }}
+            </span>
+          </div>
+        </template>
+      </Column>
+
+      <Column field="stock" header="库存" style="width: 80px">
+        <template #body="{ data }">
+          <Tag :value="data.stock" :severity="data.stock > 10 ? 'success' : data.stock > 0 ? 'warn' : 'danger'" />
+        </template>
+      </Column>
+
+      <Column field="categoryId" header="分类ID" style="width: 100px">
+        <template #body="{ data }">
+          <span class="text-sm">{{ data.categoryId || '-' }}</span>
+        </template>
+      </Column>
+
+      <Column field="isActive" header="状态" style="width: 100px">
+        <template #body="{ data }">
+          <Tag :value="data.isActive ? '上架' : '下架'" :severity="data.isActive ? 'success' : 'danger'" />
+        </template>
+      </Column>
+
+      <Column field="createdAt" header="创建时间" style="width: 150px">
+        <template #body="{ data }">
+          <span class="text-gray-500 text-sm">
+            {{ data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '-' }}
+          </span>
+        </template>
+      </Column>
+    </template>
+
+    <!-- 表单 -->
+    <template #CrudForm="{ data, disabled }: { data: ProductModel, disabled: boolean }">
+      <div class="h-full">
+        <!-- 商品名称 -->
+        <FormField v-slot="$field" name="name" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">商品名称 *</label>
+          <InputText fluid size="small" placeholder="请输入商品名称" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <!-- SKU -->
+        <FormField v-slot="$field" name="sku" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">SKU</label>
+          <InputText fluid placeholder="请输入商品SKU" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <!-- 商品描述 -->
+        <FormField v-slot="$field" name="description" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">商品描述</label>
+          <Textarea fluid placeholder="请输入商品描述" :disabled="disabled" rows="3" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <!-- 价格信息 -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <FormField v-slot="$field" name="price" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">售价 *</label>
+            <InputNumber v-model="data.price" placeholder="请输入售价" :disabled="disabled" :min="0" :max-fraction-digits="2"
+              class="w-full" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
+
+          <FormField v-slot="$field" name="comparePrice" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">对比价</label>
+            <InputNumber v-model="data.comparePrice" placeholder="请输入对比价" :disabled="disabled" :min="0"
+              :max-fraction-digits="2" class="w-full" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
         </div>
 
-        <!-- 商品数据表格 -->
-        <div class="table-section">
-            <DataTable :value="products" :loading="loading" :paginator="true" :rows="initMeta.pageSize"
-                :totalRecords="initMeta.total" :lazy="true" @page="onPage" @sort="onSort" :sortField="sortField"
-                :sortOrder="sortOrder" v-model:selection="selectedProducts" selectionMode="multiple" dataKey="id"
-                tableStyle="min-width: 50rem" class="p-datatable-sm">
-                <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-                <Column field="id" header="ID" :sortable="true" style="width: 80px">
-                    <template #body="{ data }">
-                        <span class="font-mono text-sm">#{{ data.id }}</span>
-                    </template>
-                </Column>
+        <!-- 库存和分类 -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <FormField v-slot="$field" name="stock" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">库存数量 *</label>
+            <InputNumber v-model="data.stock" placeholder="请输入库存数量" :disabled="disabled" :min="0" class="w-full" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
 
-                <Column field="name" header="商品名称" :sortable="true" style="min-width: 200px">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-3">
-                            <Image v-if="data.images && data.images[0]" :src="data.images[0]" alt="商品图片" width="40"
-                                height="40" class="rounded border" />
-                            <div v-else class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                                <i class="pi pi-image text-gray-400"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium">{{ data.name }}</div>
-                                <div class="text-sm text-gray-500">{{ data.slug }}</div>
-                            </div>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="sku" header="SKU" :sortable="true" style="width: 120px">
-                    <template #body="{ data }">
-                        <span class="font-mono text-sm">{{ data.sku }}</span>
-                    </template>
-                </Column>
-
-                <Column field="price" header="价格" :sortable="true" style="width: 100px">
-                    <template #body="{ data }">
-                        <div class="text-right">
-                            <div class="font-medium">{{ formatCurrency(data.price) }}</div>
-                            <div v-if="data.comparePrice && data.comparePrice > data.price"
-                                class="text-sm text-gray-400 line-through">
-                                {{ formatCurrency(data.comparePrice) }}
-                            </div>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="stock" header="库存" :sortable="true" style="width: 80px">
-                    <template #body="{ data }">
-                        <div class="text-center">
-                            <span :class="{
-                                'text-red-600': data.stock <= data.minStock,
-                                'text-orange-600': data.stock <= data.minStock * 2,
-                                'text-green-600': data.stock > data.minStock * 2
-                            }">{{ data.stock }}</span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="categoryName" header="分类" style="width: 120px">
-                    <template #body="{ data }">
-                        <Tag v-if="data.categoryName" :value="data.categoryName" class="p-tag-secondary" />
-                        <span v-else class="text-gray-400">未分类</span>
-                    </template>
-                </Column>
-
-                <Column field="isActive" header="状态" style="width: 100px">
-                    <template #body="{ data }">
-                        <div class="flex flex-col gap-1">
-                            <Tag :value="data.isActive ? '上架' : '下架'"
-                                :severity="data.isActive ? 'success' : 'danger'" />
-                            <Tag v-if="data.isFeatured" value="推荐" severity="info" />
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="createdAt" header="创建时间" :sortable="true" style="width: 150px">
-                    <template #body="{ data }">
-                        <span class="text-sm">{{ formatDate(data.createdAt) }}</span>
-                    </template>
-                </Column>
-
-                <Column header="操作" style="width: 150px">
-                    <template #body="{ data }">
-                        <div class="flex gap-2">
-                            <Button icon="pi pi-pencil" size="small" class="p-button-outlined p-button-primary"
-                                @click="showEditDialog(data)" v-tooltip.top="'编辑'" />
-                            <Button :icon="data.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'" size="small"
-                                :class="data.isActive ? 'p-button-outlined p-button-warning' : 'p-button-outlined p-button-success'"
-                                @click="toggleActive(data)" :v-tooltip.top="data.isActive ? '下架' : '上架'" />
-                            <Button :icon="data.isFeatured ? 'pi pi-star-fill' : 'pi pi-star'" size="small"
-                                :class="data.isFeatured ? 'p-button-outlined p-button-info' : 'p-button-outlined'"
-                                @click="toggleFeatured(data)" :v-tooltip.top="data.isFeatured ? '取消推荐' : '设为推荐'" />
-                            <Button icon="pi pi-trash" size="small" class="p-button-outlined p-button-danger"
-                                @click="confirmDelete(data)" v-tooltip.top="'删除'" />
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
+          <FormField v-slot="$field" name="categoryId" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">分类ID</label>
+            <InputNumber v-model="data.categoryId" placeholder="请输入分类ID" :disabled="disabled" :min="1" class="w-full" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
         </div>
 
-        <!-- 创建/编辑商品对话框 -->
-        <Dialog v-model:visible="showCreateDialog" :header="editingProduct ? '编辑商品' : '新增商品'" :modal="true"
-            :closable="true" class="w-[1000px] max-h-[90vh]">
-            <div class="space-y-6">
-                <!-- 必填信息区域 -->
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
-                        <i class="pi pi-exclamation-circle mr-2"></i>
-                        必填信息
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 左列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品名称 *</label>
-                                <InputText v-model="productForm.name" placeholder="请输入商品名称" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.name }" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">URL别名 *</label>
-                                <InputText v-model="productForm.slug" placeholder="请输入URL别名" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.slug }" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品SKU *</label>
-                                <InputText v-model="productForm.sku" placeholder="请输入商品SKU" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.sku }" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品分类 *</label>
-                                <Select v-model="productForm.categoryId" :options="categoryOptions" optionLabel="label"
-                                    optionValue="value" placeholder="请选择分类" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.categoryId }" />
-                            </div>
-                        </div>
-
-                        <!-- 右列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品描述 *</label>
-                                <Textarea v-model="productForm.description" placeholder="请输入商品描述" rows="3"
-                                    class="w-full" :class="{ 'p-invalid': !productForm.description }" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">简短描述 *</label>
-                                <Textarea v-model="productForm.shortDescription" placeholder="请输入简短描述" rows="2"
-                                    class="w-full" :class="{ 'p-invalid': !productForm.shortDescription }" />
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2 text-red-700">销售价格 *</label>
-                                    <InputNumber v-model="productForm.price" :min="0" :maxFractionDigits="2"
-                                        placeholder="0.00" class="w-full"
-                                        :class="{ 'p-invalid': productForm.price <= 0 }" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2 text-red-700">库存数量 *</label>
-                                    <InputNumber v-model="productForm.stock" :min="0" placeholder="0" class="w-full"
-                                        :class="{ 'p-invalid': productForm.stock < 0 }" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 选填信息区域 -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                        <i class="pi pi-info-circle mr-2"></i>
-                        选填信息
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 左列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">对比价格</label>
-                                <InputNumber v-model="productForm.comparePrice" :min="0" :maxFractionDigits="2"
-                                    placeholder="0.00" class="w-full" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">成本价</label>
-                                <InputNumber v-model="productForm.cost" :min="0" :maxFractionDigits="2"
-                                    placeholder="0.00" class="w-full" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">最低库存</label>
-                                <InputNumber v-model="productForm.minStock" :min="0" placeholder="0" class="w-full" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">重量(kg)</label>
-                                <InputNumber v-model="productForm.weight" :min="0" :maxFractionDigits="3"
-                                    placeholder="0.000" class="w-full" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">尺寸</label>
-                                <InputText v-model="productForm.dimensions" placeholder="长x宽x高(cm)" class="w-full" />
-                            </div>
-                        </div>
-
-                        <!-- 右列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">条形码</label>
-                                <InputText v-model="productForm.barcode" placeholder="请输入条形码" class="w-full" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">材质</label>
-                                <MultiSelect v-model="productForm.materials" :options="tagOptions" optionLabel="label"
-                                    optionValue="value" placeholder="选择材质" class="w-full" display="chip" />
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">护理说明</label>
-                                <Textarea v-model="productForm.careInstructions" placeholder="请输入护理说明" rows="3"
-                                    class="w-full" />
-                            </div>
-
-                            <div class="space-y-3">
-                                <div class="flex items-center gap-2">
-                                    <ToggleSwitch v-model="productForm.isActive" />
-                                    <label class="text-sm text-blue-700">立即上架</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <Checkbox v-model="productForm.isFeatured" binary />
-                                    <label class="text-sm text-blue-700">设为推荐</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 商品图片区域 -->
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                        <i class="pi pi-image mr-2"></i>
-                        商品图片
-                    </h3>
-                    <div class="space-y-4">
-                        <!-- 添加图片按钮 -->
-                        <Button label="选择图片" icon="pi pi-plus" @click="openImageSelector"
-                            class="p-button-outlined w-full" v-tooltip="'从图片库中选择图片'" />
-
-                        <!-- 已选择的图片展示 -->
-                        <div v-if="productForm.images.length > 0" class="grid grid-cols-2 md:grid-cols-6 gap-4">
-                            <div v-for="(imageUrl, index) in productForm.images" :key="index" class="relative">
-                                <img :src="imageUrl" :alt="`商品图片 ${index + 1}`"
-                                    class="w-full h-24 object-cover rounded border" />
-                                <Button icon="pi pi-times"
-                                    class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2"
-                                    @click="removeImage(index)" v-tooltip="'移除图片'" />
-                            </div>
-                        </div>
-
-                        <!-- 空状态提示 -->
-                        <div v-else class="text-center py-8 text-gray-500">
-                            <i class="pi pi-image text-4xl mb-2"></i>
-                            <p>暂无图片，点击上方按钮选择图片</p>
-                        </div>
-                    </div>
-                </div>
+        <!-- 商品图片 -->
+        <FormField v-slot="$field" name="images" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">商品图片</label>
+          <div class="flex flex-col gap-2">
+            <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined :disabled="disabled"
+              @click="() => { currentFormData = data; showImageSelector = true; }" v-tooltip="'从图片库选择'" />
+            <div v-if="data.images && data.images.length > 0" class="flex flex-wrap gap-2">
+              <img v-for="(image, index) in data.images" :key="index" :src="image" :alt="`商品图片${index + 1}`"
+                class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
             </div>
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-            <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Button label="取消" @click="closeDialog" class="p-button-text" />
-                    <Button :label="editingProduct ? '更新' : '创建'" @click="saveProduct" :loading="saving"
-                        :disabled="!isFormValid" />
-                </div>
-            </template>
-        </Dialog>
+        <!-- 商品状态 -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <FormField v-slot="$field" name="isActive" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">上架状态</label>
+            <div class="flex gap-4">
+              <div class="flex align-items-center gap-2">
+                <RadioButton v-model="data.isActive" :value="true" :disabled="disabled" input-id="active-true" />
+                <label for="active-true">上架</label>
+              </div>
+              <div class="flex align-items-center gap-2">
+                <RadioButton v-model="data.isActive" :value="false" :disabled="disabled" input-id="active-false" />
+                <label for="active-false">下架</label>
+              </div>
+            </div>
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
 
-        <!-- 确认对话框 -->
-        <ConfirmDialog />
+          <FormField v-slot="$field" name="isFeatured" class="flex flex-col gap-2">
+            <label class="text-sm font-medium">是否推荐</label>
+            <div class="flex gap-4">
+              <div class="flex align-items-center gap-2">
+                <RadioButton v-model="data.isFeatured" :value="true" :disabled="disabled" input-id="featured-true" />
+                <label for="featured-true">推荐</label>
+              </div>
+              <div class="flex align-items-center gap-2">
+                <RadioButton v-model="data.isFeatured" :value="false" :disabled="disabled" input-id="featured-false" />
+                <label for="featured-false">不推荐</label>
+              </div>
+            </div>
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
+        </div>
+      </div>
+    </template>
+  </PrimeCrudTemplate>
 
-        <!-- 图片选择器 -->
-        <ImageSelector v-model:visible="showImageSelector" category="products" @select="onImageSelected" />
-    </div>
+  <!-- 图片选择器 -->
+  <ImageSelector v-model:visible="showImageSelector" category="product" @select="onImageSelected" />
 </template>
 
 <style scoped>
-.products-management {
-    @apply p-0;
+/* 文本截断样式 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .header-section {
-        @apply mb-4;
-    }
-
-    .table-section {
-        @apply overflow-x-auto;
-    }
+/* 确保表单项有合适的间距 */
+.flex.flex-column.gap-3>* {
+  margin-bottom: 0.5rem;
 }
 </style>
