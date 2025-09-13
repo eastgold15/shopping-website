@@ -4,6 +4,19 @@ import { t } from "elysia";
 
 // 商品模型定义
 export const productsModel = {
+
+	ProductModel: t.Composite([t.Omit(DbType.typebox.select.productsSchema, [
+		"cost",
+		"price",
+		"comparePrice",
+		"weight"
+	]), t.Object({
+		cost: t.Number(),
+		price: t.Number(),
+		comparePrice: t.Number(),
+		weight: t.Number(),
+	})
+	]),
 	// 创建商品请求参数
 	CreateProductDto: t.Omit(DbType.typebox.insert.productsSchema, [
 		"id",
@@ -80,7 +93,8 @@ export const ProductModel = t.Composite([
 	}),
 ]);
 
-export type ProductModel = typeof ProductModel.static;
 
-export type IdParams = typeof productsModel.IdParams;
-export type SlugParams = typeof productsModel.SlugParams;
+export type ProductModel = typeof productsModel.ProductModel.static
+
+export type IdParams = typeof productsModel.IdParams.static;
+export type SlugParams = typeof productsModel.SlugParams.static;

@@ -4,8 +4,10 @@ import AdminLayout from "@frontend/layouts/AdminLayout.vue";
 import ImageManager from "@frontend/pages/admin/ImageManager.vue";
 import PrimePartnersManagement from "@frontend/pages/admin/PrimePartnersManagement.vue";
 
+import AddProduct from "@frontend/pages/admin/AddProduct.vue";
 import CategoryManagement from "@frontend/pages/admin/CategoryManagement.vue";
-import Test1 from "@frontend/pages/admin/test1.vue";
+import ProductsManagement from "@frontend/pages/admin/ProductsManagement.vue";
+import Test2 from "@frontend/pages/admin/test2.vue";
 const adminRoutes = [
 	{
 		path: "/admin",
@@ -22,20 +24,20 @@ const adminRoutes = [
 				component: CategoryManagement,
 			},
 			{
-				path: "test1",
-				name: "category-managemen1",
-				component: Test1,
+				path: "products",
+				name: "products-management",
+				component: ProductsManagement,
 			},
-			// 	{
-			// 		path: "products",
-			// 		name: "products-management",
-			// 		component: ProductsManagement,
-			// 	},
-			// 	{
-			// 		path: "products/add",
-			// 		name: "add-product",
-			// 		component: AddProduct,
-			// 	},
+			{
+				path: "products/add",
+				name: "add-product",
+				component: AddProduct,
+			},
+			{
+				path: "test2",
+				name: "test2",
+				component: Test2,
+			},
 			// 	{
 			// 		path: "orders",
 			// 		name: "orders-management",

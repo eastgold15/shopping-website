@@ -155,33 +155,20 @@
 </template>
 
 <script setup lang="ts">
-interface Product {
-	id: string;
-	name: string;
-	slug: string;
-	price: number;
-	salePrice?: number;
-	images: string[];
-	colors?: string[];
-	sizes?: string[];
-	stock: number;
-	isActive: boolean;
-	isFeatured: boolean;
-	averageRating?: number;
-	totalReviews?: number;
-}
+import type { ProductModel } from '@backend/types';
+
 
 interface Props {
-	product: Product;
+	product: ProductModel;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
 	click: [];
-	addToCart: [product: Product];
-	toggleFavorite: [product: Product];
-	quickView: [product: Product];
-}>();
+	addToCart: [product: ProductModel];
+	toggleFavorite: [product: ProductModel];
+	quickView: [product: ProductModel];
+}>(); 
 
 // 响应式数据
 const isFavorited = ref(false);

@@ -29,6 +29,7 @@ declare module 'vue' {
     Drawer: typeof import('primevue/drawer')['default']
     Dropdown: typeof import('primevue/dropdown')['default']
     FileUpload: typeof import('primevue/fileupload')['default']
+    FormField: typeof import('@primevue/forms/formfield')['default']
     GoogleLoginButton: typeof import('./src/components/GoogleLoginButton.vue')['default']
     Image: typeof import('primevue/image')['default']
     ImageSelector: typeof import('./src/components/ImageSelector.vue')['default']

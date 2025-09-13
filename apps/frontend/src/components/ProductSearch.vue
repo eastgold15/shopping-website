@@ -127,33 +127,7 @@ import { client } from "@frontend/utils/useTreaty";
 import { useRouter } from "vue-router";
 
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  shortDescription: string;
-  price: number;
-  comparePrice?: number;
-  sku: string;
-  stock: number;
-  images: string[];
-  colors: string[];
-  sizes: string[];
-  features: string[];
-  categoryId?: string;
-  categoryName?: string;
-  isActive: boolean;
-  isFeatured: boolean;
-  weight: string;
-  dimensions: string;
-  materials: string[];
-  metaTitle: string;
-  metaDescription: string;
-  metaKeywords: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Product } from "@frontend/types/product";
 
 interface SearchResult {
   products: Product[];
@@ -236,9 +210,9 @@ const handleSearch = async () => {
     if (filters.sizes.length) params.sizes = filters.sizes;
     if (filters.tags.length) params.tags = filters.tags;
 
-    const data = await 
+    const data = await
       client.api.products.search.get({ query: params }
-    );
+      );
     if (data) {
       searchResults.value = data;
     }
@@ -289,9 +263,9 @@ const searchWithPage = async (page: number) => {
     if (filters.sizes.length) params.sizes = filters.sizes;
     if (filters.tags.length) params.tags = filters.tags;
 
-    const data = await 
+    const data = await
       client.api.products.search.get({ query: params }
-    );
+      );
     if (data) {
       searchResults.value = data;
     }
@@ -344,7 +318,7 @@ const loadInitialData = async () => {
   try {
     // 加载热门搜索关键词
     const termsData = await client.api.products.search["popular-terms"].get();
-    
+
     if (termsData) {
       popularTerms.value = termsData;
     }
@@ -357,7 +331,7 @@ const loadInitialData = async () => {
 
     // 加载筛选选项
     const optionsData = await client.api.products["filter-options"].get();
-    
+
     if (optionsData) {
       filterOptions.value = optionsData;
     }
