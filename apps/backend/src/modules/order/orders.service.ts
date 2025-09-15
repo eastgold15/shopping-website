@@ -1,6 +1,4 @@
-import {
-  NotFoundError
-} from "@backend/utils/error/customError";
+import { NotFoundError } from "@backend/utils/error/customError";
 import {
   and,
   asc,
@@ -12,22 +10,13 @@ import {
   sql,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
-import {
-  orderItemsSchema,
-  ordersSchema,
-  refundsSchema,
-} from "../../db/schema/schema";
-import type {
-  CreateRefundDto,
-  Order,
-  OrderQuery,
-  ProcessRefundDto,
-  Refund,
-  RefundQuery,
-  StatisticsQuery,
-  UpdateOrderStatusDto,
-  UpdateShippingDto,
-} from "./orders.model";
+import { orderItemsTable } from "../../db/models/orderItems.model";
+import { ordersTable } from "../../db/models/orders.model";
+import { refundsTable } from "../../db/models/refunds.model";
+import { ProcessRefundDto, UpdateOrderStatusDto, OrdersListQueryDto } from "@backend/db/models";
+import { paginate } from "@backend/utils/services/pagination";
+
+
 
 // 订单状态枚举
 export const ORDER_STATUS = {
@@ -61,9 +50,9 @@ export const REFUND_STATUS = {
  */
 export class OrdersService {
   /**
-   * 获取订单列表（分页）
+   * 获取订单列表 - 使用统一分页函数
    */
-  async getList(query: OrderQuery) {
+  async getList(query: OrdersListQueryDto) {
     try {
       const {
         page = 1,
@@ -76,79 +65,63 @@ export class OrdersService {
         sortOrder = "desc",
       } = query;
 
-      const offset = (page - 1) * pageSize;
+      // 构建基础查询
+      let queryBuilder = db
+        .select({
+          ...getTableColumns(ordersTable),
+        })
+        .from(ordersTable);
+
+      // 构建查询条件
       const conditions = [];
 
-      // 筛选条件
       if (status) {
-        conditions.push(eq(ordersSchema.status, status));
+        conditions.push(eq(ordersTable.status, status));
       }
       if (paymentStatus) {
-        conditions.push(eq(ordersSchema.paymentStatus, paymentStatus));
+        conditions.push(eq(ordersTable.paymentStatus, paymentStatus));
       }
       if (customerEmail) {
         conditions.push(
-          ilike(ordersSchema.customerEmail, `%${customerEmail}%`),
+          ilike(ordersTable.customerEmail, `%${customerEmail}%`),
         );
       }
       if (orderNumber) {
-        conditions.push(ilike(ordersSchema.orderNumber, `%${orderNumber}%`));
+        conditions.push(ilike(ordersTable.orderNumber, `%${orderNumber}%`));
       }
 
-      const whereClause =
-        conditions.length > 0 ? and(...conditions) : undefined;
-
-      // 排序
-      let orderBy;
-      if (sortBy === "totalAmount") {
-        orderBy =
-          sortOrder === "asc"
-            ? asc(sql`CAST(${ordersSchema.totalAmount} AS DECIMAL)`)
-            : desc(sql`CAST(${ordersSchema.totalAmount} AS DECIMAL)`);
-      } else if (sortBy === "customerName") {
-        orderBy =
-          sortOrder === "asc"
-            ? asc(ordersSchema.customerName)
-            : desc(ordersSchema.customerName);
-      } else {
-        orderBy =
-          sortOrder === "asc"
-            ? asc(ordersSchema.createdAt)
-            : desc(ordersSchema.createdAt);
+      // 应用查询条件
+      if (conditions.length > 0) {
+        queryBuilder.where(and(...conditions));
       }
 
-      // 获取订单列表
-      const orders = await db
-        .select({
-          ...getTableColumns(ordersSchema),
-        })
-        .from(ordersSchema)
-        .where(whereClause)
-        .orderBy(orderBy)
-        .limit(pageSize)
-        .offset(offset);
+      // 排序字段映射
+      const sortFieldMap: Record<string, any> = {
+        totalAmount: sql`CAST(${ordersTable.totalAmount} AS DECIMAL)`,
+        customerName: ordersTable.customerName,
+        createdAt: ordersTable.createdAt,
+      };
 
-      // 获取总数
-      const totalQueryBuilder = db
-        .select({ count: count() })
-        .from(ordersSchema);
+      const sortField = sortFieldMap[sortBy] || ordersTable.createdAt;
+      const sortDirection = sortOrder === "desc" ? "desc" : "asc";
 
-      if (whereClause) {
-        totalQueryBuilder.where(whereClause);
-      }
+      // 使用统一分页函数
+      const result = await paginate(queryBuilder, {
+        page,
+        pageSize,
+        sortField,
+        sortDirection,
+      });
 
-      const [{ count: total }] = await totalQueryBuilder;
-      const totalPages = Math.ceil(total / pageSize);
-
+      // 转换返回格式以保持兼容性
       return {
-        data: orders,
+        data: result.items,
         pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
+          page: result.meta.page,
+          pageSize: result.meta.pageSize,
+          total: result.meta.total,
+          totalPages: result.meta.totalPages,
+        
         },
       };
     } catch (error) {
@@ -165,8 +138,8 @@ export class OrdersService {
       // 获取订单基本信息
       const order = await db
         .select()
-        .from(ordersSchema)
-        .where(eq(ordersSchema.id, id))
+        .from(ordersTable)
+        .where(eq(ordersTable.id, id))
         .limit(1);
 
       if (order.length === 0) {
@@ -176,24 +149,24 @@ export class OrdersService {
       // 获取订单项
       const orderItems = await db
         .select({
-          id: orderItemsSchema.id,
-          productId: orderItemsSchema.productId,
-          productName: orderItemsSchema.productName,
-          productSku: orderItemsSchema.productSku,
-          quantity: orderItemsSchema.quantity,
-          unitPrice: orderItemsSchema.unitPrice,
-          totalPrice: orderItemsSchema.totalPrice,
-          productImage: orderItemsSchema.productImage,
+          id: orderItemsTable.id,
+          productId: orderItemsTable.productId,
+          productName: orderItemsTable.productName,
+          productSku: orderItemsTable.productSku,
+          quantity: orderItemsTable.quantity,
+          unitPrice: orderItemsTable.unitPrice,
+          totalPrice: orderItemsTable.totalPrice,
+          productImage: orderItemsTable.productImage,
         })
-        .from(orderItemsSchema)
-        .where(eq(orderItemsSchema.orderId, id));
+        .from(orderItemsTable)
+        .where(eq(orderItemsTable.orderId, id));
 
       // 获取退款记录
       const refunds = await db
         .select()
-        .from(refundsSchema)
-        .where(eq(refundsSchema.orderId, id))
-        .orderBy(desc(refundsSchema.createdAt));
+        .from(refundsTable)
+        .where(eq(refundsTable.orderId, id))
+        .orderBy(desc(refundsTable.createdAt));
 
       return {
         ...order[0],
@@ -221,9 +194,9 @@ export class OrdersService {
       }
 
       const result = await db
-        .update(ordersSchema)
+        .update(ordersTable)
         .set(updateData)
-        .where(eq(ordersSchema.id, id))
+        .where(eq(ordersTable.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -252,9 +225,9 @@ export class OrdersService {
       }
 
       const result = await db
-        .update(ordersSchema)
+        .update(ordersTable)
         .set(updateData)
-        .where(eq(ordersSchema.id, id))
+        .where(eq(ordersTable.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -269,72 +242,65 @@ export class OrdersService {
   }
 
   /**
-   * 获取退款列表
+   * 获取退款列表 - 使用统一分页函数
    */
   async getRefundList(query: RefundQuery) {
     try {
       const { page = 1, pageSize = 20, status, orderId } = query;
 
-      const offset = (page - 1) * pageSize;
+      // 构建基础查询
+      let queryBuilder = db
+        .select({
+          id: refundsTable.id,
+          orderId: refundsTable.orderId,
+          amount: refundsTable.amount,
+          reason: refundsTable.reason,
+          status: refundsTable.status,
+          refundMethod: refundsTable.refundMethod,
+          processedAt: refundsTable.processedAt,
+          notes: refundsTable.notes,
+          createdAt: refundsTable.createdAt,
+          updatedAt: refundsTable.updatedAt,
+          orderNumber: ordersTable.orderNumber,
+          customerName: ordersTable.customerName,
+          customerEmail: ordersTable.customerEmail,
+        })
+        .from(refundsTable)
+        .leftJoin(ordersTable, eq(refundsTable.orderId, ordersTable.id));
+
+      // 构建查询条件
       const conditions = [];
 
       if (status) {
-        conditions.push(eq(refundsSchema.status, status));
+        conditions.push(eq(refundsTable.status, status));
       }
       if (orderId) {
-        conditions.push(eq(refundsSchema.orderId, orderId));
+        conditions.push(eq(refundsTable.orderId, orderId));
       }
 
-      const whereClause =
-        conditions.length > 0 ? and(...conditions) : undefined;
-
-      //
-
-      // 获取退款列表，包含订单信息
-      const refunds = await db
-        .select({
-          id: refundsSchema.id,
-          orderId: refundsSchema.orderId,
-          amount: refundsSchema.amount,
-          reason: refundsSchema.reason,
-          status: refundsSchema.status,
-          refundMethod: refundsSchema.refundMethod,
-          processedAt: refundsSchema.processedAt,
-          notes: refundsSchema.notes,
-          createdAt: refundsSchema.createdAt,
-          updatedAt: refundsSchema.updatedAt,
-          orderNumber: ordersSchema.orderNumber,
-          customerName: ordersSchema.customerName,
-          customerEmail: ordersSchema.customerEmail,
-        })
-        .from(refundsSchema)
-        .leftJoin(ordersSchema, eq(refundsSchema.orderId, ordersSchema.id))
-        .where(whereClause)
-        .orderBy(desc(refundsSchema.createdAt))
-        .limit(pageSize)
-        .offset(offset);
-
-      // 获取总数
-      const totalQueryBuilder = db
-        .select({ count: count() })
-        .from(refundsSchema);
-
-      if (whereClause) {
-        totalQueryBuilder.where(whereClause);
+      // 应用查询条件
+      if (conditions.length > 0) {
+        queryBuilder = queryBuilder.where(and(...conditions));
       }
 
-      const [{ count: total }] = await totalQueryBuilder;
-      const totalPages = Math.ceil(total / pageSize);
+      // 使用统一分页函数
+      const result = await paginate(queryBuilder, {
+        page,
+        pageSize,
+        sortField: refundsTable.createdAt,
+        sortDirection: "desc",
+      });
 
+      // 转换返回格式以保持兼容性
       return {
-        data: refunds,
+        data: result.items,
         pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
+          page: result.meta.page,
+          pageSize: result.meta.pageSize,
+          total: result.meta.total,
+          totalPages: result.meta.totalPages,
+          hasNext: result.meta.page < result.meta.totalPages,
+          hasPrev: result.meta.page > 1,
         },
       };
     } catch (error) {
@@ -351,8 +317,8 @@ export class OrdersService {
       // 检查订单是否存在
       const order = await db
         .select()
-        .from(ordersSchema)
-        .where(eq(ordersSchema.id, orderId))
+        .from(ordersTable)
+        .where(eq(ordersTable.id, orderId))
         .limit(1);
 
       if (order.length === 0) {
@@ -374,7 +340,7 @@ export class OrdersService {
       };
 
       const result = await db
-        .insert(refundsSchema)
+        .insert(refundsTable)
         .values(refundData)
         .returning();
 
@@ -404,9 +370,9 @@ export class OrdersService {
       }
 
       const result = await db
-        .update(refundsSchema)
+        .update(refundsTable)
         .set(updateData)
-        .where(eq(refundsSchema.id, id))
+        .where(eq(refundsTable.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -429,10 +395,10 @@ export class OrdersService {
       const conditions = [];
 
       if (startDate) {
-        conditions.push(sql`${ordersSchema.createdAt} >= ${startDate}`);
+        conditions.push(sql`${ordersTable.createdAt} >= ${startDate}`);
       }
       if (endDate) {
-        conditions.push(sql`${ordersSchema.createdAt} <= ${endDate}`);
+        conditions.push(sql`${ordersTable.createdAt} <= ${endDate}`);
       }
 
       const whereClause =
@@ -442,39 +408,39 @@ export class OrdersService {
       const totalStats = await db
         .select({
           totalOrders: count(),
-          totalAmount: sql<string>`COALESCE(SUM(CAST(${ordersSchema.totalAmount} AS DECIMAL)), 0)`,
+          totalAmount: sql<string>`COALESCE(SUM(CAST(${ordersTable.totalAmount} AS DECIMAL)), 0)`,
         })
-        .from(ordersSchema)
+        .from(ordersTable)
         .where(whereClause);
 
       // 获取各状态订单数量
       const statusStats = await db
         .select({
-          status: ordersSchema.status,
+          status: ordersTable.status,
           count: count(),
         })
-        .from(ordersSchema)
+        .from(ordersTable)
         .where(whereClause)
-        .groupBy(ordersSchema.status);
+        .groupBy(ordersTable.status);
 
       // 获取各支付状态订单数量
       const paymentStats = await db
         .select({
-          paymentStatus: ordersSchema.paymentStatus,
+          paymentStatus: ordersTable.paymentStatus,
           count: count(),
         })
-        .from(ordersSchema)
+        .from(ordersTable)
         .where(whereClause)
-        .groupBy(ordersSchema.paymentStatus);
+        .groupBy(ordersTable.paymentStatus);
 
       // 获取退款统计
       const refundStats = await db
         .select({
           totalRefunds: count(),
-          totalRefundAmount: sql<string>`COALESCE(SUM(CAST(${refundsSchema.amount} AS DECIMAL)), 0)`,
+          totalRefundAmount: sql<string>`COALESCE(SUM(CAST(${refundsTable.amount} AS DECIMAL)), 0)`,
         })
-        .from(refundsSchema)
-        .leftJoin(ordersSchema, eq(refundsSchema.orderId, ordersSchema.id))
+        .from(refundsTable)
+        .leftJoin(ordersTable, eq(refundsTable.orderId, ordersTable.id))
         .where(whereClause);
 
       return {

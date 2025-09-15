@@ -1,7 +1,8 @@
 import { commonRes } from "@backend/utils/Res";
 import { Elysia } from "elysia";
-import { StatisticsModel } from "./statistics.model";
+
 import { statisticsService } from "./statistics.service";
+
 
 /**
  * 统计控制器

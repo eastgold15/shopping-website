@@ -8,46 +8,24 @@
           <!-- 主图显示区域 -->
           <div class="main-image-container mb-4">
             <div class="aspect-square bg-white rounded-lg overflow-hidden shadow-sm">
-              <!-- 视频播放器 -->
-              <video v-if="isVideoMode && currentVideo" :src="currentVideo"
-                class="w-full h-full object-cover cursor-zoom-in" controls :poster="currentImage"
-                @click="openImageModal">
-                您的浏览器不支持视频播放。
-              </video>
               <!-- 图片显示 -->
-              <img v-else :src="currentImage" :alt="product?.name"
+              <img :src="currentImage" :alt="product?.name"
                 class="w-full h-full object-cover cursor-zoom-in transition-all duration-300 ease-in-out"
                 @click="openImageModal" />
             </div>
           </div>
 
-          <!-- 缩略图和视频选择区域 -->
+          <!-- 缩略图选择区域 -->
           <div class="media-thumbnails">
             <div class="grid grid-cols-5 gap-2">
               <!-- 商品图片缩略图 -->
-              <div v-for="(url) in product?.images" :key="url"
+              <div v-for="(url, index) in product?.images" :key="index"
                 class="aspect-square bg-white rounded-lg overflow-hidden cursor-pointer border-2 transition-all" :class="{
                   'border-blue-500': currentImage === url,
                   'border-gray-200 hover:border-gray-300': currentImage !== url
                 }" @click="setCurrentImage(url)">
                 <img :src="url" class="w-full h-full object-cover" />
               </div>
-
-              <!-- 视频缩略图 -->
-              <!-- <div v-for="video in product?.videos" :key="video"
-                class="aspect-square bg-white rounded-lg overflow-hidden cursor-pointer border-2 transition-all relative"
-                :class="{
-                  'border-blue-500': isVideoMode && currentVideo === video.url,
-                  'border-gray-200 hover:border-gray-300': !isVideoMode! && !currentVideo !=== !video.url
-                }" @click="setCurrentVideo(video.url, video.thumbnail)">
-                <img :src="video.thumbnail" :alt="video.title" class="w-full h-full object-cover" />
-           
-                <div class="absolute inset-0 flex items-center justify-center">
-                  <div class="w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                    <i class="i-ic:baseline-play-arrow text-white text-lg"></i>
-                  </div>
-                </div>
-              </div> -->
             </div>
           </div>
         </div>
@@ -63,35 +41,49 @@
           <div class="price-section mb-6">
             <div class="flex items-center gap-4 mb-2">
               <span class="text-3xl font-bold text-gray-900">
-                ${{ product?.price }}
+                ¥{{ product?.price }}
               </span>
               <span v-if="product?.comparePrice && product?.comparePrice > product?.price"
                 class="text-xl text-gray-500 line-through">
-                ${{ product?.comparePrice }}
+                ¥{{ product?.comparePrice }}
+              </span>
+              <span v-if="product?.comparePrice && product?.comparePrice > product?.price"
+                class="text-lg font-semibold text-red-600">
+                省¥{{ (Number(product?.comparePrice) - Number(product?.price)).toFixed(2) }}
               </span>
             </div>
-
-
+            <!-- 库存信息 -->
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <span v-if="product?.stock && product.stock > 0" class="text-green-600">
+                库存充足 ({{ product.stock }}件)
+              </span>
+              <span v-else class="text-red-600">暂时缺货</span>
+            </div>
           </div>
 
           <!-- 颜色选择 -->
           <div v-if="product?.colors?.length" class="color-selection mb-6">
-            <h3 class="text-lg font-semibold mb-3">Color: {{ selectedColor?.name || 'Select a color' }}</h3>
+            <h3 class="text-lg font-semibold mb-3">颜色: {{ selectedColor?.name || '请选择颜色' }}</h3>
             <div class="flex gap-3">
-              <div v-for="color in product.colors" :key="color"
-                class="w-12 h-12 rounded-full border-2 cursor-pointer transition-all" :class="{
-                  'border-gray-900 ring-2 ring-gray-300': selectedColor?.id === color.id,
+              <div v-for="color in product.colors" :key="color.id"
+                class="w-12 h-12 rounded-full border-2 cursor-pointer transition-all relative" :class="{
+                  'border-blue-500 ring-2 ring-blue-200': selectedColor?.id === color.id,
                   'border-gray-300 hover:border-gray-400': selectedColor?.id !== color.id
-                }" :style="{ backgroundColor: color.hexCode }" :title="color.name" @click="selectColor(color)"></div>
+                }" :style="{ backgroundColor: color.hexCode }" :title="color.name" @click="selectColor(color)">
+                <div v-if="selectedColor?.id === color.id"
+                  class="absolute inset-0 rounded-full flex items-center justify-center">
+                  <i class="i-ic:baseline-check text-white text-sm drop-shadow-lg"></i>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 尺寸选择 -->
           <div v-if="product?.sizes?.length" class="size-selection mb-6">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-lg font-semibold">Size:</h3>
+              <h3 class="text-lg font-semibold">尺寸: {{ selectedSize?.name || '请选择尺寸' }}</h3>
               <button class="text-sm text-blue-600 underline hover:text-blue-800">
-                Size Chart
+                尺寸表
               </button>
             </div>
 
@@ -112,7 +104,7 @@
             <div class="grid grid-cols-4 gap-3">
               <button v-for="size in product.sizes" :key="size.id"
                 class="py-3 px-4 border rounded-lg text-center transition-all" :class="{
-                  'border-gray-900 bg-gray-900 text-white': selectedSize?.id === size.id,
+                  'border-blue-500 bg-blue-50 text-blue-700': selectedSize?.id === size.id,
                   'border-gray-300 hover:border-gray-400': selectedSize?.id !== size.id && size.isAvailable,
                   'border-gray-200 text-gray-400 cursor-not-allowed': !size.isAvailable
                 }" :disabled="!size.isAvailable" @click="selectSize(size)">
@@ -120,11 +112,12 @@
                 <div class="text-xs text-gray-500">
                   {{ getSizeByType(size, currentSizeType) }}
                 </div>
+                <div v-if="!size.isAvailable" class="text-xs text-red-500 mt-1">缺货</div>
               </button>
             </div>
 
             <p v-if="!selectedSize" class="text-sm text-gray-600 mt-2">
-              Choose a size to continue, Selection will refresh the page with new results
+              请选择尺寸以继续购买
             </p>
           </div>
 
@@ -133,30 +126,42 @@
             <div class="flex gap-4 mb-4">
               <!-- 加入购物袋按钮 -->
               <button
-                class="flex-1 bg-gray-900 text-white py-4 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                class="flex-1 bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 :disabled="!canAddToCart" @click="addToCart">
-                Add to Bag
+                <i class="i-ic:baseline-shopping-cart"></i>
+                {{ !canAddToCart ? '请选择规格' : '加入购物车' }}
               </button>
 
+              <!-- 立即购买按钮 -->
+              <button
+                class="flex-1 bg-gray-900 text-white py-4 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                :disabled="!canAddToCart" @click="buyNow">
+                {{ !canAddToCart ? '请选择规格' : '立即购买' }}
+              </button>
+            </div>
+
+            <div class="flex gap-4">
               <!-- 收藏按钮 -->
-              <button class="p-4 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
-                :class="{ 'text-red-500 border-red-300': isFavorited }" @click="toggleFavorite">
-                <i class="i-ic:baseline-favorite text-xl" :class="{ 'text-red-500': isFavorited }"></i>
+              <button class="flex-1 border border-gray-300 py-3 px-6 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+                :class="{ 'text-red-500 border-red-300 bg-red-50': isFavorited }" @click="toggleFavorite">
+                <i class="i-ic:baseline-favorite" :class="{ 'text-red-500': isFavorited }"></i>
+                {{ isFavorited ? '已收藏' : '收藏' }}
               </button>
 
               <!-- 分享按钮 -->
-              <button class="p-4 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+              <button class="flex-1 border border-gray-300 py-3 px-6 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
                 @click="shareProduct">
-                <i class="i-ic:baseline-share text-xl"></i>
+                <i class="i-ic:baseline-share"></i>
+                分享
               </button>
             </div>
 
             <!-- 额外信息 -->
-            <div class="text-sm text-gray-600 space-y-1">
-              <p>FREE In Store Returns (?)</p>
-              <p>Get 10% off* - Buy online, Pick up in store*</p>
-              <p>Earn {{ product?.rewardPoints || 0 }} Reward Points (?)</p>
-              <p class="text-xs">30 points = $1 Reward</p>
+            <div class="text-sm text-gray-600 space-y-1 mt-4">
+              <p>✓ 免费店内退货</p>
+              <p>✓ 线上下单，店内自提享9折优惠</p>
+              <p>✓ 购买可获得 {{ product?.rewardPoints || 0 }} 积分</p>
+              <p class="text-xs">30积分 = ¥1优惠券</p>
             </div>
           </div>
 
@@ -233,21 +238,30 @@
     </div>
 
     <!-- 相关推荐 -->
-    <div class="related-products bg-white py-12">
+    <div class="related-products bg-white py-12" v-if="relatedProducts.length > 0">
       <div class="max-w-7xl mx-auto px-4">
-        <h2 class="text-2xl font-bold text-gray-900 mb-8">You May Also Like</h2>
+        <h2 class="text-2xl font-bold text-gray-900 mb-8">您可能还喜欢</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <div v-for="relatedProduct in relatedProducts" :key="relatedProduct.id"
             class="product-card group cursor-pointer" @click="navigateToProduct(relatedProduct.id)">
             <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-3">
-              <img :src="relatedProduct.images[0]?.url" :alt="relatedProduct.title"
+              <img :src="getProductImage(relatedProduct)" :alt="getProductName(relatedProduct)"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             </div>
             <h3 class="font-medium text-gray-900 mb-1 line-clamp-2">
-              {{ relatedProduct.title }}
+              {{ getProductName(relatedProduct) }}
             </h3>
-            <p class="text-lg font-semibold text-gray-900">
-              ${{ relatedProduct.price.currentPrice }}
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-semibold text-gray-900">
+                ¥{{ getProductPrice(relatedProduct) }}
+              </span>
+              <span v-if="getProductComparePrice(relatedProduct)"
+                class="text-sm text-gray-500 line-through">
+                ¥{{ getProductComparePrice(relatedProduct) }}
+              </span>
+            </div>
+            <p v-if="getProductDescription(relatedProduct)" class="text-sm text-gray-600 mt-1 line-clamp-2">
+              {{ getProductDescription(relatedProduct) }}
             </p>
           </div>
         </div>
@@ -282,11 +296,9 @@ const relatedProducts = ref<Products[]>([]);
 const loading = ref(true);
 
 // 商品选择状态
-const selectedColor = ref<string | null>(null);
-const selectedSize = ref<string | null>(null);
+const selectedColor = ref<any>(null);
+const selectedSize = ref<any>(null);
 const currentImage = ref<string>("");
-const currentVideo = ref<string>("");
-const isVideoMode = ref(false);
 const currentSizeType = ref<"uk" | "eu" | "us">("uk");
 const sizeTypes = ["uk", "eu", "us"] as const;
 
@@ -298,6 +310,11 @@ const isFavorited = ref(false);
 // 计算属性
 const canAddToCart = computed(() => {
 	if (!product.value) return false;
+
+	// 检查库存
+	if (!product.value?.stock || product.value.stock <= 0) {
+		return false;
+	}
 
 	// 如果有颜色选项，必须选择颜色
 	if (product.value.colors?.length && !selectedColor.value) return false;
@@ -311,14 +328,33 @@ const canAddToCart = computed(() => {
 // 方法
 const setCurrentImage = (imageUrl: string) => {
 	currentImage.value = imageUrl;
-	// currentVideo.value = ''
-	isVideoMode.value = false;
 };
 
-const setCurrentVideo = (videoUrl: string, thumbnailUrl: string) => {
-	currentVideo.value = videoUrl;
-	currentImage.value = thumbnailUrl;
-	isVideoMode.value = true;
+const selectColor = (color: any) => {
+	selectedColor.value = color;
+	// 如果该颜色有对应的图片，切换到该图片
+	if (color.imageUrl) {
+		setCurrentImage(color.imageUrl);
+	}
+};
+
+const selectSize = (size: any) => {
+	if (size.isAvailable) {
+		selectedSize.value = size;
+	}
+};
+
+const getSizeByType = (size: any, type: string) => {
+	switch (type) {
+		case 'uk':
+			return size.ukSize || size.name;
+		case 'eu':
+			return size.euSize || size.name;
+		case 'us':
+			return size.usSize || size.name;
+		default:
+			return size.name;
+	}
 };
 // const selectColor = (color: string) => {
 //   selectedColor.value = color
@@ -348,38 +384,69 @@ const setCurrentVideo = (videoUrl: string, thumbnailUrl: string) => {
 // }
 
 const addToCart = () => {
-	if (!canAddToCart.value) return;
-
-	// TODO: 实现加入购物车逻辑
-	console.log("Adding to cart:", {
+	if (!canAddToCart.value) {
+		return;
+	}
+	
+	// 构建购物车项目
+	const cartItem = {
 		productId: product.value?.id,
-		colorId: selectedColor.value?.id,
-		sizeId: selectedSize.value?.id,
-		quantity: 1,
-	});
-
+		name: product.value?.name,
+		price: product.value?.price,
+		image: currentImage.value,
+		color: selectedColor.value?.name,
+		size: selectedSize.value?.name,
+		quantity: 1
+	};
+	
+	// 这里应该调用购物车API或状态管理
+	console.log('添加到购物车:', cartItem);
+	
 	// 显示成功提示
-	alert("Product added to cart!");
+	alert('商品已添加到购物车！');
+};
+
+const buyNow = () => {
+	if (!canAddToCart.value) {
+		return;
+	}
+	
+	// 构建订单项目
+	const orderItem = {
+		productId: product.value?.id,
+		name: product.value?.name,
+		price: product.value?.price,
+		image: currentImage.value,
+		color: selectedColor.value?.name,
+		size: selectedSize.value?.name,
+		quantity: 1
+	};
+	
+	// 这里应该跳转到结算页面
+	console.log('立即购买:', orderItem);
+	alert('跳转到结算页面...');
 };
 
 const toggleFavorite = () => {
 	isFavorited.value = !isFavorited.value;
-	// TODO: 实现收藏逻辑
-	console.log("Toggle favorite:", isFavorited.value);
+	
+	// 这里应该调用收藏API
+	console.log(isFavorited.value ? '添加到收藏' : '取消收藏', product.value?.id);
+	alert(isFavorited.value ? '已添加到收藏！' : '已取消收藏！');
 };
 
 const shareProduct = () => {
-	// TODO: 实现分享逻辑
+	// 分享功能
 	if (navigator.share) {
 		navigator.share({
-			title: product.value?.title,
+			title: product.value?.name,
 			text: product.value?.shortDescription,
-			url: window.location.href,
+			url: window.location.href
 		});
 	} else {
 		// 复制链接到剪贴板
 		navigator.clipboard.writeText(window.location.href);
-		alert("Product link copied to clipboard!");
+		alert('商品链接已复制到剪贴板！');
 	}
 };
 
@@ -391,6 +458,39 @@ const closeImageModal = () => {
 	showImageModal.value = false;
 };
 
+// 相关商品数据处理辅助函数
+const getProductImage = (product: any) => {
+	if (product.images && product.images.length > 0) {
+		return typeof product.images[0] === 'string' ? product.images[0] : product.images[0].url;
+	}
+	return 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400';
+};
+
+const getProductName = (product: any) => {
+	return product.name || product.title || '商品名称';
+};
+
+const getProductPrice = (product: any) => {
+	if (product.price) {
+		return typeof product.price === 'string' ? product.price : product.price.currentPrice || product.price;
+	}
+	return '0.00';
+};
+
+const getProductComparePrice = (product: any) => {
+	if (product.comparePrice) {
+		return product.comparePrice;
+	}
+	if (product.price && typeof product.price === 'object' && product.price.originalPrice) {
+		return product.price.originalPrice > getProductPrice(product) ? product.price.originalPrice : null;
+	}
+	return null;
+};
+
+const getProductDescription = (product: any) => {
+	return product.shortDescription || product.description || '';
+};
+
 const navigateToProduct = (productId: string) => {
 	router.push(`/product/${productId}`);
 };
@@ -399,31 +499,85 @@ const navigateToProduct = (productId: string) => {
 const fetchProduct = async (productId: string) => {
 	try {
 		loading.value = true;
-		// 使用Eden Treaty调用API
-		const res = await api.products.getById(productId)
+		// 使用API调用
+		const res = await api.products.getById(Number(productId));
 		if (!res) {
 			return;
 		}
 
-		if (res.code == 200) {
+		if (res.code === 200) {
 			product.value = res.data as any;
 
 			// 设置默认图片
-			//@ts-ignore
-			if (product.value?.images.length > 0) {
-				currentImage.value = product?.value?.images[0] as any;
-				isVideoMode.value = false;
-				currentVideo.value = "";
+			if (product.value?.images && product.value.images.length > 0) {
+				currentImage.value = product.value.images[0] as any;
 			}
 		} else {
 			// 如果API调用失败，使用模拟数据作为后备
-			console.warn("API调用失败，使用模拟数据:");
+			console.warn("API调用失败，使用模拟数据:", res.message);
+			// 设置模拟数据
+			product.value = {
+				id: Number(productId),
+				name: "经典棉质T恤",
+				slug: "classic-cotton-tshirt",
+				description: "这是一款经典的棉质T恤，采用100%纯棉材质制作，舒适透气，适合日常穿着。",
+				shortDescription: "经典棉质T恤，舒适透气，日常必备",
+				price: "89.00",
+				comparePrice: "129.00",
+				stock: 50,
+				images: [
+					"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800",
+					"https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800",
+					"https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800"
+				],
+				colors: [
+					{ id: 1, name: "白色", hexCode: "#FFFFFF" },
+					{ id: 2, name: "黑色", hexCode: "#000000" },
+					{ id: 3, name: "灰色", hexCode: "#808080" }
+				],
+				sizes: [
+					{ id: 1, name: "S", isAvailable: true, ukSize: "S", euSize: "36", usSize: "S" },
+					{ id: 2, name: "M", isAvailable: true, ukSize: "M", euSize: "38", usSize: "M" },
+					{ id: 3, name: "L", isAvailable: true, ukSize: "L", euSize: "40", usSize: "L" },
+					{ id: 4, name: "XL", isAvailable: false, ukSize: "XL", euSize: "42", usSize: "XL" }
+				],
+				averageRating: 4.5,
+				rewardPoints: 89,
+				specifications: [
+					{ name: "材质", value: "100%纯棉" },
+					{ name: "产地", value: "中国" },
+					{ name: "洗涤方式", value: "机洗" }
+				],
+				careInstructions: [
+					"机洗，水温不超过30°C",
+					"不可漂白",
+					"低温熨烫",
+					"不可干洗"
+				],
+				fullDescription: "这款经典棉质T恤采用优质100%纯棉面料，经过精心设计和制作。面料柔软舒适，透气性好，适合各种场合穿着。简约的设计风格，经典的剪裁，让您在任何时候都能展现出优雅的气质。无论是日常休闲还是运动健身，都是您的理想选择。"
+			} as any;
+			
+			// 设置默认图片
+			if (product.value?.images && product.value.images.length > 0) {
+				currentImage.value = product.value.images[0] as any;
+			}
 		}
 
 		// 获取相关商品
-		// await fetchRelatedProducts()
+		await fetchRelatedProducts();
 	} catch (err) {
 		console.error("Error fetching product:", err);
+		// 错误时也设置模拟数据
+		product.value = {
+			id: Number(productId),
+			name: "经典棉质T恤",
+			price: "89.00",
+			comparePrice: "129.00",
+			stock: 50,
+			images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800"],
+			shortDescription: "经典棉质T恤，舒适透气，日常必备"
+		} as any;
+		currentImage.value = product.value.images[0] as any;
 	} finally {
 		loading.value = false;
 	}
@@ -432,36 +586,105 @@ const fetchProduct = async (productId: string) => {
 // 获取相关商品
 const fetchRelatedProducts = async () => {
 	try {
-		// 使用Eden Treaty调用API
-		if (product.value?.id) {
-			const { data, error: apiError } = await client.api.products
-				.related({ id: product.value.id })
-				.get();
-
-			if (data) {
-				relatedProducts.value = data;
-				return;
-			} else {
-				console.warn("获取相关产品失败，使用模拟数据:", apiError);
-			}
+		// 调用API获取相关商品
+		const res = await api.products.list({ page: 1, pageSize: 4 });
+		if (res && res.code === 200) {
+			// 过滤掉当前商品
+			relatedProducts.value = res.data.items.filter((item: any) => item.id !== product.value?.id).slice(0, 4);
+		} else {
+			// 使用模拟数据
+			relatedProducts.value = [
+				{
+					id: "2",
+					title: "经典牛仔裤",
+					price: {
+						currentPrice: 199.00,
+						originalPrice: 259.00,
+						currency: "CNY",
+					},
+					images: [
+						{
+							id: "1",
+							url: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=800",
+							alt: "经典牛仔裤",
+							isMain: true,
+							sortOrder: 1,
+						},
+					],
+				},
+				{
+					id: "3",
+					title: "休闲衬衫",
+					price: {
+						currentPrice: 159.00,
+						originalPrice: 199.00,
+						currency: "CNY",
+					},
+					images: [
+						{
+							id: "1",
+							url: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800",
+							alt: "休闲衬衫",
+							isMain: true,
+							sortOrder: 1,
+						},
+					],
+				},
+				{
+					id: "4",
+					title: "运动鞋",
+					price: {
+						currentPrice: 299.00,
+						originalPrice: 399.00,
+						currency: "CNY",
+					},
+					images: [
+						{
+							id: "1",
+							url: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800",
+							alt: "运动鞋",
+							isMain: true,
+							sortOrder: 1,
+						},
+					],
+				},
+				{
+					id: "5",
+					title: "棒球帽",
+					price: {
+						currentPrice: 89.00,
+						originalPrice: 119.00,
+						currency: "CNY",
+					},
+					images: [
+						{
+							id: "1",
+							url: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800",
+							alt: "棒球帽",
+							isMain: true,
+							sortOrder: 1,
+						},
+					],
+				},
+			] as Product[];
 		}
-
-		// 如果API调用失败或没有产品ID，使用模拟数据作为后备
-		// 模拟数据
+	} catch (err) {
+		console.error("Error fetching related products:", err);
+		// 错误时使用模拟数据
 		relatedProducts.value = [
 			{
 				id: "2",
-				title: "Classic Cotton T-Shirt",
+				title: "相关商品1",
 				price: {
-					currentPrice: 29.99,
-					originalPrice: 39.99,
-					currency: "USD",
+					currentPrice: 99.00,
+					originalPrice: 129.00,
+					currency: "CNY",
 				},
 				images: [
 					{
 						id: "1",
-						url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800",
-						alt: "Cotton T-Shirt",
+						url: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800",
+						alt: "相关商品1",
 						isMain: true,
 						sortOrder: 1,
 					},
@@ -469,61 +692,23 @@ const fetchRelatedProducts = async () => {
 			},
 			{
 				id: "3",
-				title: "Casual Denim Jacket",
+				title: "相关商品2",
 				price: {
-					currentPrice: 89.99,
-					originalPrice: 119.99,
-					currency: "USD",
-				},
-				images: [
-					{
-						id: "1",
-						url: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800",
-						alt: "Denim Jacket",
-						isMain: true,
-						sortOrder: 1,
-					},
-				],
-			},
-			{
-				id: "4",
-				title: "Slim Fit Chinos",
-				price: {
-					currentPrice: 49.99,
-					originalPrice: 69.99,
-					currency: "USD",
+					currentPrice: 79.00,
+					originalPrice: 99.00,
+					currency: "CNY",
 				},
 				images: [
 					{
 						id: "1",
 						url: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800",
-						alt: "Chinos",
+						alt: "相关商品2",
 						isMain: true,
 						sortOrder: 1,
 					},
 				],
-			},
-			{
-				id: "5",
-				title: "Knit Sweater",
-				price: {
-					currentPrice: 64.99,
-					originalPrice: 84.99,
-					currency: "USD",
-				},
-				images: [
-					{
-						id: "1",
-						url: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800",
-						alt: "Knit Sweater",
-						isMain: true,
-						sortOrder: 1,
-					},
-				],
-			},
+			}
 		] as Product[];
-	} catch (err) {
-		console.error("Error fetching related products:", err);
 	}
 };
 

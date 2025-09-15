@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { useToast } from "primevue/usetoast";
+import type { SelectAdvertisementsType, SelectProductVo } from "@backend/types";
 import { useCmsApi } from "../utils/handleApi";
 
 
@@ -10,9 +8,8 @@ const router = useRouter();
 
 // 响应式数据
 
-const hotProducts = ref<Products[]>([]);
+const hotProducts = ref<SelectProductVo[]>([]);
 const loadingProducts = ref(false);
-const latestNews = ref<any[]>([]);
 
 const pageMeta = ref({
 	total: 0,
@@ -20,7 +17,7 @@ const pageMeta = ref({
 	pageSize: 10,
 	totalPages: 0,
 });
-
+const api = useCmsApi();
 // 方法
 /**
  * 加载热门商品
@@ -28,7 +25,6 @@ const pageMeta = ref({
 const loadHotProducts = async () => {
 	loadingProducts.value = true;
 	try {
-		const api = useCmsApi();
 		const res = await api.products.list({
 			page: 1,
 			pageSize: 10,
@@ -39,7 +35,27 @@ const loadHotProducts = async () => {
 			return;
 		}
 		if (res.code === 200) {
-			hotProducts.value = res.data?.items as any;
+			// 处理商品数据，添加必要的字段
+			hotProducts.value = (res.data?.items as any[])?.map(item => ({
+				...item,
+				// 确保价格是数字类型
+				price: parseFloat(item.price),
+				// 计算原价（如果没有comparePrice，则设为价格的1.2倍）
+				originalPrice: item.comparePrice && parseFloat(item.comparePrice) > 0
+					? parseFloat(item.comparePrice)
+					: parseFloat(item.price) * 1.2,
+				// 处理图片URL，移除反引号
+				imageUrl: item.images && item.images.length > 0
+					? item.images[0].url.replace(/`/g, '')
+					: 'https://via.placeholder.com/300x300?text=' + encodeURIComponent(item.name),
+				// 计算折扣百分比
+				discount: item.comparePrice && parseFloat(item.comparePrice) > 0
+					? Math.round((1 - parseFloat(item.price) / parseFloat(item.comparePrice)) * 100)
+					: Math.floor(Math.random() * 20) + 10,
+				// 添加评分（模拟数据）
+				rating: (Math.random() * 2 + 3).toFixed(1), // 3.0-5.0之间的评分
+				reviewCount: Math.floor(Math.random() * 500) + 10 // 10-510之间的评论数
+			})) || [];
 			pageMeta.value = res.data?.meta as any;
 		}
 	} catch (error) {
@@ -49,66 +65,46 @@ const loadHotProducts = async () => {
 	}
 };
 
-const carouselAds = ref<Advertisement[]>([]);
+const carouselAds = ref<SelectAdvertisementsType[]>([]);
 
-const toast = useToast();
 
-// 加载轮播图广告
+
+/**
+ * 加载轮播图广告
+ */
 const loadCarouselAds = async () => {
 	try {
-		// 注意：advertisements API在后端未实现，需要后端支持
-		// const res = await api.advertisements.getByPosition("home-hero")
-		const res = null; // 临时处理
-		if (!res) {
-			throw new Error("加载轮播图广告失敗");
-		}
-
+		// 使用真实的广告API数据
+		const res = await api.advertisements.list({ type: "carousel" })
+		// 处理API返回的数据
 		if (res.code === 200) {
-			carouselAds.value = res.data as any;
+			carouselAds.value = (res.data as any[])?.map(ad => ({
+				...ad,
+				// 确保有name字段用于显示
+				name: ad.title || ad.name,
+				// 暂时使用占位图，后续可以根据image_id获取真实图片
+				image: `https://picsum.photos/800/400?random=${ad.id}`
+			})) || [];
 		}
 	} catch (error) {
-		toast.add({
-			severity: "error",
-			summary: "加载失败",
-			detail: (error as Error).message,
-			life: 3000,
-		});
+		console.error("加载轮播广告失败:", error);
+		// 发生错误时使用备用数据
+		carouselAds.value = [
+			{
+				id: 1,
+				title: "官方的水果",
+				image: "https://picsum.photos/800/400?random=1",
+				position: "home-top",
+				link: "/",
+				isActive: true,
+				sortOrder: 0,
+				createdAt: new Date(),
+				updatedAt: new Date()
+			}
+		];
 	}
 };
 loadCarouselAds();
-/**
- * 加载最新资讯
- */
-const loadLatestNews = async () => {
-	try {
-		// 模拟新闻数据
-		latestNews.value = [
-			{
-				id: 1,
-				title: "2024春季新品发布会",
-				excerpt: "全新春季服装系列即将上市，敬请期待...",
-				image: "/news-1.jpg",
-				createdAt: new Date("2024-03-01"),
-			},
-			{
-				id: 2,
-				title: "品牌合作伙伴计划",
-				excerpt: "我们正在寻找优质的品牌合作伙伴...",
-				image: "/news-2.jpg",
-				createdAt: new Date("2024-02-28"),
-			},
-			{
-				id: 3,
-				title: "可持续发展倡议",
-				excerpt: "我们致力于环保和可持续发展...",
-				image: "/news-3.jpg",
-				createdAt: new Date("2024-02-25"),
-			},
-		];
-	} catch (error) {
-		console.error("加载新闻失败:", error);
-	}
-};
 
 /**
  * 查看商品详情
@@ -124,170 +120,205 @@ const viewAllProducts = () => {
 	router.push("/products");
 };
 
-/**
- * 查看新闻详情
- */
-const viewNews = (newsId: number) => {
-	router.push(`/news/${newsId}`);
-};
 
-/**
- * 查看所有新闻
- */
-const viewAllNews = () => {
-	router.push("/news");
-};
 
-/**
- * 格式化日期
- */
-const formatDate = (date: Date) => {
-	return new Intl.DateTimeFormat("zh-CN", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-	}).format(new Date(date));
-};
 
 // 生命周期
 onMounted(() => {
 	loadHotProducts();
-	loadLatestNews();
 });
 </script>
 
 
 <template>
-	<div class="w-[100%]">
-		<div class="grid grid-cols-5 gap-8">
-			<!-- 左侧广告（2:1 比例） -->
-			<div class="col-span-4 overflow-hidden aspect-[2/1]  max-h-[400px]">
-
-				<Carousel class="inline-flex" :value="carouselAds" :numVisible="1" :numScroll="3" circular
-					:showIndicators="false" :pt="{
-						root: { class: 'h-full' },
-						content: { class: 'relative !block  h-full' }, // 确保 Carousel 继承高度
-						viewport: { class: '!h-full', root: { class: '!h-full' } }, pcPrevButton: {
-							root: {
-								class: '!absolute top-1/2 -translate-y-1/2 left-4 z-1'
-							}
-						}, pcNextButton: {
-							root: {
-								class: '!absolute top-1/2 -translate-y-1/2 right-4'
-							}
-						}
-					}">
-
-
-
-					<template #item="slotProps">
-						<div class="relative w-full aspect-[2/1]"> <!-- 父容器固定比例 -->
-							<img :src="slotProps.data.image" :alt="slotProps.data.name"
-								class=" w-full h-full object-cover " />
-						</div>
-					</template>
-				</Carousel>
-			</div>
-
-			<!-- 右侧（等高布局） -->
-			<div class="col-span-1 grid grid-rows-2 gap-4 min-w-[200px] h-full"> <!-- 关键：h-full -->
-				<!-- 上部：4个图标 -->
-				<div class="grid grid-cols-2 grid-rows-2 gap-4">
-					<!-- 图标项（保持和左侧等高） -->
-					<div class="flex-center-center bg-white rounded-lg shadow-sm">
-						<div class="flex flex-col items-center p-3">
-							<i class="i-ic:outline-shopify text-6 text-blue-500"></i>
-							<span class="text-sm mt-2">我的订单</span>
-						</div>
+	<div class="w-full bg-gradient-to-br from-gray-50 to-white min-h-screen">
+		<!-- 主要内容区域 -->
+		<div class="container mx-auto px-6 py-8">
+			<div class="grid grid-cols-5 gap-8 mb-12">
+				<!-- 左侧轮播图（优化样式） -->
+				<div class="col-span-4 relative overflow-hidden rounded-2xl shadow-2xl bg-white">
+					<div class="aspect-[2/1] max-h-[450px]">
+						<Carousel class="h-full" :value="carouselAds" :numVisible="1" :numScroll="1" circular :showIndicators="true"
+							:autoplayInterval="4000" :pt="{
+								root: { class: 'h-full rounded-2xl overflow-hidden' },
+								content: { class: 'relative h-full' },
+								viewport: { class: 'h-full' },
+								pcPrevButton: {
+									root: {
+										class: 'absolute top-1/2 -translate-y-1/2 left-4 z-10 bg-white/80 hover:bg-white text-gray-700 border-0 rounded-full w-12 h-12 shadow-lg transition-all duration-300 hover:scale-110'
+									}
+								},
+								pcNextButton: {
+									root: {
+										class: 'absolute top-1/2 -translate-y-1/2 right-4 z-10 bg-white/80 hover:bg-white text-gray-700 border-0 rounded-full w-12 h-12 shadow-lg transition-all duration-300 hover:scale-110'
+									}
+								},
+								indicators: {
+									root: {
+										class: 'absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2'
+									}
+								},
+								indicator: {
+									root: {
+										class: 'w-3 h-3 rounded-full bg-white/50 hover:bg-white/80 transition-all duration-300 cursor-pointer'
+									}
+								}
+							}">
+							<template #item="slotProps">
+								<div class="relative w-full h-full group">
+									<img :src="slotProps.data.image" :alt="slotProps.data.name"
+										class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+									<div
+										class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+									</div>
+									<div
+										class="absolute bottom-6 left-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+										<h3 class="text-2xl font-bold mb-2">{{ slotProps.data.name }}</h3>
+										<p class="text-white/90">探索更多精彩内容</p>
+									</div>
+								</div>
+							</template>
+						</Carousel>
 					</div>
-
-
-					<div class="flex-center-center bg-white rounded-lg shadow-sm">
-						<div class="flex flex-col items-center p-3">
-							<i class="i-ic:outline-shopify text-6 text-blue-500"></i>
-							<span class="text-sm mt-2">我的订单</span>
-						</div>
-					</div>
-
-
-					<div class="flex-center-center bg-white rounded-lg shadow-sm">
-						<div class="flex flex-col items-center p-3">
-							<i class="i-ic:outline-shopify text-6 text-blue-500"></i>
-							<span class="text-sm mt-2">我的订单</span>
-						</div>
-					</div>
-					<!-- 其他3个图标同理... -->
 				</div>
 
-				<!-- 下部：Banner -->
-				<div class="bg-yellow-200 rounded-lg overflow-hidden">
-					<img src="./../public/01.jpg" alt="Banner" class="w-full h-full object-cover" />
+				<!-- 右侧功能区域（优化样式） -->
+				<div class="col-span-1 space-y-6">
+					<!-- 快捷功能按钮 -->
+					<div class="bg-white rounded-2xl shadow-lg p-6">
+						<h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">快捷功能</h3>
+						<div class="grid grid-cols-2 gap-4">
+							<div class="group cursor-pointer" @click="router.push('/orders')">
+								<div
+									class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
+									<i class="i-ic:outline-receipt text-3xl text-blue-600 mb-2 block"></i>
+									<span class="text-sm font-medium text-gray-700">我的订单</span>
+								</div>
+							</div>
+
+							<div class="group cursor-pointer" @click="router.push('/favorites')">
+								<div
+									class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 text-center transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
+									<i class="i-ic:outline-favorite text-3xl text-red-600 mb-2 block"></i>
+									<span class="text-sm font-medium text-gray-700">我的收藏</span>
+								</div>
+							</div>
+
+							<div class="group cursor-pointer" @click="router.push('/cart')">
+								<div
+									class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 text-center transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
+									<i class="i-ic:outline-shopping-cart text-3xl text-green-600 mb-2 block"></i>
+									<span class="text-sm font-medium text-gray-700">购物车</span>
+								</div>
+							</div>
+
+							<div class="group cursor-pointer" @click="router.push('/profile')">
+								<div
+									class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
+									<i class="i-ic:outline-person text-3xl text-purple-600 mb-2 block"></i>
+									<span class="text-sm font-medium text-gray-700">个人中心</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- 推广横幅 -->
+					<div class="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer">
+						<div class="aspect-[4/3] bg-gradient-to-br from-yellow-400 via-orange-400 to-red-400">
+							<div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-300"></div>
+							<div class="absolute inset-0 flex flex-col justify-center items-center text-white p-4">
+								<i class="i-ic:outline-local-fire-department text-4xl mb-2 animate-pulse"></i>
+								<h4 class="text-lg font-bold mb-1">限时优惠</h4>
+								<p class="text-sm opacity-90">精选商品</p>
+								<p class="text-xs opacity-75 mt-1">低至5折</p>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
-		</div>
 
 
 
 
 
-		<!-- 热门商品 -->
-		<section class="featured-products">
-			<div class="">
-				<div class="section-header">
-					<h2 class="section-title">热门商品</h2>
-					<Button label="查看全部" icon="pi pi-arrow-right" iconPos="right" class="p-button-text"
+			<!-- 热门商品区域（优化样式） -->
+			<section class="bg-white rounded-2xl shadow-lg p-8">
+				<div class="flex justify-between items-center mb-8">
+					<div class="flex items-center gap-3">
+						<div class="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+						<h2 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">热门商品
+						</h2>
+					</div>
+					<Button label="查看全部" icon="pi pi-arrow-right" iconPos="right"
+						class="bg-gradient-to-r from-blue-500 to-purple-600 border-0 px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-300 hover:scale-105"
 						@click="viewAllProducts" />
 				</div>
 
-				<div class="products-grid" v-if="hotProducts.length > 0">
-					<div v-for="product in hotProducts" :key="product.id" class="product-card"
+				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" v-if="hotProducts.length > 0">
+					<div v-for="product in hotProducts" :key="product.id"
+						class="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden border border-gray-100 hover:border-blue-200 hover:-translate-y-2"
 						@click="viewProduct(product.id)">
-						<div class="product-image">
-							<img :src="product.images?.[0] || '/placeholder-product.png'" :alt="product.name"
-								class="product-img" />
-							<div class="product-overlay">
-								<Button icon="pi pi-eye" class="p-button-rounded p-button-secondary"
+						<div class="relative overflow-hidden">
+							<div class="aspect-square bg-gray-100">
+								<img
+									:src="product.imageUrl || (product.images && product.images[0] ? product.images[0].url.replace(/`/g, '') : 'https://via.placeholder.com/300x300?text=' + encodeURIComponent(product.name))"
+									:alt="product.name"
+									class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+							</div>
+							<div
+								class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+							</div>
+							<div
+								class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+								<Button icon="pi pi-eye"
+									class="p-button-rounded bg-white/90 text-gray-700 border-0 w-10 h-10 shadow-lg hover:bg-white hover:scale-110 transition-all duration-300"
 									@click.stop="viewProduct(product.id)" />
 							</div>
+							<!-- 折扣标签 -->
+							<div v-if="product.originalPrice && product.originalPrice > product.price"
+								class="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+								{{ Math.round((1 - product.price / product.originalPrice) * 100) }}% OFF
+							</div>
 						</div>
-						<div class="product-info">
-							<h3 class="product-name">{{ product.name }}</h3>
-							<div class="product-price">
-								<span class="current-price">${{ product.price }}</span>
+						<div class="p-6">
+							<h3
+								class="text-lg font-semibold text-gray-800 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-300">
+								{{ product.name }}</h3>
+							<div class="flex items-center gap-3 mb-3">
+								<span class="text-2xl font-bold text-blue-600">¥{{ product.price }}</span>
 								<span v-if="product.originalPrice && product.originalPrice > product.price"
-									class="original-price">
-									${{ product.originalPrice }}
+									class="text-sm text-gray-400 line-through">
+									¥{{ product.originalPrice }}
 								</span>
 							</div>
-							<div class="product-rating" v-if="product.rating">
-								<Rating :modelValue="product.rating" readonly :cancel="false" />
-								<span class="rating-count">({{ product.reviewCount || 0 }})</span>
+							<div class="flex items-center justify-between" v-if="product.rating">
+								<div class="flex items-center gap-2">
+									<Rating :modelValue="product.rating" readonly :cancel="false" class="text-sm" />
+									<span class="text-sm text-gray-500">({{ product.reviewCount || 0 }})</span>
+								</div>
+								<i
+									class="pi pi-heart text-gray-300 hover:text-red-500 cursor-pointer transition-colors duration-300"></i>
 							</div>
 						</div>
 					</div>
 				</div>
 
 				<!-- 加载状态 -->
-				<div v-else-if="loadingProducts" class="loading-products">
-					<ProgressSpinner />
-					<span>加载商品中...</span>
+				<div v-else-if="loadingProducts" class="flex flex-col items-center justify-center py-20">
+					<ProgressSpinner class="mb-4" />
+					<span class="text-gray-500 text-lg">加载商品中...</span>
 				</div>
 
 				<!-- 空状态 -->
-				<div v-else class="empty-products">
-					<i class="pi pi-shopping-bag empty-icon"></i>
-					<p>暂无热门商品</p>
+				<div v-else class="flex flex-col items-center justify-center py-20 text-gray-400">
+					<i class="pi pi-shopping-bag text-6xl mb-4"></i>
+					<p class="text-xl">暂无热门商品</p>
+					<p class="text-sm mt-2">请稍后再试</p>
 				</div>
-			</div>
-		</section>
+			</section>
+		</div>
 
-		<!-- 自动导入功能测试组件 -->
-		<section class="py-8">
-			<div class="container mx-auto px-4">
-				<h2 class="text-2xl font-bold mb-6 text-center">自动导入功能测试</h2>
-				<AutoImportTest />
-			</div>
-		</section>
+
 
 	</div>
 </template>

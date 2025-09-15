@@ -287,8 +287,8 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
     </Panel>
 
     <!-- 侧边栏对话框 -->
-    <Drawer v-model:visible="crudDialogOptionsRef.visible" position="right"
-      class="w-full md:w-40rem lg:w-30rem h-screen" :modal="true">
+    <Drawer v-model:visible="crudDialogOptionsRef.visible" position="right" class="w-full !md:w-30rem  h-screen"
+      :modal="true">
       <template #header>
         <div class="flex align-items-center gap-2">
           <i class="pi pi-user"></i>
@@ -304,8 +304,8 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
       </template>
 
       <div class="flex justify-center">
-        <Form v-if="crudDialogOptionsRef.data" ref="drawerFormRef" :initialValues="crudDialogOptionsRef.data"
-          :resolver="props.resolver" @submit="onFormSubmit" class="w-full flex flex-col gap-4 sm:w-56">
+        <Form unstyled v-if="crudDialogOptionsRef.data" ref="drawerFormRef" :initialValues="crudDialogOptionsRef.data"
+          :resolver="props.resolver" @submit="onFormSubmit" class="w-full flex flex-col gap-4 ">
           <slot :data="(crudDialogOptionsRef.data as T)" :mode="crudDialogOptionsRef.mode"
             :disabled="crudDialogOptionsRef.loading || crudDialogOptionsRef.mode === 'READ'" name="CrudForm" />
         </Form>

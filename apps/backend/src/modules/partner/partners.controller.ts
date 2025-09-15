@@ -1,10 +1,11 @@
 import { db } from "@backend/db/connection";
-import { imagesSchema, partnersSchema } from "@backend/db/schema";
+import { imagesTable, partnersTable, UpdateSortDto } from "@backend/db/models";
+import { paramIdZod } from "@backend/types";
 import { NotFoundError } from "@backend/utils/error/customError";
 import { commonRes } from "@backend/utils/Res";
 import { asc, eq, getTableColumns } from "drizzle-orm";
-import { Elysia, t } from "elysia";
-import { partnersModel } from "./partners.model";
+import { Elysia } from "elysia";
+import { partnersModel } from "../../db/models/partners.model";
 import { PartnersService } from "./partners.service";
 /**
  * 合作伙伴控制器
@@ -21,16 +22,16 @@ export const partnersController = new Elysia({
     "/all",
     async () => {
       try {
-        const columns = getTableColumns(partnersSchema);
+        const columns = getTableColumns(partnersTable);
         const partners = await db
           .select({
             ...columns,
-            image: imagesSchema.url
+            image: imagesTable.url,
           })
-          .from(partnersSchema)
-          .where(eq(partnersSchema.isActive, true))
-          .leftJoin(imagesSchema, eq(partnersSchema.image_id, imagesSchema.id))
-          .orderBy(asc(partnersSchema.id));
+          .from(partnersTable)
+          .where(eq(partnersTable.isActive, true))
+          .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
+          .orderBy(asc(partnersTable.id));
 
         return commonRes(partners, 200, "获取合作伙伴列表成功");
       } catch (_error) {
@@ -59,7 +60,7 @@ export const partnersController = new Elysia({
       }
     },
     {
-      query: "partnerQuery",
+      query: "queryPartnersListDto",
       detail: {
         tags: ["Partners"],
         summary: "获取合作伙伴列表（管理后台）",
@@ -83,9 +84,7 @@ export const partnersController = new Elysia({
       }
     },
     {
-      params: t.Object({
-        id: t.Number(),
-      }),
+      params: paramIdZod,
       detail: {
         tags: ["Partners"],
         summary: "获取合作伙伴详情",
@@ -106,7 +105,7 @@ export const partnersController = new Elysia({
       }
     },
     {
-      body: "CreatePartnerDto",
+      body: "insertPartnersDto",
       detail: {
         tags: ["Partners"],
         summary: "创建合作伙伴",
@@ -127,10 +126,8 @@ export const partnersController = new Elysia({
       }
     },
     {
-      params: t.Object({
-        id: t.Number(),
-      }),
-      body: "UpdatePartnerDto",
+      params: paramIdZod,
+      body: "updatePartnersDto",
       detail: {
         tags: ["Partners"],
         summary: "更新合作伙伴",
@@ -147,9 +144,7 @@ export const partnersController = new Elysia({
       return commonRes(null, 204, "删除合作伙伴成功");
     },
     {
-      params: t.Object({
-        id: t.Number(),
-      }),
+      params: paramIdZod,
       detail: {
         tags: ["Partners"],
         summary: "删除合作伙伴",
@@ -173,10 +168,8 @@ export const partnersController = new Elysia({
       }
     },
     {
-      params: t.Object({
-        id: t.Number(),
-      }),
-      body: "UpdateSortDto",
+      params: paramIdZod,
+      body: UpdateSortDto,
       detail: {
         tags: ["Partners"],
         summary: "更新合作伙伴排序",
@@ -197,9 +190,7 @@ export const partnersController = new Elysia({
       }
     },
     {
-      params: t.Object({
-        id: t.Number(),
-      }),
+      params: paramIdZod,
       detail: {
         tags: ["Partners"],
         summary: "切换合作伙伴启用状态",

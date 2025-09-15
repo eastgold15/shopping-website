@@ -1,7 +1,8 @@
 import { commonRes } from "@backend/types";
 import { Elysia } from "elysia";
-import { uploadsModel } from "./uploads.model";
+
 import { uploadService } from "./uploads.service";
+import { uploadsModel } from "./uploads.model";
 
 /**
  * 文件上传控制器

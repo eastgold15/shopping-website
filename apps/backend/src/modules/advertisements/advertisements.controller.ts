@@ -1,6 +1,7 @@
-import { commonRes } from "@backend/types";
-import { Elysia, t } from "elysia";
-import { advertisementsModel } from "./advertisements.model";
+import { Elysia } from "elysia";
+import { z } from "zod/v4";
+import { advertisementsModel } from "../../db/models/advertisements.model";
+import { commonRes, UpdateSortDto } from "../../types";
 import { AdvertisementsService } from "./advertisements.service";
 
 /**
@@ -13,62 +14,32 @@ export const advertisementsController = new Elysia({
 
 	.model(advertisementsModel)
 	.decorate("advertisementsService", new AdvertisementsService())
-	.guard({
-		beforeHandle({ params }) {
-			// 转换路径参数中的 parentId 为数字
-			if (params && "id" in params) {
-				params.id = Number(params.id);
-			}
-		},
-	})
-
-	// 获取广告列表（分页）
+	// 获取广告列表 - RESTful标准设计，支持类型筛选
 	.get(
 		"/",
 		async ({ query, advertisementsService }) => {
+			// 根据查询参数决定返回哪种广告列表
+			if (query.type === 'banner') {
+				const banners = await advertisementsService.getBannerAdvertisements(
+					query.position,
+				);
+				return commonRes(banners);
+			}
+
+			if (query.type === 'carousel') {
+				const carousels = await advertisementsService.getCarouselAdvertisements();
+				return commonRes(carousels);
+			}
+
+			// 默认返回分页广告列表
 			const result = await advertisementsService.getAdvertisementList(query);
 			return commonRes(result);
 		},
 		{
-			query: "ADQueryDto",
+			query: advertisementsModel.queryAdvertisementsListDto,
 			detail: {
 				summary: "获取广告列表",
-				description: "分页获取广告列表，支持搜索和筛选",
-				tags: ["Advertisements"],
-			},
-		},
-	)
-
-	// 获取Banner广告
-	.get(
-		"/banners",
-		async ({ query, advertisementsService }) => {
-			const banners = await advertisementsService.getBannerAdvertisements(
-				query.position,
-			);
-			return commonRes(banners);
-		},
-		{
-			query: "positionDto",
-			detail: {
-				summary: "获取Banner广告",
-				description: "获取所有激活的Banner广告",
-				tags: ["Advertisements"],
-			},
-		},
-	)
-
-	// 获取轮播图广告
-	.get(
-		"/carousels",
-		async ({ advertisementsService }) => {
-			const carousels = await advertisementsService.getCarouselAdvertisements();
-			return commonRes(carousels);
-		},
-		{
-			detail: {
-				summary: "获取轮播图广告",
-				description: "获取所有激活的轮播图广告",
+				description: "获取广告列表，支持分页、搜索和筛选。使用type=banner获取Banner广告，type=carousel获取轮播图广告",
 				tags: ["Advertisements"],
 			},
 		},
@@ -83,8 +54,8 @@ export const advertisementsController = new Elysia({
 			return commonRes(advertisement);
 		},
 		{
-			params: t.Object({
-				id: t.Number({ description: "广告ID" }),
+			params: z.object({
+				id: z.number(),
 			}),
 			detail: {
 				summary: "获取广告详情",
@@ -103,7 +74,7 @@ export const advertisementsController = new Elysia({
 			return commonRes(advertisement, 201);
 		},
 		{
-			body: "CreateADDto",
+			body: advertisementsModel.insertAdvertisementsDto,
 			detail: {
 				summary: "创建广告",
 				description: "创建新的广告",
@@ -123,10 +94,10 @@ export const advertisementsController = new Elysia({
 			return commonRes(advertisement);
 		},
 		{
-			params: t.Object({
-				id: t.Number({ description: "广告ID" }),
+			params: z.object({
+				id: z.number(),
 			}),
-			body: "UpdateADDto",
+			body: advertisementsModel.updateAdvertisementsDto,
 			detail: {
 				summary: "更新广告",
 				description: "更新指定ID的广告信息",
@@ -143,8 +114,8 @@ export const advertisementsController = new Elysia({
 			return commonRes(advertisement);
 		},
 		{
-			params: t.Object({
-				id: t.Number({ description: "广告ID" }),
+			params: z.object({
+				id: z.number(),
 			}),
 			detail: {
 				summary: "删除广告",
@@ -163,8 +134,8 @@ export const advertisementsController = new Elysia({
 			return commonRes(advertisement);
 		},
 		{
-			params: t.Object({
-				id: t.Number({ description: "广告ID" }),
+			params: z.object({
+				id: z.number(),
 			}),
 			detail: {
 				summary: "切换广告状态",
@@ -180,16 +151,12 @@ export const advertisementsController = new Elysia({
 		async ({ query, advertisementsService }) => {
 			const advertisements =
 				await advertisementsService.getActiveAdvertisements(
-					query.type,
 					query.position,
 				);
 			return commonRes(advertisements);
 		},
 		{
-			query: t.Object({
-				type: t.Optional(t.String({ description: "广告类型" })),
-				position: t.Optional(t.String({ description: "广告位置" })),
-			}),
+			query: advertisementsModel.queryAdvertisementsByPositionDto,
 			detail: {
 				summary: "获取激活的广告",
 				description: "获取所有激活状态的广告，支持按类型和位置筛选",
@@ -209,10 +176,10 @@ export const advertisementsController = new Elysia({
 			return commonRes(advertisement);
 		},
 		{
-			params: t.Object({
-				id: t.Number({ description: "广告ID" }),
+			params: z.object({
+				id: z.number(),
 			}),
-			body: "UpdateSortDto",
+			body: UpdateSortDto,
 			detail: {
 				summary: "更新广告排序",
 				description: "更新指定广告的排序值",

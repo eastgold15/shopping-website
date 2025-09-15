@@ -1,11 +1,11 @@
+import { Elysia, t } from "elysia";
+import { imagesModel } from "../../db/models/images.model";
 import {
 	InternalServerError,
 	NotFoundError,
-} from "@backend/utils/error/customError";
-import { commonRes } from "@backend/utils/Res";
-import { Elysia, t } from "elysia";
+} from "../../utils/error/customError";
+import { commonRes } from "../../utils/Res";
 import { ossService } from "../oss";
-import { imagesModel } from "./images.model";
 import { ImageService } from "./images.service";
 
 /**
@@ -20,15 +20,15 @@ export const imagesController = new Elysia({ prefix: "/images" })
 			tags: ["Images"],
 		},
 	})
-	// 获取图片列表
+	// 获取图片列表 - RESTful标准设计
 	.get(
-		"/list",
+		"/",
 		async ({ query, imagesService }) => {
-			const result = await imagesService.findImagesByPage(query);
+			const result = await imagesService.getImageList(query);
 			return commonRes(result);
 		},
 		{
-			query: "ImageQueryDto",
+			query: "queryImagesListDto",
 			detail: {
 				summary: "获取图片列表",
 				description: "获取图片列表，支持分类筛选、搜索和分页",
@@ -40,7 +40,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
 	.get(
 		"/:id",
 		async ({ params, imagesService }) => {
-			const result = await imagesService.findById(params.id);
+			const result = await imagesService.getImageById(params.id);
 			return commonRes(result);
 		},
 		{
@@ -65,7 +65,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
 			params: t.Object({
 				id: t.Number(),
 			}),
-			body: "UpdateImageDto",
+			body: "updateImagesDto",
 			detail: {
 				summary: "更新图片信息",
 				description: "更新图片的基本信息",
@@ -79,17 +79,17 @@ export const imagesController = new Elysia({ prefix: "/images" })
 		async ({ params: { id }, imagesService }) => {
 			try {
 				// 先获取图片信息
-				const imageResult = await imagesService.findById(id);
+				const [imageResult] = await imagesService.getImageById(id);
 
 				if (!imageResult) {
 					throw new NotFoundError("图片不存在");
 				}
 
-				const image = imageResult.data;
+				const imageUrl = imageResult.url;
 
 				// 从OSS删除文件
 				try {
-					const ossKey = image.url.split("/").pop(); // 从URL提取key
+					const ossKey = imageUrl.split("/").pop(); // 从URL提取key
 					if (ossKey) {
 						await ossService.deleteFile(ossKey);
 					}
@@ -139,10 +139,8 @@ export const imagesController = new Elysia({ prefix: "/images" })
 				// 获取所有图片信息
 				const images = [];
 				for (const id of imageIds) {
-					const result = await imagesService.findById(id);
-					if (result.code === 200 && result.data) {
-						images.push(result.data);
-					}
+					const [result] = await imagesService.getImageById(id);
+					images.push(result)
 				}
 
 				// 从OSS批量删除文件
@@ -175,9 +173,7 @@ export const imagesController = new Elysia({ prefix: "/images" })
 			}
 		},
 		{
-			body: t.Object({
-				ids: t.Array(t.Number()),
-			}),
+			body: "batchDeleteImagesDto",
 			detail: {
 				summary: "批量删除图片",
 				description: "批量删除多个图片记录和文件",

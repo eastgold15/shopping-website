@@ -89,7 +89,7 @@ const carouselStyle = computed(() => ({
 const loadCarouselAds = async () => {
   loading.value = true;
   try {
-    const res = await client.api.advertisements.carousel.get()
+    const res = await client.api.advertisements.get({ query: { type: 'carousel' } })
 
     console.log("aaaa", res);
 

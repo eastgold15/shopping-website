@@ -1,37 +1,38 @@
 import { db } from "@backend/db/connection";
-import { siteConfigSchema } from "@backend/db/schema/schema";
+import type { QueryOptions } from "@backend/types";
 import { NotFoundError } from "@backend/utils/error/customError";
+import type { PageData } from "@backend/utils/Res";
+import { BaseService } from "@backend/utils/services/BaseService";
 import {
-  and,
-  asc,
-  count,
-  desc,
   eq,
   getTableColumns,
-  inArray,
-  like,
-  or,
+  inArray
 } from "drizzle-orm";
-import type {
-  BatchUpdateSiteConfigDto,
-  CreateSiteConfigDto,
-  SiteConfigQueryDto,
-  UpdateSiteConfigDto,
-} from "./siteConfigs.model";
+import { BatchUpdateSiteConfigDto, InsertSiteConfigDto, SelectSiteConfigType, SiteConfigListQueryDto, siteConfigTable, UpdateSiteConfigDto } from "../../db/models/siteConfig.model";
 
 /**
  * 网站配置服务类
  * 处理网站配置相关的业务逻辑
  */
-export class SiteConfigsService {
-  private readonly columns = getTableColumns(siteConfigSchema);
+export class SiteConfigsService extends BaseService<
+  SelectSiteConfigType,
+  InsertSiteConfigDto,
+  UpdateSiteConfigDto
+> {
+  protected readonly table = siteConfigTable;
+  protected readonly tableName = 'siteConfig';
+  private readonly columns = getTableColumns(siteConfigTable);
+
+  constructor() {
+    super();
+  }
 
   /**
-   * 获取配置列表
+   * 获取配置列表 - 使用 BaseService 的 findPaginated 方法
    * @param params 查询参数
    * @returns 分页的配置列表
    */
-  async getList(params: SiteConfigQueryDto) {
+  async getList(params: SiteConfigListQueryDto): Promise<PageData<SelectSiteConfigType>> {
     const {
       page = 1,
       pageSize = 10,
@@ -42,70 +43,82 @@ export class SiteConfigsService {
       key,
     } = params;
 
-    // 构建查询条件
-    const conditions = [];
+    // 构建查询选项
+    const queryOptions: QueryOptions = {
+      filters: [],
+      sort: []
+    };
 
+    // 处理搜索条件
     if (search) {
-      conditions.push(
-        or(
-          like(siteConfigSchema.key, `%${search}%`),
-          like(siteConfigSchema.description, `%${search}%`),
-        ),
-      );
+      queryOptions.filters?.push({
+        field: 'key',
+        operator: 'like',
+        value: `%${search}%`
+      });
+      queryOptions.filters?.push({
+        field: 'description',
+        operator: 'like',
+        value: `%${search}%`
+      });
     }
 
+    // 处理分类过滤
     if (category) {
-      conditions.push(eq(siteConfigSchema.category, category));
+      queryOptions.filters?.push({
+        field: 'category',
+        operator: 'eq',
+        value: category
+      });
     }
 
+    // 处理键名过滤
     if (key) {
-      conditions.push(like(siteConfigSchema.key, `%${key}%`));
+      queryOptions.filters?.push({
+        field: 'key',
+        operator: 'like',
+        value: `%${key}%`
+      });
     }
 
-    // 排序字段映射
-    const sortFieldMap: Record<string, any> = {
-      key: siteConfigSchema.key,
-      category: siteConfigSchema.category,
-      createdAt: siteConfigSchema.createdAt,
-      updatedAt: siteConfigSchema.updatedAt,
+    // 处理排序
+    queryOptions.sort?.push({
+      field: sortBy,
+      direction: sortOrder
+    });
+
+    // 使用 BaseService 的分页方法
+    return await this.findPaginated(
+      { page, pageSize },
+      queryOptions
+    );
+  }
+
+  /**
+   * 获取所有配置（不分页）- 使用 BaseService 的 findMany 方法
+   * @param category 可选的分类过滤
+   * @returns 配置列表
+   */
+  async getAll(category?: string): Promise<SelectSiteConfigType[]> {
+    const queryOptions: QueryOptions = {
+      filters: [],
+      sort: [
+        { field: 'category', direction: 'asc' },
+        { field: 'key', direction: 'asc' }
+      ]
     };
 
-    const sortField = sortFieldMap[sortBy] || siteConfigSchema.createdAt;
-    const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
-
-    // 分页计算
-    const offset = (page - 1) * pageSize;
-
-    // 构建查询
-    const queryBuilder = db
-      .select()
-      .from(siteConfigSchema)
-      .orderBy(orderBy)
-      .limit(pageSize)
-      .offset(offset);
-
-    // 获取总数
-    const totalBuilder = db.select({ count: count() }).from(siteConfigSchema);
-
-    if (conditions.length > 0) {
-      queryBuilder.where(and(...conditions));
-      totalBuilder.where(and(...conditions));
+    // 处理分类过滤
+    if (category) {
+      queryOptions.filters?.push({
+        field: 'category',
+        operator: 'eq',
+        value: category
+      });
     }
 
-    const [configs, [{ count: total }]] = await Promise.all([
-      queryBuilder,
-      totalBuilder,
-    ]);
-
-    return {
-      items: configs,
-      meta: {
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    };
+    // 使用 BaseService 的 findMany 方法
+    return await this.findMany(queryOptions);
   }
 
   /**
@@ -114,11 +127,10 @@ export class SiteConfigsService {
   async getByCategory(category: string) {
     const result = await db
       .select(this.columns)
-      .from(siteConfigSchema)
-      .where(eq(siteConfigSchema.category, category));
+      .from(siteConfigTable)
+      .where(eq(siteConfigTable.category, category));
 
-
-    return result
+    return result;
   }
 
   /**
@@ -127,8 +139,8 @@ export class SiteConfigsService {
   async getByKeys(keys: string[]) {
     const config = await db
       .select(this.columns)
-      .from(siteConfigSchema)
-      .where(inArray(siteConfigSchema.key, keys));
+      .from(siteConfigTable)
+      .where(inArray(siteConfigTable.key, keys));
 
     if (!config || config.length === 0) {
       throw new NotFoundError(`配置项不存在`);
@@ -145,8 +157,8 @@ export class SiteConfigsService {
   async getById(id: number) {
     const [config] = await db
       .select(this.columns)
-      .from(siteConfigSchema)
-      .where(eq(siteConfigSchema.id, id))
+      .from(siteConfigTable)
+      .where(eq(siteConfigTable.id, id))
       .limit(1);
 
     if (!config) {
@@ -159,9 +171,9 @@ export class SiteConfigsService {
   /**
    * 创建配置
    */
-  async create(data: CreateSiteConfigDto) {
+  async create(data: InsertSiteConfigDto) {
     const [newConfig] = await db
-      .insert(siteConfigSchema)
+      .insert(siteConfigTable)
       .values({
         key: data.key,
         value: data.value,
@@ -180,17 +192,17 @@ export class SiteConfigsService {
     // 先检查配置是否存在
     const res = await this.getByKeys([key]);
 
-    if (res.length = 0) {
+    if ((res.length = 0)) {
       throw new NotFoundError(`Record with key ${key} not found`);
     }
 
     const [updatedConfig] = await db
-      .update(siteConfigSchema)
+      .update(siteConfigTable)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(siteConfigSchema.key, key))
+      .where(eq(siteConfigTable.key, key))
       .returning(this.columns);
 
     return updatedConfig;
@@ -201,12 +213,12 @@ export class SiteConfigsService {
    */
   async updateById(id: number, data: UpdateSiteConfigDto) {
     const [updatedConfig] = await db
-      .update(siteConfigSchema)
+      .update(siteConfigTable)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(siteConfigSchema.id, id))
+      .where(eq(siteConfigTable.id, id))
       .returning(this.columns);
 
     if (!updatedConfig) {
@@ -228,8 +240,8 @@ export class SiteConfigsService {
     }
 
     const [deletedConfig] = await db
-      .delete(siteConfigSchema)
-      .where(eq(siteConfigSchema.key, key))
+      .delete(siteConfigTable)
+      .where(eq(siteConfigTable.key, key))
       .returning(this.columns);
 
     return deletedConfig;
@@ -246,25 +258,25 @@ export class SiteConfigsService {
         // 检查配置是否存在
         const existing = await db
           .select(this.columns)
-          .from(siteConfigSchema)
-          .where(eq(siteConfigSchema.key, config.key))
+          .from(siteConfigTable)
+          .where(eq(siteConfigTable.key, config.key))
           .limit(1);
 
         if (existing.length > 0) {
           // 更新现有配置
           const [updated] = await db
-            .update(siteConfigSchema)
+            .update(siteConfigTable)
             .set({
               ...config,
               updatedAt: new Date(),
             })
-            .where(eq(siteConfigSchema.key, config.key))
+            .where(eq(siteConfigTable.key, config.key))
             .returning(this.columns);
           results.push(updated);
         } else {
           // 创建新配置
           const [created] = await db
-            .insert(siteConfigSchema)
+            .insert(siteConfigTable)
             .values(config)
             .returning(this.columns);
           results.push(created);
@@ -349,13 +361,13 @@ export class SiteConfigsService {
         // 检查配置是否已存在
         const existing = await db
           .select(this.columns)
-          .from(siteConfigSchema)
-          .where(eq(siteConfigSchema.key, config.key))
+          .from(siteConfigTable)
+          .where(eq(siteConfigTable.key, config.key))
           .limit(1);
 
         if (existing.length === 0) {
           const [newConfig] = await db
-            .insert(siteConfigSchema)
+            .insert(siteConfigTable)
             .values(config)
             .returning(this.columns);
 

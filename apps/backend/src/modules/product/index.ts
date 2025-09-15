@@ -4,6 +4,5 @@
  */
 
 export { productsController } from "./products.controller";
-export type * from "./products.model";
-export { productsModel } from "./products.model";
+
 export { ProductsService } from "./products.service";

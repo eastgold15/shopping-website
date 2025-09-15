@@ -88,109 +88,212 @@ app.get('/data', () => {
 })
 ```
 
-### 3.2 类型规范
+### 3.2 RESTful接口设计规范
+
+#### 3.2.1 URL路径规范
 
 ```ts
-// ✅ 正确 - 使用typebox定义DTO 看第7点
+// ✅ 正确 - RESTful设计
+app.get('/products', handler)           // 获取商品列表
+app.get('/products/:id', handler)       // 获取单个商品
+app.post('/products', handler)          // 创建商品
+app.patch('/products/:id', handler)     // 更新商品
+app.delete('/products/:id', handler)    // 删除商品
+app.post('/products/batch', handler)    // 批量操作
 
-// ❌ 错误 - 使用any类型
+// ❌ 错误 - 非RESTful设计
+app.get('/products/list', handler)      // 应使用 GET /products
+app.get('/products/create', handler)    // 应使用 POST /products
+app.get('/getProduct/:id', handler)     // 应使用 GET /products/:id
+```
+
+#### 3.2.2 方法命名规范
+
+```ts
+// ✅ 正确 - 语义化方法命名
+const ProductService = {
+  createProduct,     // 创建
+  listProducts,      // 分页查询
+  getProduct,        // 获取单个
+  updateProduct,     // 更新
+  deleteProduct,     // 删除
+  batchCreateProducts, // 批量创建
+}
+
+// ❌ 错误 - 不规范的方法命名
+const ProductService = {
+  addProduct,        // 应使用 createProduct
+  fetchProducts,     // 应使用 listProducts
+  modifyProduct,     // 应使用 updateProduct
+}
+```
+
+### 3.3 类型系统规范
+
+#### 3.3.1 Drizzle + Zod 架构
+
+```ts
+// ✅ 正确 - 使用Drizzle表定义 + Zod校验
+// 1. Drizzle表定义
+export const productsTable = pgTable('products', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  // ...
+});
+
+// 2. Zod Schema（运行时校验）
+export const insertProductSchema = createInsertSchema(productsTable);
+export const selectProductSchema = createSelectSchema(productsTable);
+
+// 3. 业务模型（供Elysia使用）
+export const productsModel = {
+  insertProductDto: insertProductSchema.omit({ 
+    id: true, 
+    createdAt: true, 
+    updatedAt: true 
+  }),
+  selectProductTable: selectProductSchema,
+};
+
+// 4. TypeScript类型定义
+export type InsertProductDto = z.infer<typeof productsModel.insertProductDto>;
+export type SelectProductVo = z.infer<typeof productsModel.selectProductTable>;
+
+// ❌ 错误 - 使用any类型或重复定义
 app.post('/users', ({ body }: { body: any }) => {
-  // 违反3.2-A
+  // 违反类型安全原则
 })
 ```
 
-### 3.3 Eden规范
+#### 3.3.2 Eden Treaty 前后端类型同步
 
 ```ts
-// 因为eden 返回类型是后端的类型，可能受数据库影响，这个不用提严格
-// ✅ 正确 - 使用typebox定义DTO 看第7点 不管这个eden的返回类型，只要能看一眼路由返回结果和前端接收对的上去就行哈
+// ✅ 正确 - Eden Treaty类型安全调用
+// 前端使用
+import { treaty } from '@elysiajs/eden';
 
-// ❌ 错误 -
-// 将 @backend/index 改为相对路径 ../../../backend/src/index
+import type { App } from '@backend/index'; // 应使用绝对路径路径
+const client = treaty<App>('http://localhost:3000');
+
+// 类型安全的API调用
+const { data, error } = await client.api.products.get({
+  query: { page: 1, limit: 10 }
+});
+
+
+
+// ❌ 错误 - 不使用类型约束
+const response = await fetch('/api/products'); // 缺少类型安全
 ```
 
-### 3.4 项目规范
+### 3.4 项目架构规范
 
-- monorepo仓库统一使用turbo 管理
-- 统一使用biome格式化但是不能处理vue文件，类型检查使用tsx
-- vue不要代码格式化工具，vscode自带
-- 数据库统一使用compose文件启动
-- 不需要bat文件
-- 清除使用rimraf 这个工具
-- 在本地开发中，drizzle永远只使用push,一个人开发
+#### 3.4.1 Monorepo管理
+
+- 使用Turbo管理monorepo项目
+- 统一使用Biome格式化（Vue文件除外，使用VSCode自带）
+- 数据库使用Docker Compose启动
+- 本地开发Drizzle只使用push模式
 
 ```ts
-// ✅ 正确 - turbo.json 使用tasks
+// ✅ 正确 - turbo.json配置使用tasks字段
 {
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
-    "i": {
-      "cache": false
-    },
-    "build": {
-      "outputs": [
-        "dist/**"
-      ]
-    },
+  
+    "build": { "outputs": ["dist/**"] },
     "clean": {},
-    "check": {
-      "dependsOn": [
-        "^check"
-      ]
-    },
-    "dev": {
-      "persistent": true,
-      "cache": false
-    }
+    "check": { "dependsOn": ["^check"] },
+    "dev": { "persistent": true, "cache": false }
   }
 }
 
-// package.json
+// ✅ 正确 - package.json脚本
 "scripts": {
-  "i": "bun install", //安装依赖
+  
   "dev": "turbo run dev",
-  "clean": "rimraf dist node_modules package-lock.json"
-  "check": "bun --bun tsc --noEmit" //前端
-  "check": "biome check .",
-  "db:push": "drizzle-kit push --config=container/dev/drizzle-dev.config.ts",
+  "clean": "rimraf dist node_modules package-lock.json",
+  "check": "bun --bun tsc --noEmit", // 前端类型检查
+  "check": "biome check .",           // 后端代码检查
+  "db:push": "drizzle-kit push --config=container/dev/drizzle-dev.config.ts"
 }
 
-// ❌ 错误 - 使用migrate
+// ❌ 错误 - 本地开发使用migrate
 "scripts": {
-  "db:migrate": "drizzle-kit migrate --config=container/dev/drizzle-dev.config.ts",
+  "db:migrate": "drizzle-kit migrate --config=container/dev/drizzle-dev.config.ts"
 }
+```
+
+#### 3.4.2 文件结构规范
+
+```
+src/
+├── model/              # 数据库Schema定义
+│   ├── products.model.ts      # 商品表模块
+│   ├── users.model.ts         # 用户表模块
+│   ├── utils.model.ts         # 公共工具
+│   └── index.ts         # 统一导出
+├── modules/             # 业务模块
+│   └── [entity]/
+│       ├── [entity].controller.ts
+│       └── [entity].service.ts
+├── utils/
+└── db/
 ```
 
 ## 4. 📝 代码风格规范
 
-### 4.1 命名约定
+### 4.1 命名约定规范
 
-类型规范示例:
+#### 4.1.1 基础命名规则
 
 ```ts
-// 变量 camelCase
-userName
+// 变量 - camelCase
+const userName = 'john';
+const productList = [];
 
-// 常量 UPPER_SNAKE_CASE
-MAX_RETRIES
+// 常量 - UPPER_SNAKE_CASE
+const MAX_RETRIES = 3;
+const API_BASE_URL = 'https://api.example.com';
 
-// 函数 camelCase
-getUserData()
+// 函数 - camelCase
+const getUserData = () => {};
+const createProduct = () => {};
 
-// 类 PascalCase
-UserService
+// 类 - PascalCase
+class UserService {}
+class ProductController {}
 
-// Controller导出 PascalCase
-export const UserController = new Elysia()
+// Controller导出 - PascalCase
+export const UserController = new Elysia({ prefix: '/users' });
+```
 
-// Model对象 PascalCase
-export const UserModel = {
-  user: DbType.typebox.select.users
-}
+#### 4.1.2 数据库和类型命名规范
 
-// 接口 PascalCase
-// 统一接口命名风格。
-// 建议遵循TypeScript社区惯例，移除前缀I，统一使用PascalCase（如UserRequest）。
+```ts
+// ✅ 正确 - Drizzle表定义
+export const usersTable = pgTable('users', { ... });     // xxxTable后缀
+export const productsTable = pgTable('products', { ... }); // xxxTable后缀
+
+// ✅ 正确 - Zod Schema命名
+export const insertUserSchema = createInsertSchema(usersTable);  // xxxSchema后缀
+export const selectUserSchema = createSelectSchema(usersTable);   // xxxSchema后缀
+
+// ✅ 正确 - 业务模型命名
+export const usersModel = {                              // xxxModel（驼峰）
+  insertUserDto: insertUserSchema.omit({ ... }),
+  selectUserTable: selectUserSchema,
+};
+
+// ✅ 正确 - TypeScript类型命名
+export type InsertUserDto = z.infer<typeof usersModel.insertUserDto>;  // Dto后缀，大驼峰
+export type SelectUserVo = z.infer<typeof usersModel.selectUserTable>;  // Vo后缀，大驼峰
+export type UserWithPostsVo = { ... };                               // 复合类型，大驼峰
+
+// ❌ 错误 - 不规范的命名
+export const userSchema = pgTable('users', { ... });     // 应使用 usersTable
+export const UserSchema = createInsertSchema(...);       // 应使用 insertUserSchema
+export type userDto = { ... };                           // 应使用 InsertUserDto（大驼峰）
 ```
 
 ### 4.2 函数规范
@@ -439,56 +542,99 @@ app.get(
 )
 ```
 
-## 7. 📦 类型复用规范
+## 7. 📦 Drizzle + Zod 类型系统规范
 
-### 7.1 数据库类型导出（新规范）
+### 7.1 四层架构标准
 
-
-
-### 7.2 API 模型定义
+#### 7.1.1 完整模块示例
 
 ```typescript
-// modules/users/users.model.ts
-import { DbType } from '@/db/database.types';
-import { t } from 'elysia';
+// src/schema/users.ts
+import { relations } from "drizzle-orm";
+import { pgTable, serial, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { z } from "zod";
+import { BaseQueryZod } from "./utils";
 
-export const UsersModel = {
-  // 直接使用数据库类型
-  user: DbType.typebox.select.users,
-  
-  // 使用 Pick/Omit 选择字段
-  userUpdate: t.Omit(DbType.typebox.insert.users, ['id', 'createdAt', 'updatedAt']),
-  
-  // 分页返回格式
-  usersList: t.Object({
-    items: t.Array(DbType.typebox.select.users),
-    meta: t.Object({
-      page: t.Number(),
-      pageSize: t.Number(),
-      total: t.Number(),
-      totalPages: t.Number()
-    })
+// 1. Drizzle 表定义层
+export const usersTable = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 2. Zod Schema 层（运行时校验）
+export const insertUserSchema = createInsertSchema(usersTable);
+export const updateUserSchema = createUpdateSchema(usersTable);
+export const selectUserSchema = createSelectSchema(usersTable);
+
+// 3. 业务模型层（供Elysia使用）
+export const usersModel = {
+  insertUserDto: insertUserSchema.omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true
+  }),
+  updateUserDto: updateUserSchema.omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true
+  }),
+  selectUserTable: selectUserSchema,
+  queryUserDto: BaseQueryZod.extend({
+    isActive: z.boolean().optional(),
+    email: z.string().optional(),
   })
 };
+
+// 4. TypeScript 类型定义层
+export type InsertUserDto = z.infer<typeof usersModel.insertUserDto>;
+export type UpdateUserDto = z.infer<typeof usersModel.updateUserDto>;
+export type SelectUserVo = z.infer<typeof usersModel.selectUserTable>;
+export type QueryUserDto = z.infer<typeof usersModel.queryUserDto>;
+
+// 5. 关联关系层
+export const usersRelations = relations(usersTable, ({ many }) => ({
+  posts: many(postsTable),
+}));
 ```
+
+### 7.2 命名规范总结
+
+| 用途 | 命名风格 | 示例 | 后缀 | 说明 |
+|------|----------|------|------|------|
+| **Drizzle表定义** | 驼峰 | `usersTable` | `Table` | 数据库表定义 |
+| **Zod Schema** | 驼峰 | `insertUserSchema` | `Schema` | 运行时校验 |
+| **业务模型** | 驼峰 | `usersModel` | `Model` | 供Elysia使用 |
+| **请求类型** | 大驼峰 | `InsertUserDto` | `Dto` | 前端提交数据 |
+| **返回类型** | 大驼峰 | `SelectUserVo` | `Vo` | 前端展示数据 |
+| **复合类型** | 大驼峰 | `UserWithPostsVo` | `Vo` | 多表联查结果 |
 
 ### 7.3 类型复用最佳实践
 
 ```typescript
-// ✅ 正确 - 复用数据库类型
-export const PostModel = {
-  post: DbType.typebox.select.posts,
-  createPost: t.Omit(DbType.typebox.insert.posts, ['id', 'createdAt', 'updatedAt']),
-  updatePost: t.Partial(t.Omit(DbType.typebox.insert.posts, ['id', 'createdAt', 'updatedAt']))
+// ✅ 正确 - 基于Drizzle Schema复用
+export const productsModel = {
+  insertProductDto: insertProductSchema.omit({ 
+    id: true, 
+    createdAt: true, 
+    updatedAt: true 
+  }).extend({
+    // 自定义扩展字段
+    imageIds: z.array(z.number()),
+  }),
+  selectProductTable: selectProductSchema,
 };
 
 // ❌ 错误 - 重复定义类型
-export const PostModel = {
-  post: t.Object({
-    id: t.Number(),
-    title: t.String(),
-    content: t.String()
-    // 违反类型复用原则
+export const productsModel = {
+  insertProductDto: z.object({
+    name: z.string(),
+    price: z.number(),
+    // 违反类型复用原则，应基于Drizzle Schema
   })
 };
 ```

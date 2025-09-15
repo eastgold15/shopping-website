@@ -1,84 +1,77 @@
-import { DbType } from "@backend/types";
-import { t } from "elysia";
-import { FOLDDER_TYPE, SUPPORTED_IMAGE_TYPES } from "../oss";
 
-// Elysia模型定义
+import { z } from "zod/v4";
+import { imagesModel } from "@backend/db/models/images.model";
+import { FOLDDER_TYPE } from "../oss";
+
+// Zod 模型定义
 export const uploadsModel = {
-	ImageInfo: DbType.typebox.select.imagesSchema,
+	// 图片信息类型 - 引用 images 模型
+	ImageInfo: imagesModel.selectImagesTable,
+
 	// 文件信息类型
-	FileInfo: t.Object({
-		url: t.String(),
-		fileName: t.String(),
-		size: t.Number(),
-		type: t.String(),
-		uploadedAt: t.String(),
+	FileInfo: z.object({
+		url: z.string().url("请提供有效的URL"),
+		fileName: z.string().min(1, "文件名不能为空"),
+		size: z.number().positive("文件大小必须为正数"),
+		type: z.string().min(1, "文件类型不能为空"),
+		uploadedAt: z.string(),
 	}),
 
-	// 通用文件上传请求参数
-	UploadImageDto: t.Object({
-		file: t.File({
-			type: [...SUPPORTED_IMAGE_TYPES],
-			maxSize: 5 * 1024 * 1024, // 5MB
-		}),
-		folder: t.Optional(
-			t.UnionEnum([
-				FOLDDER_TYPE.ADVERTISEMENT,
-				FOLDDER_TYPE.CATEGORY,
-				FOLDDER_TYPE.GENERAL,
-				FOLDDER_TYPE.PRODUCT,
-				FOLDDER_TYPE.USER_AVATAR,
-			]),
-		),
+	// 单文件上传请求参数
+	UploadImageDto: z.object({
+		file: z.any(), // 文件对象，在运行时验证
+		folder: z.enum([
+			FOLDDER_TYPE.ADVERTISEMENT,
+			FOLDDER_TYPE.CATEGORY,
+			FOLDDER_TYPE.GENERAL,
+			FOLDDER_TYPE.PRODUCT,
+			FOLDDER_TYPE.USER_AVATAR,
+		]).optional().default(FOLDDER_TYPE.GENERAL),
 	}),
 
-	// 通用文件上传请求参数
-	UploadImagesDto: t.Object({
-		files: t.Files({
-			type: [...SUPPORTED_IMAGE_TYPES],
-			maxSize: 5 * 1024 * 1024, // 5MB
-		}),
-		folder: t.Optional(
-			t.UnionEnum([
-				FOLDDER_TYPE.ADVERTISEMENT,
-				FOLDDER_TYPE.CATEGORY,
-				FOLDDER_TYPE.GENERAL,
-				FOLDDER_TYPE.PRODUCT,
-				FOLDDER_TYPE.USER_AVATAR,
-			]),
-		),
+	// 多文件上传请求参数
+	UploadImagesDto: z.object({
+		files: z.array(z.any()).min(1, "至少需要上传一个文件"), // 文件数组，在运行时验证
+		folder: z.enum([
+			FOLDDER_TYPE.ADVERTISEMENT,
+			FOLDDER_TYPE.CATEGORY,
+			FOLDDER_TYPE.GENERAL,
+			FOLDDER_TYPE.PRODUCT,
+			FOLDDER_TYPE.USER_AVATAR,
+		]).optional().default(FOLDDER_TYPE.GENERAL),
 	}),
 
 	// 上传响应类型
-	UploadResponse: t.Object({
-		success: t.Boolean(),
-		message: t.String(),
-		url: t.Optional(t.String()),
-		fileName: t.Optional(t.String()),
-		error: t.Optional(t.String()),
+	UploadResponse: z.object({
+		success: z.boolean(),
+		message: z.string(),
+		url: z.string().url().optional(),
+		fileName: z.string().optional(),
+		error: z.string().optional(),
 	}),
 
 	// 批量上传响应类型
-	BatchUploadResponse: t.Object({
-		success: t.Boolean(),
-		message: t.String(),
-		urls: t.Optional(t.Array(t.String())),
-		files: t.Optional(
-			t.Array(
-				t.Object({
-					url: t.String(),
-					fileName: t.String(),
-				}),
-			),
-		),
-		error: t.Optional(t.String()),
+	BatchUploadResponse: z.object({
+		success: z.boolean(),
+		message: z.string(),
+		urls: z.array(z.string().url()).optional(),
+		files: z.array(
+			z.object({
+				url: z.string().url(),
+				fileName: z.string(),
+			})
+		).optional(),
+		error: z.string().optional(),
 	}),
 };
 
-// 导出类型
-export type UploadImageDto = typeof uploadsModel.UploadImageDto.static;
-export type UploadImagesDto = typeof uploadsModel.UploadImagesDto.static;
+// 导出 Zod 推断类型
+export type UploadImageDto = z.infer<typeof uploadsModel.UploadImageDto>;
+export type UploadImagesDto = z.infer<typeof uploadsModel.UploadImagesDto>;
+export type UploadResponse = z.infer<typeof uploadsModel.UploadResponse>;
+export type BatchUploadResponse = z.infer<typeof uploadsModel.BatchUploadResponse>;
+export type FileInfo = z.infer<typeof uploadsModel.FileInfo>;
+export type ImageInfo = z.infer<typeof uploadsModel.ImageInfo>;
 
-export type UploadResponse = typeof uploadsModel.UploadResponse.static;
-export type BatchUploadResponse =
-	typeof uploadsModel.BatchUploadResponse.static;
-export type FileInfo = typeof uploadsModel.FileInfo.static;
+// 导出选择的图片类型（从 images 模型）
+export type SelectImageType = z.infer<typeof imagesModel.selectImagesTable>;

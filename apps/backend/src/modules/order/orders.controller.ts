@@ -1,6 +1,6 @@
 import { commonRes } from "@backend/utils/Res";
 import { Elysia, t } from "elysia";
-import { OrderModel } from "./orders.model";
+import { ordersModel } from "../../db/models/orders.model";
 import { OrdersService } from "./orders.service";
 
 /**
@@ -8,7 +8,7 @@ import { OrdersService } from "./orders.service";
  * 处理订单相关的HTTP请求
  */
 export const ordersController = new Elysia({ prefix: "/orders" })
-	.model(OrderModel)
+	.model(ordersModel)
 	.decorate("ordersService", new OrdersService())
 	.guard({
 		beforeHandle({ params }) {
@@ -30,7 +30,7 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 			return commonRes(result, 200, "获取订单列表成功");
 		},
 		{
-			query: "OrderQuery",
+			query: "queryOrdersListDto",
 		},
 	)
 
@@ -59,7 +59,7 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 			params: t.Object({
 				id: t.Number(),
 			}),
-			body: "UpdateOrderStatusDto",
+			body: "updateOrderStatusDto",
 		},
 	)
 
@@ -74,11 +74,23 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 			params: t.Object({
 				id: t.Number(),
 			}),
-			body: "UpdateShippingDto",
+			body: "updateShippingInfoDto",
 		},
 	)
 
-	// 获取退款列表
+	// 获取订单统计信息 - 作为子资源
+	.get(
+		"/statistics",
+		async ({ query, ordersService }) => {
+			const result = await ordersService.getOrderStatistics(query);
+			return commonRes(result, 200, "获取订单统计成功");
+		},
+		{
+			query: "queryOrdersListDto",
+		},
+	)
+
+	// 退款相关接口 - 作为子资源
 	.get(
 		"/refunds",
 		async ({ query, ordersService }) => {
@@ -86,7 +98,7 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 			return commonRes(result, 200, "获取退款列表成功");
 		},
 		{
-			query: "RefundQuery",
+			query: "queryOrdersListDto",
 		},
 	)
 
@@ -95,13 +107,13 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 		"/:id/refunds",
 		async ({ params: { id }, body, ordersService }) => {
 			const result = await ordersService.createRefund(Number(id), body);
-			return commonRes(result, 200, "创建退款申请成功");
+			return commonRes(result, 201, "创建退款申请成功");
 		},
 		{
 			params: t.Object({
 				id: t.Number(),
 			}),
-			body: "CreateRefundDto",
+			body: "cancelOrderDto",
 		},
 	)
 
@@ -109,25 +121,13 @@ export const ordersController = new Elysia({ prefix: "/orders" })
 	.put(
 		"/refunds/:id",
 		async ({ params: { id }, body, ordersService }) => {
-			const result = await ordersService.processRefund(id, body);
+			const result = await ordersService.processRefund(Number(id), body);
 			return commonRes(result, 200, "处理退款申请成功");
 		},
 		{
 			params: t.Object({
 				id: t.Number(),
 			}),
-			body: "ProcessRefundDto",
-		},
-	)
-
-	// 获取订单统计数据
-	.get(
-		"/statistics",
-		async ({ query, ordersService }) => {
-			const result = await ordersService.getOrderStatistics(query);
-			return commonRes(result, 200, "获取订单统计成功");
-		},
-		{
-			query: "StatisticsQuery",
+			body: "updateOrderStatusDto",
 		},
 	);

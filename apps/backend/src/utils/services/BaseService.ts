@@ -1,364 +1,330 @@
 // 基础Service类，提供通用的CRUD操作
 
 import type {
-	CreateOptions,
 	DeleteOptions,
 	PaginationParams,
+	QueryFilter,
 	QueryOptions,
-	UpdateOptions,
+	SortOption,
+	UpdateOptions
 } from "@backend/types";
-import { eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, like, lt, lte, ne, SQL } from "drizzle-orm";
 import { db } from "../../db/connection";
 import {
-	CustomeError,
 	DatabaseError,
 	handleDatabaseError,
-	InternalServerError,
 	NotFoundError,
-	ValidationError,
+	ValidationError
 } from "../error/customError";
-import { commonRes, type PageData } from "../Res";
-import {
-	createPaginator,
-	type PaginationOptions,
-	paginate,
-} from "./pagination";
-import {
-	buildOrderByClause,
-	buildQueryOptions,
-	buildWhereClause,
-} from "./utils";
-
+import { type PageData } from "../Res";
+import { paginate } from "./pagination";
+/**
+ * 基础Service类，提供通用的CRUD操作
+ * 移除了验证逻辑（由Controller层处理）
+ */
 export abstract class BaseService<
-	T = any,
-	CreateInput = any,
-	UpdateInput = any,
+	T extends Record<string, any>,
+	CreateInput extends Record<string, any>,
+	UpdateInput extends Partial<CreateInput>,
 > {
-	protected tableName: string;
-	protected schema: any;
+	protected abstract readonly table: any;
+	protected abstract readonly tableName: string;
 
-	constructor(schema: any, tableName: string) {
-		this.schema = schema;
-		this.tableName = tableName;
-	}
+
 
 	/**
 	 * 创建记录
 	 */
-	async create(data: CreateInput, options: CreateOptions = {}): Promise<T> {
+	/**
+	* 创建单条记录 - 修复版本
+	*/
+	async create(data: CreateInput): Promise<T> {
 		try {
-			// 基础验证
-			if (options.validate !== false) {
-				await this.validateCreate(data);
-			}
-
-			// 插入记录
-			const [result] = (await db
-				.insert(this.schema)
+			// 明确指定返回类型
+			const result = await db
+				.insert(this.table)
 				.values(data as any)
-				.returning()) as T[];
+				.returning();
 
-			if (!result) {
+			// 检查返回的是数组
+			if (!Array.isArray(result) || result.length === 0) {
 				throw new DatabaseError("Failed to create record");
 			}
 
-			return result;
+			return result[0] as T;
 		} catch (error) {
-			if (error instanceof CustomeError) {
-				throw error;
+			throw handleDatabaseError(error);
+		}
+	}
+
+
+	/**
+		* 批量创建记录 - 修复版本
+		*/
+	async createMany(data: CreateInput[]): Promise<T[]> {
+		if (!data || data.length === 0) {
+			throw new ValidationError('No data provided for batch creation');
+		}
+
+		try {
+			const result = await db
+				.insert(this.table)
+				.values(data as any)
+				.returning();
+
+			if (!Array.isArray(result)) {
+				throw new DatabaseError("Failed to create records");
 			}
+
+			return result as T[];
+		} catch (error) {
 			throw handleDatabaseError(error);
 		}
 	}
 
 	/**
-	 * 批量创建记录
-	 */
-	async createBatch(data: CreateInput[], options: CreateOptions = {}) {
-		if (!data || data.length === 0) {
-			throw new ValidationError("No data provided for batch creation");
-		}
-
-		// 验证每条记录
-		if (options.validate !== false) {
-			for (const item of data) {
-				await this.validateCreate(item);
-			}
-		}
-
-		// 批量插入
-		const result = await db.insert(this.schema).values(data).returning();
-
-		return result;
-	}
-
-	/**
 	 * 根据ID查找记录
 	 */
-	async findById(id: number) {
+	async findById(id: number): Promise<T | null> {
 		const [result] = await db
 			.select()
-			.from(this.schema)
-			.where(eq(this.schema.id, id));
+			.from(this.table)
+			.where(eq(this.table.id, id))
+			.limit(1);
+
+		return result as T || null;
+	}
+
+	/**
+	 * 根据ID查找记录或抛出错误
+	 */
+	async findByIdOrThrow(id: number): Promise<T> {
+		const result = await this.findById(id);
 
 		if (!result) {
-			throw new InternalServerError("记录不存在");
+			throw new NotFoundError(`Record with id ${id} not found`);
 		}
+
 		return result;
 	}
 
 	/**
-	 * 根据条件查找记录
+	 * 根据条件查找单条记录
 	 */
-	async findOne(filters: Record<string, any>) {
-		const queryOptions = buildQueryOptions(filters);
-		const whereClause = buildWhereClause(
-			Object.entries(queryOptions).map(([field, value]) => ({
-				field,
-				operator: "eq",
-				value,
-			})),
-			this.schema,
-		);
+	async findOne(filters: QueryFilter[]): Promise<T | null> {
+		const whereClause = this.buildWhereClause(filters);
 
 		const [result] = await db
 			.select()
-			.from(this.schema)
+			.from(this.table)
 			.where(whereClause)
 			.limit(1);
 
-		if (!result) {
-			throw new InternalServerError("服务器内部错误");
-		}
-
-		return result;
+		return result as T || null;
 	}
 
 	/**
-	 * 查询列表
+	 * 查询多条记录
 	 */
-	async findMany(queryOptions: QueryOptions = {}) {
-		const whereClause = buildWhereClause(
-			queryOptions.filters || [],
-			this.schema,
-		);
-		const orderByClause = buildOrderByClause(
-			queryOptions.sort || [],
-			this.schema,
-		);
+	async findMany(queryOptions: QueryOptions = {}): Promise<T[]> {
+		const whereClause = this.buildWhereClause(queryOptions.filters || []);
+		const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
 
-		let query = db.select().from(this.schema).$dynamic();
+		let query = db.select().from(this.table);
 
 		if (whereClause) {
-			query = query.where(whereClause);
+			query.where(whereClause);
 		}
 
 		if (orderByClause.length > 0) {
-			query = query.orderBy(...orderByClause);
+			query.orderBy(...orderByClause);
 		}
 
-		const result = await query;
-		return result;
+
+		return await query as T[];
 	}
 
 	/**
-	 * 分页查询 - 使用分页插件
+	 * 分页查询 - 使用统一的分页函数
 	 */
 	async findPaginated(
 		pagination: PaginationParams,
 		queryOptions: QueryOptions = {},
 	): Promise<PageData<T>> {
-		const whereClause = buildWhereClause(
-			queryOptions.filters || [],
-			this.schema,
-		);
-		const orderByClause = buildOrderByClause(
-			queryOptions.sort || [],
-			this.schema,
-		);
+		const { page = 1, pageSize = 10 } = pagination;
+		
+		const whereClause = this.buildWhereClause(queryOptions.filters || []);
+		const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
 
-		// 构建数据查询
-		let dataQuery = db.select().from(this.schema).$dynamic();
+		// 构建基础查询
+		let baseQuery = db.select().from(this.table).$dynamic();
+
+		// 应用查询条件
 		if (whereClause) {
-			dataQuery = dataQuery.where(whereClause);
-		}
-		if (orderByClause.length > 0) {
-			dataQuery = dataQuery.orderBy(...orderByClause);
+			baseQuery = baseQuery.where(whereClause);
 		}
 
-		// 构建计数查询
-		let countQuery = db
-			.select({ count: this.schema.id })
-			.from(this.schema)
-			.$dynamic();
-		if (whereClause) {
-			countQuery = countQuery.where(whereClause);
+		// 确定排序字段
+		let orderBy = this.table.id; // 默认使用id排序
+		let orderDirection: 'asc' | 'desc' = 'asc';
+		
+		if (queryOptions.sort && queryOptions.sort.length > 0) {
+			const firstSort = queryOptions.sort[0];
+			orderBy = this.table[firstSort.field];
+			orderDirection = firstSort.direction;
 		}
 
-		// 使用分页插件进行分页查询
-		return await paginate(dataQuery, countQuery, {
-			page: pagination.page,
-			pageSize: pagination.pageSize,
-			orderBy: orderByClause.length > 0 ? orderByClause[0] : undefined,
-			orderDirection: queryOptions.sort?.[0]?.direction || "asc",
+		// 使用统一的分页函数
+		return await paginate<T>(db, baseQuery, {
+			page,
+			pageSize,
+			orderBy,
+			orderDirection,
 		});
-	}
-
-	/**
-	 * 创建分页器 - 复用分页插件的 createPaginator
-	 */
-	createPaginator(
-		queryOptions: QueryOptions = {},
-	): (options: Partial<PaginationOptions>) => Promise<PageData<T>> {
-		const whereClause = buildWhereClause(
-			queryOptions.filters || [],
-			this.schema,
-		);
-		const orderByClause = buildOrderByClause(
-			queryOptions.sort || [],
-			this.schema,
-		);
-
-		// 构建数据查询
-		let dataQuery = db.select().from(this.schema).$dynamic();
-		if (whereClause) {
-			dataQuery = dataQuery.where(whereClause);
-		}
-		if (orderByClause.length > 0) {
-			dataQuery = dataQuery.orderBy(...orderByClause);
-		}
-
-		// 构建计数查询
-		let countQuery = db
-			.select({ count: this.schema.id })
-			.from(this.schema)
-			.$dynamic();
-		if (whereClause) {
-			countQuery = countQuery.where(whereClause);
-		}
-
-		// 使用分页插件创建分页器
-		return createPaginator(
-			dataQuery,
-			countQuery,
-			orderByClause.length > 0 ? orderByClause[0] : undefined,
-			this.schema,
-		);
 	}
 
 	/**
 	 * 更新记录
 	 */
-	async update(id: number, data: UpdateInput, options: UpdateOptions = {}) {
+	async update(id: number, data: UpdateInput, options: UpdateOptions = {}): Promise<T> {
 		// 检查记录是否存在
 		const existing = await this.findById(id);
-		if (!existing.data || existing.data == null) {
+		if (!existing) {
 			throw new NotFoundError(`Record with id ${id} not found`);
 		}
 
-		// 执行更新
 		const [result] = await db
-			.update(this.schema)
-			.set(data as any)
-			.where(eq(this.schema.id, id))
+			.update(this.table)
+			.set(data)
+			.where(eq(this.table.id, id))
 			.returning();
 
 		if (!result) {
-			throw new DatabaseError("Failed to update record");
+			throw new DatabaseError('Failed to update record');
 		}
 
-		return result;
+		return result as T;
 	}
 
 	/**
 	 * 删除记录
 	 */
-	async delete(id: number, options: DeleteOptions = {}) {
+	async delete(id: number, options: DeleteOptions = {}): Promise<boolean> {
 		// 检查记录是否存在
 		const existing = await this.findById(id);
-		if (!existing.data == null || !existing.data) {
+		if (!existing) {
 			throw new NotFoundError(`Record with id ${id} not found`);
 		}
 
-		// 执行删除
 		const result = await db
-			.delete(this.schema)
-			.where(eq(this.schema.id, id))
-			.returning({ id: this.schema.id });
+			.delete(this.table)
+			.where(eq(this.table.id, id))
+			.returning({ id: this.table.id });
 
-		if (!result || result.length === 0) {
-			throw new DatabaseError("Failed to delete record");
-		}
-
-		return true;
+		return result.length > 0;
 	}
 
 	/**
 	 * 批量删除记录
 	 */
-	async deleteBatch(ids: number[]) {
+	async deleteBatch(ids: number[]): Promise<number> {
 		if (!ids || ids.length === 0) {
-			throw new ValidationError("No IDs provided for batch deletion");
+			throw new ValidationError('No IDs provided for batch deletion');
 		}
 
 		const result = await db
-			.delete(this.schema)
-			.where(inArray(this.schema.id, ids))
-			.returning({ id: this.schema.id });
+			.delete(this.table)
+			.where(inArray(this.table.id, ids))
+			.returning({ id: this.table.id });
 
-		const deletedCount = result.length;
-		return deletedCount;
+		return result.length;
 	}
 
 	/**
 	 * 统计记录数量
 	 */
-	async count(filters: Record<string, any> = {}) {
-		const queryOptions = buildQueryOptions(filters);
-		const whereClause = buildWhereClause(
-			Object.entries(queryOptions).map(([field, value]) => ({
-				field,
-				operator: "eq",
-				value,
-			})),
-			this.schema,
-		);
+	async count(filters: QueryFilter[] = []): Promise<number> {
+		const whereClause = this.buildWhereClause(filters);
 
 		let query = db
-			.select({ count: this.schema.id })
-			.from(this.schema)
-			.$dynamic();
+			.select({ count: this.table.id })
+			.from(this.table);
+
 		if (whereClause) {
-			query = query.where(whereClause);
+			query.where(whereClause);
 		}
 
 		const result = await query;
-		return result.length;
+		return Number(result[0]?.count || 0);
 	}
 
 	/**
 	 * 检查记录是否存在
 	 */
-	async exists(id: number) {
+	async exists(id: number): Promise<boolean> {
 		const result = await this.findById(id);
-		return commonRes(result.data !== null);
-	}
-	// 抽象方法，子类可以实现具体的验证逻辑
-	protected async validateCreate(data: CreateInput): Promise<void> {
-		// 默认实现，子类可以重写
+		return !!result;
 	}
 
-	protected async validateUpdate(data: UpdateInput): Promise<void> {
-		// 默认实现，子类可以重写
+	/**
+	 * 构建查询条件
+	 */
+	protected buildWhereClause(filters: QueryFilter[]): SQL | undefined {
+		if (!filters || filters.length === 0) {
+			return undefined;
+		}
+
+		const conditions = filters.map((filter) => {
+			const { field, operator, value } = filter;
+			const column = this.table[field];
+
+			if (!column) {
+				throw new ValidationError(`Invalid field: ${field}`);
+			}
+
+			switch (operator) {
+				case 'eq':
+					return eq(column, value);
+				case 'ne':
+					return ne(column, value);
+				case 'gt':
+					return gt(column, value);
+				case 'gte':
+					return gte(column, value);
+				case 'lt':
+					return lt(column, value);
+				case 'lte':
+					return lte(column, value);
+				case 'like':
+					return like(column, `%${value}%`);
+				case 'in':
+					return inArray(column, value);
+				default:
+					throw new ValidationError(`Unsupported operator: ${operator}`);
+			}
+		});
+
+		return conditions.length > 1 ? and(...conditions) : conditions[0];
 	}
 
-	// 获取表名
-	getTableName(): string {
-		return this.tableName;
+	/**
+	 * 构建排序条件
+	 */
+	protected buildOrderByClause(sortOptions: SortOption[]): any[] {
+		if (!sortOptions || sortOptions.length === 0) {
+			return [];
+		}
+
+		return sortOptions.map((option) => {
+			const { field, direction } = option;
+			const column = this.table[field];
+
+			if (!column) {
+				throw new ValidationError(`Invalid sort field: ${field}`);
+			}
+
+			return direction === 'asc' ? asc(column) : desc(column);
+		});
 	}
 
-	// 获取schema
-	getSchema(): any {
-		return this.schema;
-	}
 }

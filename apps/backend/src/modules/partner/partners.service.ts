@@ -1,33 +1,29 @@
 import { db } from "@backend/db/connection";
-import { imagesSchema, partnersSchema } from "@backend/db/schema/schema";
+import { UpdateSortDtoType } from "@backend/types";
 import {
   DatabaseError,
   InternalServerError,
   NotFoundError,
 } from "@backend/utils/error/customError";
+import { paginate } from "@backend/utils/services/pagination";
 import {
   and,
   asc,
-  count,
-  desc,
   eq,
   getTableColumns,
   like,
-  or,
+  or
 } from "drizzle-orm";
-import type {
-  CreatePartnerDto,
-  PartnerQueryDto,
-  UpdatePartnerDto,
-  UpdateSortDto,
-} from "./partners.model";
+import { imagesTable } from "../../db/models/images.model";
+import { InsertPartnersDto, PartnersListQueryDto, partnersTable, UpdatePartnersDto } from "../../db/models/partners.model";
+
 
 /**
  * 合作伙伴服务类
  * 处理合作伙伴相关的业务逻辑
  */
 export class PartnersService {
-  private readonly columns = getTableColumns(partnersSchema);
+  private readonly columns = getTableColumns(partnersTable);
 
   /**
    * 获取启用的合作伙伴列表（前台用）
@@ -37,20 +33,20 @@ export class PartnersService {
     return await db
       .select({
         ...this.columns,
-        image: imagesSchema.url, // 添加图片URL字段
+        image: imagesTable.url, // 添加图片URL字段
       })
-      .from(partnersSchema)
-      .innerJoin(imagesSchema, eq(partnersSchema.image_id, imagesSchema.id))
-      .where(eq(partnersSchema.isActive, true))
-      .orderBy(asc(partnersSchema.sortOrder));
+      .from(partnersTable)
+      .innerJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
+      .where(eq(partnersTable.isActive, true))
+      .orderBy(asc(partnersTable.sortOrder));
   }
 
   /**
-   * 获取合作伙伴列表（管理后台用）
+   * 获取合作伙伴列表（管理后台用）- 使用统一的分页函数
    * @param params 查询参数
    * @returns 分页的合作伙伴列表
    */
-  async getPartnersList(params: PartnerQueryDto) {
+  async getPartnersList(params: PartnersListQueryDto) {
     const {
       page = 1,
       pageSize = 10,
@@ -61,6 +57,16 @@ export class PartnersService {
       isActive,
     } = params;
 
+    // 构建基础查询
+    let baseQuery = db
+      .select({
+        ...this.columns,
+        image: imagesTable.url, // 添加图片URL字段
+      })
+      .from(partnersTable)
+      .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
+      .$dynamic();
+
     // 搜索条件构建
     const conditions = [];
 
@@ -68,67 +74,43 @@ export class PartnersService {
     if (search) {
       conditions.push(
         or(
-          like(partnersSchema.name, `%${search}%`),
-          like(partnersSchema.description, `%${search}%`),
+          like(partnersTable.name, `%${search}%`),
+          like(partnersTable.description, `%${search}%`),
         ),
       );
     }
 
     // 独立的精确搜索条件
     if (name) {
-      conditions.push(like(partnersSchema.name, `%${name}%`));
+      conditions.push(like(partnersTable.name, `%${name}%`));
     }
     if (isActive !== undefined) {
-      conditions.push(eq(partnersSchema.isActive, isActive));
+      conditions.push(eq(partnersTable.isActive, isActive));
+    }
+
+    // 应用查询条件
+    if (conditions.length > 0) {
+      baseQuery = baseQuery.where(and(...conditions));
     }
 
     // 排序字段映射
     const sortFieldMap: Record<string, any> = {
-      name: partnersSchema.name,
-      sortOrder: partnersSchema.sortOrder,
-      createdAt: partnersSchema.createdAt,
-      updatedAt: partnersSchema.updatedAt,
+      name: partnersTable.name,
+      sortOrder: partnersTable.sortOrder,
+      createdAt: partnersTable.createdAt,
+      updatedAt: partnersTable.updatedAt,
     };
     // 确定排序字段和方向
-    const sortField = sortFieldMap[sortBy] || partnersSchema.sortOrder;
-    const orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
+    const orderBy = sortFieldMap[sortBy] || partnersTable.sortOrder;
+    const orderDirection = sortOrder as "asc" | "desc";
 
-    // 构建查询
-    const queryBuilder = db
-      .select({
-        ...this.columns,
-        image: imagesSchema.url, // 添加图片URL字段
-      })
-      .from(partnersSchema)
-      .leftJoin(imagesSchema, eq(partnersSchema.image_id, imagesSchema.id))
-      .orderBy(orderBy);
-
-    // 获取总数
-    const totalBuilder = db.select({ count: count() }).from(partnersSchema);
-
-    if (conditions.length > 0) {
-      queryBuilder.where(and(...conditions));
-      totalBuilder.where(and(...conditions));
-    }
-
-    // 分页
-    const offset = (page - 1) * pageSize;
-    queryBuilder.limit(pageSize).offset(offset);
-
-    // 开始查询
-    const [partners, [{ count: total }]] = await Promise.all([
-      queryBuilder,
-      totalBuilder,
-    ]);
-    return {
-      items: partners,
-      meta: {
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    };
+    // 使用统一的分页函数
+    return await paginate(db, baseQuery, {
+      page,
+      pageSize,
+      orderBy,
+      orderDirection,
+    });
   }
 
   /**
@@ -140,11 +122,11 @@ export class PartnersService {
     const [partner] = await db
       .select({
         ...this.columns,
-        image: imagesSchema.url, // 添加图片URL字段
+        image: imagesTable.url, // 添加图片URL字段
       })
-      .from(partnersSchema)
-      .leftJoin(imagesSchema, eq(partnersSchema.image_id, imagesSchema.id))
-      .where(eq(partnersSchema.id, id));
+      .from(partnersTable)
+      .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
+      .where(eq(partnersTable.id, id));
 
     if (!partner) {
       throw new NotFoundError("合作伙伴不存在", "com");
@@ -157,11 +139,11 @@ export class PartnersService {
    * @param data 创建数据
    * @returns 创建的合作伙伴
    */
-  async createPartner(data: CreatePartnerDto) {
+  async createPartner(data: InsertPartnersDto) {
     const [newPartner] = await db
-      .insert(partnersSchema)
+      .insert(partnersTable)
       .values(data)
-      .returning(this.columns);
+      .returning();
 
     if (!newPartner) {
       throw new InternalServerError("创建合作伙伴失败");
@@ -175,14 +157,14 @@ export class PartnersService {
    * @param data 更新数据
    * @returns 更新后的合作伙伴
    */
-  async updatePartner(id: number, data: UpdatePartnerDto) {
+  async updatePartner(id: number, data: UpdatePartnersDto) {
     const [updatedPartner] = await db
-      .update(partnersSchema)
+      .update(partnersTable)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(partnersSchema.id, id))
+      .where(eq(partnersTable.id, id))
       .returning(this.columns);
 
     if (!updatedPartner) {
@@ -202,8 +184,8 @@ export class PartnersService {
 
     try {
       const result = await db
-        .delete(partnersSchema)
-        .where(eq(partnersSchema.id, id));
+        .delete(partnersTable)
+        .where(eq(partnersTable.id, id));
 
       if (!result || result.rowCount === 0) {
         throw new InternalServerError("删除合作伙伴失败");
@@ -224,14 +206,14 @@ export class PartnersService {
    * @param data 排序数据
    * @returns 更新后的合作伙伴
    */
-  async updatePartnerSort(id: number, data: UpdateSortDto) {
+  async updatePartnerSort(id: number, data: UpdateSortDtoType) {
     const [updatedPartner] = await db
-      .update(partnersSchema)
+      .update(partnersTable)
       .set({
         sortOrder: data.sortOrder,
         updatedAt: new Date(),
       })
-      .where(eq(partnersSchema.id, id))
+      .where(eq(partnersTable.id, id))
       .returning(this.columns);
 
     if (!updatedPartner) {
@@ -255,12 +237,12 @@ export class PartnersService {
 
     // 切换状态
     const [updatedPartner] = await db
-      .update(partnersSchema)
+      .update(partnersTable)
       .set({
         isActive: !currentPartner.isActive,
         updatedAt: new Date(),
       })
-      .where(eq(partnersSchema.id, id))
+      .where(eq(partnersTable.id, id))
       .returning(this.columns);
 
     if (!updatedPartner) {

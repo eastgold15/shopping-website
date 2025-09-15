@@ -14,26 +14,30 @@ const productSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, "商品名称不能为空"),
   slug: z.string().min(1, "URL别名不能为空"),
-  description: z.string().min(1, "商品描述不能为空"),
-  shortDescription: z.string().min(1, "简短描述不能为空"),
-  price: z.number().min(0.01, "价格必须大于0"),
-  comparePrice: z.number().optional(),
-  cost: z.number().optional(),
-  sku: z.string().min(1, "SKU不能为空"),
+  description: z.string().optional(),
+  shortDescription: z.string().optional(),
+  price: z.number().min(0, "价格不能小于0"),
+  comparePrice: z.number().min(0, "对比价格不能小于0").optional(),
+  cost: z.number().min(0, "成本价不能小于0").optional(),
+  sku: z.string().optional(),
   barcode: z.string().optional(),
-  weight: z.number().optional(),
-  dimensions: z.any().optional(),
-  images: z.array(z.string()).default([]),
-  videos: z.array(z.string()).default([]),
-  colors: z.array(z.string()).default([]),
-  sizes: z.array(z.string()).default([]),
-  materials: z.array(z.string()).default([]),
+  weight: z.number().min(0, "重量不能小于0").optional(),
+  dimensions: z.object({
+    length: z.number().optional(),
+    width: z.number().optional(),
+    height: z.number().optional(),
+  }).optional(),
+  images: z.array(z.string()).optional(),
+  videos: z.array(z.string()).optional(),
+  colors: z.array(z.string()).optional(),
+  sizes: z.array(z.string()).optional(),
+  materials: z.array(z.string()).optional(),
   careInstructions: z.string().optional(),
-  features: z.any().optional(),
-  specifications: z.any().optional(),
-  categoryId: z.number().nullable(),
-  stock: z.number().min(0, "库存不能为负数"),
-  minStock: z.number().optional(),
+  features: z.array(z.string()).optional(),
+  specifications: z.record(z.any()).optional(),
+  categoryId: z.number().optional(),
+  stock: z.number().min(0, "库存不能小于0"),
+  minStock: z.number().min(0, "最低库存不能小于0").optional(),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
   metaTitle: z.string().optional(),
@@ -75,15 +79,15 @@ const templateData = await genPrimeCmsTemplateData<
       sku: "",
       barcode: "",
       weight: 0,
-      dimensions: null,
+      dimensions: { length: 0, width: 0, height: 0 },
       images: [],
       videos: [],
       colors: [],
       sizes: [],
       materials: [],
       careInstructions: "",
-      features: null,
-      specifications: null,
+      features: [],
+      specifications: {},
       categoryId: null,
       stock: 0,
       minStock: 0,
@@ -150,12 +154,78 @@ const onImageSelected = (imageUrl: string, imageData: any) => {
   console.log("imageUrl:", imageUrl);
 
   if (currentFormData.value) {
-    // 设置图片ID（数字类型）
-    currentFormData.value.image_id = imageData.id;
-    // 设置显示用的图片URL
-    currentFormData.value.image = imageUrl;
+    // 确保images数组存在
+    if (!currentFormData.value.images) {
+      currentFormData.value.images = [];
+    }
+    // 添加图片URL到数组中
+    if (!currentFormData.value.images.includes(imageUrl)) {
+      currentFormData.value.images.push(imageUrl);
+    }
   }
   showImageSelector.value = false;
+};
+
+// 规格管理相关
+const newColor = ref('');
+const newSize = ref('');
+const newMaterial = ref('');
+const newFeature = ref('');
+
+// 添加颜色
+const addColor = () => {
+  if (newColor.value.trim()) {
+    const data = templateData.crudFormData.value;
+    if (!data.colors) {
+      data.colors = [];
+    }
+    if (!data.colors.includes(newColor.value.trim())) {
+      data.colors.push(newColor.value.trim());
+    }
+    newColor.value = '';
+  }
+};
+
+// 添加尺寸
+const addSize = () => {
+  if (newSize.value.trim()) {
+    const data = templateData.crudFormData.value;
+    if (!data.sizes) {
+      data.sizes = [];
+    }
+    if (!data.sizes.includes(newSize.value.trim())) {
+      data.sizes.push(newSize.value.trim());
+    }
+    newSize.value = '';
+  }
+};
+
+// 添加材质
+const addMaterial = () => {
+  if (newMaterial.value.trim()) {
+    const data = templateData.crudFormData.value;
+    if (!data.materials) {
+      data.materials = [];
+    }
+    if (!data.materials.includes(newMaterial.value.trim())) {
+      data.materials.push(newMaterial.value.trim());
+    }
+    newMaterial.value = '';
+  }
+};
+
+// 添加特性
+const addFeature = () => {
+  if (newFeature.value.trim()) {
+    const data = templateData.crudFormData.value;
+    if (!data.features) {
+      data.features = [];
+    }
+    if (!data.features.includes(newFeature.value.trim())) {
+      data.features.push(newFeature.value.trim());
+    }
+    newFeature.value = '';
+  }
 };
 </script>
 
@@ -279,112 +349,341 @@ const onImageSelected = (imageUrl: string, imageData: any) => {
 
     <!-- 表单 -->
     <template #CrudForm="{ data, disabled }: { data: ProductModel, disabled: boolean }">
-      <div class="h-full">
-        <!-- 商品名称 -->
-        <FormField v-slot="$field" name="name" class="flex flex-col gap-2 mb-4">
-          <label class="text-sm font-medium">商品名称 *</label>
-          <InputText fluid size="small" placeholder="请输入商品名称" :disabled="disabled" />
-          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
-          </Message>
-        </FormField>
+      <div class="h-full overflow-y-auto">
+        <!-- 基本信息 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="pi pi-info-circle text-blue-500"></i>
+            基本信息
+          </h3>
 
-        <!-- SKU -->
-        <FormField v-slot="$field" name="sku" class="flex flex-col gap-2 mb-4">
-          <label class="text-sm font-medium">SKU</label>
-          <InputText fluid placeholder="请输入商品SKU" :disabled="disabled" />
-          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
-          </Message>
-        </FormField>
-
-        <!-- 商品描述 -->
-        <FormField v-slot="$field" name="description" class="flex flex-col gap-2 mb-4">
-          <label class="text-sm font-medium">商品描述</label>
-          <Textarea fluid placeholder="请输入商品描述" :disabled="disabled" rows="3" />
-          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
-          </Message>
-        </FormField>
-
-        <!-- 价格信息 -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <FormField v-slot="$field" name="price" class="flex flex-col gap-2">
-            <label class="text-sm font-medium">售价 *</label>
-            <InputNumber v-model="data.price" placeholder="请输入售价" :disabled="disabled" :min="0" :max-fraction-digits="2"
-              class="w-full" />
+          <!-- 商品名称 -->
+          <FormField v-slot="$field" name="name" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">商品名称 *</label>
+            <InputText fluid size="small" placeholder="请输入商品名称" :disabled="disabled" />
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
           </FormField>
 
-          <FormField v-slot="$field" name="comparePrice" class="flex flex-col gap-2">
-            <label class="text-sm font-medium">对比价</label>
-            <InputNumber v-model="data.comparePrice" placeholder="请输入对比价" :disabled="disabled" :min="0"
-              :max-fraction-digits="2" class="w-full" />
+          <!-- URL标识符 -->
+          <FormField v-slot="$field" name="slug" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">URL标识符 *</label>
+            <InputText fluid placeholder="请输入URL标识符" :disabled="disabled" />
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
-          </FormField>
-        </div>
-
-        <!-- 库存和分类 -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <FormField v-slot="$field" name="stock" class="flex flex-col gap-2">
-            <label class="text-sm font-medium">库存数量 *</label>
-            <InputNumber v-model="data.stock" placeholder="请输入库存数量" :disabled="disabled" :min="0" class="w-full" />
-            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
-            </Message>
+            <small class="text-gray-500">用于生成商品页面URL，只能包含字母、数字和连字符</small>
           </FormField>
 
-          <FormField v-slot="$field" name="categoryId" class="flex flex-col gap-2">
-            <label class="text-sm font-medium">分类ID</label>
+          <!-- SKU和条形码 -->
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <FormField v-slot="$field" name="sku" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">商品编码</label>
+              <InputText fluid placeholder="请输入商品SKU" :disabled="disabled" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+
+            <FormField v-slot="$field" name="barcode" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">条形码</label>
+              <InputText fluid placeholder="请输入条形码" :disabled="disabled" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+          </div>
+
+          <!-- 商品分类 -->
+          <FormField v-slot="$field" name="categoryId" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">商品分类 *</label>
             <InputNumber v-model="data.categoryId" placeholder="请输入分类ID" :disabled="disabled" :min="1" class="w-full" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
+
+          <!-- 简短描述 -->
+          <FormField v-slot="$field" name="shortDescription" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">简短描述</label>
+            <Textarea fluid placeholder="请输入简短描述" :disabled="disabled" rows="2" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+            <small class="text-gray-500">用于商品列表页面显示</small>
+          </FormField>
+
+          <!-- 详细描述 -->
+          <FormField v-slot="$field" name="description" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">详细描述</label>
+            <Textarea fluid placeholder="请输入详细描述" :disabled="disabled" rows="4" />
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
           </FormField>
         </div>
 
         <!-- 商品图片 -->
-        <FormField v-slot="$field" name="images" class="flex flex-col gap-2 mb-4">
-          <label class="text-sm font-medium">商品图片</label>
-          <div class="flex flex-col gap-2">
-            <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined :disabled="disabled"
-              @click="() => { currentFormData = data; showImageSelector = true; }" v-tooltip="'从图片库选择'" />
-            <div v-if="data.images && data.images.length > 0" class="flex flex-wrap gap-2">
-              <img v-for="(image, index) in data.images" :key="index" :src="image" :alt="`商品图片${index + 1}`"
-                class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="pi pi-image text-green-500"></i>
+            商品图片
+          </h3>
+
+          <FormField v-slot="$field" name="images" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">商品图片 *</label>
+            <div class="flex flex-col gap-2">
+              <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined :disabled="disabled"
+                @click="() => { currentFormData = templateData.crudFormData.value; showImageSelector = true; }"
+                v-tooltip="'从图片库选择'" />
+
+              <!-- 已选择的图片展示 -->
+              <div v-if="data.images && data.images.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div v-for="(image, index) in data.images" :key="index" class="relative group">
+                  <img :src="image" :alt="`商品图片 ${index + 1}`" class="w-full h-32 object-cover rounded-lg border" />
+                  <Button @click="data.images.splice(index, 1)" icon="pi pi-times" size="small" severity="danger"
+                    rounded class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    :disabled="disabled" />
+                </div>
+              </div>
+
+              <!-- 无图片时的提示 -->
+              <div v-else class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <i class="pi pi-image text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-500">暂无图片，点击上方按钮选择图片</p>
+              </div>
+            </div>
+            <small class="text-gray-500">支持 JPG、PNG 格式，建议尺寸 800x800px，最大5MB，最多10张</small>
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
+        </div>
+
+        <!-- 商品规格 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="pi pi-cog text-purple-500"></i>
+            商品规格
+          </h3>
+
+          <!-- 颜色规格 -->
+          <div class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">颜色</label>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="(color, index) in data.colors" :key="index"
+                class="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                <span>{{ color }}</span>
+                <Button icon="pi pi-times" size="small" text @click="data.colors.splice(index, 1)"
+                  :disabled="disabled" />
+              </div>
+              <div class="flex items-center gap-2" v-if="!disabled">
+                <InputText v-model="newColor" placeholder="添加颜色" class="w-32" @keyup.enter="addColor" />
+                <Button icon="pi pi-plus" size="small" @click="addColor" />
+              </div>
             </div>
           </div>
-          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
-          </Message>
-        </FormField>
 
-        <!-- 商品状态 -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <FormField v-slot="$field" name="isActive" class="flex flex-col gap-2">
-            <label class="text-sm font-medium">上架状态</label>
-            <div class="flex gap-4">
-              <div class="flex align-items-center gap-2">
-                <RadioButton v-model="data.isActive" :value="true" :disabled="disabled" input-id="active-true" />
-                <label for="active-true">上架</label>
+          <!-- 尺寸规格 -->
+          <div class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">尺寸</label>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="(size, index) in data.sizes" :key="index"
+                class="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                <span>{{ size }}</span>
+                <Button icon="pi pi-times" size="small" text @click="data.sizes.splice(index, 1)"
+                  :disabled="disabled" />
               </div>
-              <div class="flex align-items-center gap-2">
-                <RadioButton v-model="data.isActive" :value="false" :disabled="disabled" input-id="active-false" />
-                <label for="active-false">下架</label>
+              <div class="flex items-center gap-2" v-if="!disabled">
+                <InputText v-model="newSize" placeholder="添加尺寸" class="w-32" @keyup.enter="addSize" />
+                <Button icon="pi pi-plus" size="small" @click="addSize" />
               </div>
             </div>
+          </div>
+
+          <!-- 材质规格 -->
+          <div class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">材质</label>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="(material, index) in data.materials" :key="index"
+                class="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                <span>{{ material }}</span>
+                <Button icon="pi pi-times" size="small" text @click="data.materials.splice(index, 1)"
+                  :disabled="disabled" />
+              </div>
+              <div class="flex items-center gap-2" v-if="!disabled">
+                <InputText v-model="newMaterial" placeholder="添加材质" class="w-32" @keyup.enter="addMaterial" />
+                <Button icon="pi pi-plus" size="small" @click="addMaterial" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 护理说明 -->
+          <FormField v-slot="$field" name="careInstructions" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">护理说明</label>
+            <Textarea fluid placeholder="请输入护理说明" :disabled="disabled" rows="2" />
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
           </FormField>
 
-          <FormField v-slot="$field" name="isFeatured" class="flex flex-col gap-2">
-            <label class="text-sm font-medium">是否推荐</label>
-            <div class="flex gap-4">
-              <div class="flex align-items-center gap-2">
-                <RadioButton v-model="data.isFeatured" :value="true" :disabled="disabled" input-id="featured-true" />
-                <label for="featured-true">推荐</label>
+          <!-- 商品特性 -->
+          <div class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">商品特性</label>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="(feature, index) in data.features" :key="index"
+                class="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                <span>{{ feature }}</span>
+                <Button icon="pi pi-times" size="small" text @click="data.features.splice(index, 1)"
+                  :disabled="disabled" />
               </div>
-              <div class="flex align-items-center gap-2">
-                <RadioButton v-model="data.isFeatured" :value="false" :disabled="disabled" input-id="featured-false" />
-                <label for="featured-false">不推荐</label>
+              <div class="flex items-center gap-2" v-if="!disabled">
+                <InputText v-model="newFeature" placeholder="添加特性" class="w-32" @keyup.enter="addFeature" />
+                <Button icon="pi pi-plus" size="small" @click="addFeature" />
               </div>
             </div>
+          </div>
+
+          <!-- 规格参数 -->
+          <FormField v-slot="$field" name="specifications" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">规格参数</label>
+            <Textarea fluid placeholder="请输入规格参数" :disabled="disabled" rows="3" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+          </FormField>
+        </div>
+
+        <!-- 价格和库存 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="pi pi-dollar text-orange-500"></i>
+            价格和库存
+          </h3>
+
+          <!-- 价格信息 -->
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <FormField v-slot="$field" name="price" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">售价 *</label>
+              <InputNumber v-model="data.price" placeholder="请输入售价" :disabled="disabled" :min="0"
+                :max-fraction-digits="2" class="w-full" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+
+            <FormField v-slot="$field" name="comparePrice" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">对比价</label>
+              <InputNumber v-model="data.comparePrice" placeholder="请输入对比价" :disabled="disabled" :min="0"
+                :max-fraction-digits="2" class="w-full" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+
+            <FormField v-slot="$field" name="cost" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">成本价</label>
+              <InputNumber v-model="data.cost" placeholder="请输入成本价" :disabled="disabled" :min="0"
+                :max-fraction-digits="2" class="w-full" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+          </div>
+
+          <!-- 库存信息 -->
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <FormField v-slot="$field" name="stock" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">库存数量 *</label>
+              <InputNumber v-model="data.stock" placeholder="请输入库存数量" :disabled="disabled" :min="0" class="w-full" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+
+            <FormField v-slot="$field" name="minStock" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">最低库存</label>
+              <InputNumber v-model="data.minStock" placeholder="请输入最低库存" :disabled="disabled" :min="0" class="w-full" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+          </div>
+
+          <!-- 物理属性 -->
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <FormField v-slot="$field" name="weight" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">重量(kg)</label>
+              <InputNumber v-model="data.weight" placeholder="请输入重量" :disabled="disabled" :min="0"
+                :max-fraction-digits="3" class="w-full" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+
+            <FormField v-slot="$field" name="dimensions" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">尺寸</label>
+              <InputText fluid placeholder="长x宽x高(cm)" :disabled="disabled" />
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+          </div>
+        </div>
+
+        <!-- 商品状态 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="pi pi-check-circle text-indigo-500"></i>
+            商品状态
+          </h3>
+
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <FormField v-slot="$field" name="isActive" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">上架状态</label>
+              <div class="flex gap-4">
+                <div class="flex align-items-center gap-2">
+                  <RadioButton v-model="data.isActive" :value="true" :disabled="disabled" input-id="active-true" />
+                  <label for="active-true">上架</label>
+                </div>
+                <div class="flex align-items-center gap-2">
+                  <RadioButton v-model="data.isActive" :value="false" :disabled="disabled" input-id="active-false" />
+                  <label for="active-false">下架</label>
+                </div>
+              </div>
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+
+            <FormField v-slot="$field" name="isFeatured" class="flex flex-col gap-2">
+              <label class="text-sm font-medium">是否推荐</label>
+              <div class="flex gap-4">
+                <div class="flex align-items-center gap-2">
+                  <RadioButton v-model="data.isFeatured" :value="true" :disabled="disabled" input-id="featured-true" />
+                  <label for="featured-true">推荐</label>
+                </div>
+                <div class="flex align-items-center gap-2">
+                  <RadioButton v-model="data.isFeatured" :value="false" :disabled="disabled"
+                    input-id="featured-false" />
+                  <label for="featured-false">不推荐</label>
+                </div>
+              </div>
+              <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+              </Message>
+            </FormField>
+          </div>
+        </div>
+
+        <!-- SEO信息 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <i class="pi pi-search text-teal-500"></i>
+            SEO信息
+          </h3>
+
+          <FormField v-slot="$field" name="metaTitle" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">SEO标题</label>
+            <InputText fluid placeholder="请输入SEO标题" :disabled="disabled" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+            <small class="text-gray-500">建议不超过60个字符</small>
+          </FormField>
+
+          <FormField v-slot="$field" name="metaDescription" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">SEO描述</label>
+            <Textarea fluid placeholder="请输入SEO描述" :disabled="disabled" rows="2" />
+            <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+            </Message>
+            <small class="text-gray-500">建议不超过160个字符</small>
+          </FormField>
+
+          <FormField v-slot="$field" name="metaKeywords" class="flex flex-col gap-2 mb-4">
+            <label class="text-sm font-medium">SEO关键词</label>
+            <InputText fluid placeholder="请输入SEO关键词，用逗号分隔" :disabled="disabled" />
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
           </FormField>

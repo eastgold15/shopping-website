@@ -80,8 +80,8 @@
 </template>
 
 <script setup lang="ts">
-import { client } from "@frontend/utils/useTreaty";
 
+import { useFrontApi } from "@frontend/utils/handleApi";
 import type { CategoryTree } from "../types/layout";
 
 
@@ -162,21 +162,18 @@ const isCategoryExpanded = (categoryId: string) => {
   return expandedCategories.value.has(categoryId);
 };
 
+const api = useFrontApi()
+
 // 获取分类数据
 const fetchCategories = async () => {
   try {
     loading.value = true;
     error.value = null;
 
-    const res = await client.api.categories.tree.get()
-
-    console.log("11", res);
-    if (!res) {
-      return;
-    }
+    const res = await api.categories.tree()
 
     if (res.code === 200 && res.data) {
-      categories.value = res.data as any;
+      categories.value = res.data
     } else {
       // 使用模拟数据作为后备
       categories.value = [];

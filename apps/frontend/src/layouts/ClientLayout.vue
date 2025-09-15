@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import CategoryNav from "../components/CategoryNav.vue";
-import type { FooterConfig, FooterSection } from "../types/layout";
-
-
 const router = useRouter();
 const isMobileMenuOpen = ref(false);
 const currentLanguage = ref("中文");
@@ -99,7 +96,7 @@ const loadFooterConfig = async () => {
 
     if (footerResponse.data && footerResponse.code === 200) {
       // 处理底部栏目数据
-      const footerData: FooterConfig[] = footerResponse.data || [];
+      const footerData= footerResponse.data || [];
 
       // 查找底部栏目配置
       const sectionsConfig = footerData.find(
@@ -107,7 +104,7 @@ const loadFooterConfig = async () => {
       );
       if (sectionsConfig) {
         try {
-          const sections: FooterSection = JSON.parse(sectionsConfig.value);
+          const sections = JSON.parse(sectionsConfig.value);
           if (Array.isArray(sections)) {
             footerConfig.sections = sections;
           }

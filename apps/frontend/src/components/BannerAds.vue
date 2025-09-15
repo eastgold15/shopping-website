@@ -144,7 +144,7 @@ const loadBannerAds = async () => {
 		const query = props.position ? { position: props.position } : {};
 
 		const { data, error } = await 
-			client.api.advertisements.banner.get({ query }
+			client.api.advertisements.get({ query: { ...query, type: 'banner' } }
 		);
 
 		if (data) {

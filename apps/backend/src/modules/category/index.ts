@@ -4,6 +4,5 @@
  */
 
 export { categoriesController } from "./categories.controller";
-export type * from "./categories.model";
-export { categoriesModel } from "./categories.model";
+
 export { CategoriesService } from "./categories.service";

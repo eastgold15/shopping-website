@@ -1,4 +1,3 @@
-import { NotFoundError } from "@backend/utils/error/customError";
 import {
   and,
   asc,
@@ -10,24 +9,30 @@ import {
   or,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
-import { advertisementsSchema, imagesSchema } from "../../db/schema/schema";
-import type { UpdateSortDto } from "../partner";
-import type {
-  ADQueryDto,
-  CreateADDto,
-  UpdateADDto,
-} from "./advertisements.model";
+import {
+  advertisementsTable,
+  type AdvertisementsListQueryDto,
+  type InsertAdvertisementsDto,
+  type UpdateAdvertisementsDto
+} from "../../db/models/advertisements.model";
+import { imagesTable } from "../../db/models/images.model";
+import { NotFoundError } from "../../utils/error/customError";
+import { paginate } from "../../utils/services/pagination";
+
+import { UpdateSortDtoType } from "@backend/types";
+
+
 
 /**
  * 广告服务类
  * 处理广告相关的业务逻辑
  */
 export class AdvertisementsService {
-  private readonly columns = getTableColumns(advertisementsSchema);
+  private readonly columns = getTableColumns(advertisementsTable);
   /**
-   * 获取广告列表（分页）
+   * 获取广告列表（分页）- 使用统一的分页函数
    */
-  async getAdvertisementList(params: ADQueryDto) {
+  async getAdvertisementList(params: AdvertisementsListQueryDto) {
     try {
       const {
         page = 1,
@@ -40,79 +45,55 @@ export class AdvertisementsService {
         isActive,
       } = params;
 
+      // 构建基础查询
+      let baseQuery = db.select().from(advertisementsTable).$dynamic();
+
       // 搜索条件：支持标题和链接搜索
       const conditions = [];
       if (search) {
         conditions.push(
           or(
-            like(advertisementsSchema.title, `%${search}%`),
-            like(advertisementsSchema.link, `%${search}%`),
+            like(advertisementsTable.title, `%${search}%`),
+            like(advertisementsTable.link, `%${search}%`),
           ),
         );
       }
       if (type) {
-        conditions.push(eq(advertisementsSchema.type, type));
+        conditions.push(eq(advertisementsTable.type, type));
       }
       if (position) {
-        conditions.push(eq(advertisementsSchema.position, position));
+        conditions.push(eq(advertisementsTable.position, position));
       }
       if (isActive !== undefined) {
-        conditions.push(eq(advertisementsSchema.isActive, isActive));
+        conditions.push(eq(advertisementsTable.isActive, isActive));
+      }
+
+      // 应用查询条件
+      if (conditions.length > 0) {
+        baseQuery = baseQuery.where(and(...conditions));
       }
 
       // 允许的排序字段
       const allowedSortFields = {
-        title: advertisementsSchema.title,
-        sortOrder: advertisementsSchema.sortOrder,
-        createdAt: advertisementsSchema.createdAt,
-        updatedAt: advertisementsSchema.updatedAt,
+        title: advertisementsTable.title,
+        sortOrder: advertisementsTable.sortOrder,
+        createdAt: advertisementsTable.createdAt,
+        updatedAt: advertisementsTable.updatedAt,
       };
 
       // 确定排序字段和方向
-      const sortFields =
+      const orderBy =
         allowedSortFields[sortBy as keyof typeof allowedSortFields] ||
-        advertisementsSchema.sortOrder;
-      const sortOrderValue =
-        sortOrder === "desc" ? desc(sortFields) : asc(sortFields);
+        advertisementsTable.sortOrder;
+      const orderDirection = sortOrder as "asc" | "desc";
 
-      // 构建查询
-      const queryBuilder = db
-        .select()
-        .from(advertisementsSchema)
-        .orderBy(sortOrderValue);
-
-      // 获取总数
-      const totalBuilder = db
-        .select({ count: count() })
-        .from(advertisementsSchema);
-
-      //
-      if (conditions.length > 0) {
-        queryBuilder.where(and(...conditions));
-        totalBuilder.where(and(...conditions));
-      }
-
-      // 分页
-      const offset = (page - 1) * pageSize;
-      const adBuilder = queryBuilder.limit(pageSize).offset(offset);
-
-      // 开始查询
-      const [advertisements, [{ count: total }]] = await Promise.all([
-        adBuilder,
-        totalBuilder,
-      ]);
-
-      const totalPages = Math.ceil(total / pageSize);
-
-      return {
-        items: advertisements,
-        meta: {
-          total,
-          page,
-          pageSize,
-          totalPages,
-        },
-      };
+      // 使用统一的分页函数
+      return await paginate(db, baseQuery, {
+        page,
+        pageSize,
+        orderBy,
+        orderDirection,
+      });
     } catch (error) {
       console.error("获取广告列表失败:", error);
       throw new Error("获取广告列表失败");
@@ -125,19 +106,19 @@ export class AdvertisementsService {
   async getBannerAdvertisements(position?: string) {
     try {
       const conditions = [
-        eq(advertisementsSchema.type, "banner"),
-        eq(advertisementsSchema.isActive, true),
+        eq(advertisementsTable.type, "banner"),
+        eq(advertisementsTable.isActive, true),
       ];
 
       if (position) {
-        conditions.push(eq(advertisementsSchema.position, position));
+        conditions.push(eq(advertisementsTable.position, position));
       }
 
       const banners = await db
         .select()
-        .from(advertisementsSchema)
+        .from(advertisementsTable)
         .where(and(...conditions))
-        .orderBy(asc(advertisementsSchema.sortOrder));
+        .orderBy(asc(advertisementsTable.sortOrder));
 
       return banners;
     } catch (error) {
@@ -153,14 +134,14 @@ export class AdvertisementsService {
     try {
       const carousels = await db
         .select()
-        .from(advertisementsSchema)
+        .from(advertisementsTable)
         .where(
           and(
-            eq(advertisementsSchema.type, "carousel"),
-            eq(advertisementsSchema.isActive, true),
+            eq(advertisementsTable.type, "carousel"),
+            eq(advertisementsTable.isActive, true),
           ),
         )
-        .orderBy(asc(advertisementsSchema.sortOrder));
+        .orderBy(asc(advertisementsTable.sortOrder));
 
       return carousels;
     } catch (error) {
@@ -176,14 +157,14 @@ export class AdvertisementsService {
     const [advertisement] = await db
       .select({
         ...this.columns,
-        image: imagesSchema.url,
+        image: imagesTable.url,
       })
-      .from(advertisementsSchema)
+      .from(advertisementsTable)
       .leftJoin(
-        imagesSchema,
-        eq(advertisementsSchema.image_id, imagesSchema.id),
+        imagesTable,
+        eq(advertisementsTable.image_id, imagesTable.id),
       )
-      .where(eq(advertisementsSchema.id, id))
+      .where(eq(advertisementsTable.id, id))
       .limit(1);
 
     if (!advertisement) {
@@ -195,18 +176,18 @@ export class AdvertisementsService {
   /**
    * 创建广告
    */
-  async createAdvertisement(data: CreateADDto) {
+  async createAdvertisement(data: InsertAdvertisementsDto) {
     // 设置默认值
     const advertisementData = {
       ...data,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
+      startDate: data.startDate ? new Date(data.startDate) : new Date(),
+      endDate: data.endDate ? new Date(data.endDate) : new Date(),
       sortOrder: data.sortOrder ?? 0,
       isActive: data.isActive ?? true,
     };
 
     const [newAd] = await db
-      .insert(advertisementsSchema)
+      .insert(advertisementsTable)
       .values(advertisementData)
       .returning();
     if (!newAd) {
@@ -218,20 +199,20 @@ export class AdvertisementsService {
   /**
    * 更新广告
    */
-  async updateAdvertisement(id: number, data: UpdateADDto) {
+  async updateAdvertisement(id: number, data: UpdateAdvertisementsDto) {
     try {
       // 准备更新数据，添加更新时间
       const updateData = {
         ...data,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
+        startDate: data.startDate ? new Date(data.startDate) : new Date(),
+        endDate: data.endDate ? new Date(data.endDate) : new Date(),
         updatedAt: new Date(),
       };
 
       const result = await db
-        .update(advertisementsSchema)
+        .update(advertisementsTable)
         .set(updateData)
-        .where(eq(advertisementsSchema.id, id))
+        .where(eq(advertisementsTable.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -251,8 +232,8 @@ export class AdvertisementsService {
   async deleteAdvertisement(id: number) {
     try {
       const result = await db
-        .delete(advertisementsSchema)
-        .where(eq(advertisementsSchema.id, id))
+        .delete(advertisementsTable)
+        .where(eq(advertisementsTable.id, id))
         .returning();
 
       if (result.length === 0) {
@@ -273,9 +254,9 @@ export class AdvertisementsService {
     try {
       // 先获取当前状态
       const current = await db
-        .select({ isActive: advertisementsSchema.isActive })
-        .from(advertisementsSchema)
-        .where(eq(advertisementsSchema.id, id))
+        .select({ isActive: advertisementsTable.isActive })
+        .from(advertisementsTable)
+        .where(eq(advertisementsTable.id, id))
         .limit(1);
 
       if (current.length === 0) {
@@ -285,12 +266,12 @@ export class AdvertisementsService {
       const newStatus = !current[0].isActive;
 
       const result = await db
-        .update(advertisementsSchema)
+        .update(advertisementsTable)
         .set({
           isActive: newStatus,
           updatedAt: new Date(),
         })
-        .where(eq(advertisementsSchema.id, id))
+        .where(eq(advertisementsTable.id, id))
         .returning();
 
       return result[0];
@@ -303,22 +284,19 @@ export class AdvertisementsService {
   /**
    * 获取激活的广告
    */
-  async getActiveAdvertisements(type?: string, position?: string) {
+  async getActiveAdvertisements(position?: string) {
     try {
-      const conditions = [eq(advertisementsSchema.isActive, true)];
+      const conditions = [eq(advertisementsTable.isActive, true)];
 
-      if (type) {
-        conditions.push(eq(advertisementsSchema.type, type));
-      }
       if (position) {
-        conditions.push(eq(advertisementsSchema.position, position));
+        conditions.push(eq(advertisementsTable.position, position));
       }
 
       const advertisements = await db
         .select()
-        .from(advertisementsSchema)
+        .from(advertisementsTable)
         .where(and(...conditions))
-        .orderBy(asc(advertisementsSchema.sortOrder));
+        .orderBy(asc(advertisementsTable.sortOrder));
 
       return advertisements;
     } catch (error) {
@@ -330,15 +308,15 @@ export class AdvertisementsService {
   /**
    * 更新广告排序
    */
-  async updateAdvertisementSort(id: number, data: UpdateSortDto) {
+  async updateAdvertisementSort(id: number, data: UpdateSortDtoType) {
     try {
       const result = await db
-        .update(advertisementsSchema)
+        .update(advertisementsTable)
         .set({
           sortOrder: data.sortOrder,
           updatedAt: new Date(),
         })
-        .where(eq(advertisementsSchema.id, id))
+        .where(eq(advertisementsTable.id, id))
         .returning();
 
       if (result.length === 0) {

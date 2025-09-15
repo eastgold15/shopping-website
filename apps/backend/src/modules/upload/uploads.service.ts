@@ -9,7 +9,7 @@ import {
 
 import { imageService } from "../image/images.service";
 import { type FileInfo, ossService } from "../oss";
-import type { UploadImagesDto } from "./uploads.model";
+import { UploadImagesDto } from "./uploads.model";
 
 export class UploadService {
 	/**
@@ -93,7 +93,7 @@ export class UploadService {
 						fileSize: file.size,
 						mimeType: file.type,
 						category: folder,
-						altText: fileName,
+						alt: file.name,
 					});
 
 					if (!imageRecord) {
