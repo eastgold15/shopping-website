@@ -96,7 +96,7 @@ const loadFooterConfig = async () => {
 
     if (footerResponse.data && footerResponse.code === 200) {
       // 处理底部栏目数据
-      const footerData= footerResponse.data || [];
+      const footerData = footerResponse.data || [];
 
       // 查找底部栏目配置
       const sectionsConfig = footerData.find(
@@ -355,9 +355,9 @@ onMounted(() => {
         </div>
 
         <!-- 底部内容 -->
-        <div v-else class="footer-content">
+        <div v-else class="footer-content text-center ">
           <div v-for="section in footerConfig.sections" :key="section.title" class="footer-section">
-            <h4>{{ section.title }}</h4>
+            <h4>{{ section.title || 111 }}</h4>
             <ul v-if="section.links && section.links.length > 0">
               <li v-for="link in section.links" :key="link.text">
                 <a :href="link.url || '#'" :target="link.url && link.url.startsWith('http') ? '_blank' : '_self'"
@@ -642,34 +642,5 @@ onMounted(() => {
 
 .loading-spinner {
   @apply flex flex-col items-center space-y-2 text-gray-600;
-}
-
-/* 底部样式 */
-.site-footer {
-  @apply bg-gray-800 text-white py-12;
-}
-
-.footer-content {
-  @apply grid grid-cols-1 md:grid-cols-3 gap-8;
-}
-
-.footer-section h4 {
-  @apply text-lg font-semibold mb-4;
-}
-
-.footer-section ul {
-  @apply list-none p-0 m-0;
-}
-
-.footer-section li {
-  @apply mb-2;
-}
-
-.footer-section a {
-  @apply text-gray-300 hover:text-white transition-colors duration-200 text-decoration-none;
-}
-
-.footer-bottom {
-  @apply mt-8 pt-8 border-t border-gray-700 text-center text-gray-400;
 }
 </style>

@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": " NODE_ENV=production bun build --target bun --minify-whitespace --minify-syntax --outfile ./dist/index.js src/index.ts",
-    "start": " bun --env-file=.env --env-file=.env.development  ./dist/index.js ",
+    "start": " bun --env-file=.env --env-file=.env.production  ./dist/index.js ",
     "dev": "bun --watch src/index.ts",
     "clean": "rimraf dist node_modules  ",
     "type-check": "bun --bun tsc --noEmit",
@@ -43,7 +43,7 @@
     "drizzle-orm": "^0.44.5",
     "drizzle-typebox": "^0.3.3",
     "drizzle-zod": "^0.8.3",
-    "elysia": "latest",
+    "elysia": "*",
     "pg": "^8.16.3",
     "zod": "^4.1.8"
   },

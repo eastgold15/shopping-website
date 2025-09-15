@@ -2,6 +2,7 @@ import { commonRes } from "@backend/utils/Res";
 import { Elysia, t } from "elysia";
 // import { productsModel } from "./products.model";
 import { productsModel } from "@backend/db/models/product.model";
+import { paramIdZod } from "@backend/types";
 import { z } from "zod/v4";
 import { ProductsService } from "./products.service";
 
@@ -73,9 +74,7 @@ export const productsController = new Elysia({
       return commonRes(result);
     },
     {
-      params: z.object({
-        id: z.number(),
-      }),
+      params: paramIdZod,
       detail: {
         tags: ["Products"],
         summary: "根据ID获取商品详情",

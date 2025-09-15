@@ -95,18 +95,10 @@ export type UpdatePartnerStatusDto = z.infer<typeof partnersModel.updatePartnerS
 export type RecordClickDto = z.infer<typeof partnersModel.recordClickDto>;
 export type BatchUpdateOrderDto = z.infer<typeof partnersModel.batchUpdateOrderDto>;
 
-// 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
-export type SelectPartnersVo = SelectPartnersType & {
-  // 可以添加计算字段
-  partnershipTypeText?: string; // 合作类型文本
-  partnershipLevelText?: string; // 合作等级文本
-  contractStatus?: string; // 合同状态
-  daysUntilExpiry?: number; // 距离到期天数
-  parsedTags?: string[]; // 解析后的标签
-  isExpiringSoon?: boolean; // 是否即将到期
-  totalClicks?: number; // 总点击数
-};
-
+// 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰） 左连接一般都有null
+export type SelectPartnersVo = Omit<SelectPartnersType, 'image_id'> & {
+  imageUrl: string | null
+}
 // 5. 关系定义
 // 合作伙伴表通常是独立的，不需要复杂的关系定义
 // 如果需要关联其他表（如用户表、订单表等），可以在这里定义

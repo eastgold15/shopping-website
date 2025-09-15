@@ -1,9 +1,8 @@
-import { db } from "@backend/db/connection";
-import { imagesTable, partnersTable, UpdateSortDto } from "@backend/db/models";
+import { partnersTable, UpdateSortDto } from "@backend/db/models";
 import { paramIdZod } from "@backend/types";
 import { NotFoundError } from "@backend/utils/error/customError";
 import { commonRes } from "@backend/utils/Res";
-import { asc, eq, getTableColumns } from "drizzle-orm";
+import { getTableColumns } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { partnersModel } from "../../db/models/partners.model";
 import { PartnersService } from "./partners.service";
@@ -20,18 +19,9 @@ export const partnersController = new Elysia({
   // 获取所有合作伙伴（前台用）
   .get(
     "/all",
-    async () => {
+    async ({ partnersService }) => {
       try {
-        const columns = getTableColumns(partnersTable);
-        const partners = await db
-          .select({
-            ...columns,
-            image: imagesTable.url,
-          })
-          .from(partnersTable)
-          .where(eq(partnersTable.isActive, true))
-          .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
-          .orderBy(asc(partnersTable.id));
+        const partners = await partnersService.getActivePartnersList()
 
         return commonRes(partners, 200, "获取合作伙伴列表成功");
       } catch (_error) {

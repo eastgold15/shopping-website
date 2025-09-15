@@ -16,7 +16,7 @@ import { err_handler } from "./utils/error/err.global";
 import { startupHealthCheck } from "./utils/healthyCheck";
 
 console.log("启动检查...");
-console.log("启动检查完成", path.join(import.meta.dir, "../tsconfig.json"));
+console.log("启动检查完成", path.join(import.meta.dirname, "../tsconfig.json"));
 
 const api = new Elysia({ prefix: "/api" })
   .use(uploadsController)
@@ -46,8 +46,8 @@ export const app = new Elysia()
           ? "dist/index.d.ts"
           : "src/index.ts",
         {
-          projectRoot: path.join(import.meta.dir, "../"),
-          tsconfigPath: path.join(import.meta.dir, "../tsconfig.json"),
+          projectRoot: path.join(import.meta.dirname, "../"),
+          tsconfigPath: path.join(import.meta.dirname, "../tsconfig.json"),
         },
       ),
     }),

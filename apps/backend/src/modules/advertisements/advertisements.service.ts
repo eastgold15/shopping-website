@@ -1,12 +1,10 @@
 import {
   and,
   asc,
-  count,
-  desc,
   eq,
   getTableColumns,
   like,
-  or,
+  or
 } from "drizzle-orm";
 import { db } from "../../db/connection";
 import {
@@ -45,8 +43,16 @@ export class AdvertisementsService {
         isActive,
       } = params;
 
+      const { image_id, ...rest } = this.columns
       // 构建基础查询
-      let baseQuery = db.select().from(advertisementsTable).$dynamic();
+      let baseQuery = db.select(
+        {
+          image_url: imagesTable.url,
+          ...rest
+        }
+      ).from(advertisementsTable).leftJoin(imagesTable, eq(advertisementsTable.image_id, imagesTable.id)).$dynamic();
+
+      console.log("111")
 
       // 搜索条件：支持标题和链接搜索
       const conditions = [];
@@ -68,6 +74,7 @@ export class AdvertisementsService {
         conditions.push(eq(advertisementsTable.isActive, isActive));
       }
 
+
       // 应用查询条件
       if (conditions.length > 0) {
         baseQuery = baseQuery.where(and(...conditions));
@@ -86,6 +93,8 @@ export class AdvertisementsService {
         allowedSortFields[sortBy as keyof typeof allowedSortFields] ||
         advertisementsTable.sortOrder;
       const orderDirection = sortOrder as "asc" | "desc";
+
+
 
       // 使用统一的分页函数
       return await paginate(db, baseQuery, {

@@ -15,7 +15,7 @@
     "deploy:prod": "node deploy-sftp.cjs"
   },
   "dependencies": {
-    "@elysiajs/eden": "^1.4.1",
+    "@elysiajs/eden": "latest",
     "@primeuix/themes": "^1.2.3",
     "@primevue/forms": "^4.3.9",
     "@types/lodash-es": "^4.17.12",
@@ -37,7 +37,7 @@
     "@types/bun": "^1.2.21",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
-    "elysia": "^latest",
+    "elysia": "*",
     "primeicons": "^7.0.0",
     "typescript": "^5.9.2",
     "unocss": "^66.5.0",

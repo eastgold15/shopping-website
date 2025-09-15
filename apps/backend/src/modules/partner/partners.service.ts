@@ -30,15 +30,19 @@ export class PartnersService {
    * @returns 启用的合作伙伴列表，按排序权重排序
    */
   async getActivePartnersList() {
+
+    const { image_id, ...rest } = getTableColumns(partnersTable);
     return await db
       .select({
-        ...this.columns,
-        image: imagesTable.url, // 添加图片URL字段
+        ...rest,
+        imageUrl: imagesTable.url, // 添加图片URL字段  
       })
       .from(partnersTable)
-      .innerJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
+      .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
       .where(eq(partnersTable.isActive, true))
       .orderBy(asc(partnersTable.sortOrder));
+
+
   }
 
   /**

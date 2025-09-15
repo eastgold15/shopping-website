@@ -20,9 +20,7 @@
 <script setup lang="ts">
 import ProductSearch from "../components/ProductSearch.vue";
 
-// 设置页面元数据
-const title = "商品搜索";
-const description = "搜索您需要的商品，支持多种筛选条件";
+
 </script>
 
 <style scoped>
@@ -64,15 +62,15 @@ const description = "搜索您需要的商品，支持多种筛选条件";
   .page-header {
     padding: 1.5rem 0;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .page-description {
     font-size: 1rem;
   }
-  
+
   .search-content {
     padding: 1.5rem 0;
   }

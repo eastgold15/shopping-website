@@ -13,7 +13,6 @@ declare module 'vue' {
     Badge: typeof import('primevue/badge')['default']
     BannerAds: typeof import('./src/components/BannerAds.vue')['default']
     Button: typeof import('primevue/button')['default']
-    Carousel: typeof import('primevue/carousel')['default']
     CarouselAds: typeof import('./src/components/CarouselAds.vue')['default']
     CategoryNav: typeof import('./src/components/CategoryNav.vue')['default']
     CategoryNavigation: typeof import('./src/components/CategoryNavigation.vue')['default']
@@ -44,13 +43,14 @@ declare module 'vue' {
     ProgressBar: typeof import('primevue/progressbar')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RadioButton: typeof import('primevue/radiobutton')['default']
-    Rating: typeof import('primevue/rating')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Select: typeof import('primevue/select')['default']
+    ShadowBox: typeof import('./src/components/Tooltip.vue')['default']
     Tag: typeof import('primevue/tag')['default']
     Textarea: typeof import('primevue/textarea')['default']
     Toast: typeof import('primevue/toast')['default']
+    Tooltip: typeof import('./src/components/Tooltip.vue')['default']
   }
   export interface GlobalDirectives {
     Tooltip: typeof import('primevue/tooltip')['default']

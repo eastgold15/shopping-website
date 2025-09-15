@@ -615,12 +615,20 @@ export const useFrontApi = () => {
       },
     },
 
-    product: {
+    products: {
       getById: async (id: number) => {
         const { data, error } = await client.api.products({ id }).get()
         if (error) {
           console.error('SiteConfigs getByCategory error:', error)
           return comDefaultValue
+        }
+        return data
+      },
+      list: async (params?: ProductListQueryDto) => {
+        const { data, error } = await client.api.products.get({ query: params })
+        if (error) {
+          console.error('Products list error:', error)
+          return pageDefaultValue
         }
         return data
       }

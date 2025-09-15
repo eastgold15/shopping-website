@@ -26,12 +26,12 @@ export const UnoQueryZod = z.object({
 })
 
 export const paramIdZod = z.object({
-  id: z.number(),
+  id: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined)),
 })
 
 // 通用排序更新类型
 export const UpdateSortDto = z.object({
-  sortOrder: z.number()
+  sortOrder: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined))
 });
 
 // 导出类型

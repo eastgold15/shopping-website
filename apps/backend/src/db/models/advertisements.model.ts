@@ -30,18 +30,13 @@ export const advertisementsTable = pgTable("advertisements", {
 // 2. Zod Schema（基于 Drizzle 表生成，并可扩展校验）
 export const insertAdvertisementsSchema = createInsertSchema(advertisementsTable, {
   title: z.string().min(1, "广告标题不能为空").max(200, "广告标题不能超过200个字符"),
-
-
   position: z.string().min(1, "广告位置不能为空"),
-
   startDate: z.iso.datetime().optional().or(z.date().optional()),
   endDate: z.iso.datetime().optional().or(z.date().optional()),
 });
 export const updateAdvertisementsSchema = createUpdateSchema(advertisementsTable, {
   title: z.string().min(1, "广告标题不能为空").max(200, "广告标题不能超过200个字符").optional(),
-
   position: z.string().min(1, "广告位置不能为空").optional(),
-
   startDate: z.iso.datetime().optional().or(z.date().optional()),
   endDate: z.iso.datetime().optional().or(z.date().optional()),
 });
@@ -93,8 +88,7 @@ export type UpdateAdvertisementStatsDto = z.infer<typeof advertisementsModel.upd
 export type BatchUpdateAdvertisementStatusDto = z.infer<typeof advertisementsModel.batchUpdateAdvertisementStatusDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
-export type SelectAdvertisementsVo = SelectAdvertisementsType & {
-};
+export type SelectAdvertisementsVo = Omit<SelectAdvertisementsType, 'image_id'> & { image_url: string }
 
 // 5. 关系定义（广告表通常不需要复杂的关系定义）
 // export const advertisementsRelations = relations(advertisementsTable, ({ }) => ({}));

@@ -113,6 +113,12 @@ export type ProductListQueryDto = z.infer<typeof productsModel.queryProductListD
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
 export type SelectProductVo = SelectProductType; // 可直接复用，或扩展字段（比如格式化日期等）
+export type SelectProductDetailVo = SelectProductType & {
+  images: {
+    id: number
+    , url: string, alt: string, isMain: boolean
+  }[]
+}; // 可直接复用，或扩展字段（比如格式化日期等）
 
 
 

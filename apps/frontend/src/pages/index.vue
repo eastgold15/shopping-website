@@ -1,50 +1,66 @@
 <script setup lang="ts">
-import type { PartnerModel } from "@backend/modules/partner";
+
+import type { SelectPartnersVo } from "@backend/types";
 import { useFrontApi } from "@frontend/utils/handleApi";
 
 import { nextTick, onUnmounted, ref } from "vue";
 
 // 合作伙伴数据
-const partners = ref<PartnerModel[]>([]);
+const partners = ref<SelectPartnersVo[]>([
+  {
+    id: 1,
+    name: "Partner 1",
+    imageUrl: "https://via.placeholder.com/150",
+    description: "This is a partner description.",
+    url: "https://example.com",
+    sortOrder: 0,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+]);
 
+interface ViewConfig {
+  partners_intro_paragraphs: string[];
+  footer_copyright: string;
+}
 // 当前界面配置数据
-const viewConfig = ref<ViewConfig>({});
-// 默认介绍段落
-const defaultIntroParagraphs = [
-  "我们通过化妆品牌，现在，我们正在工作7个不同的品牌的客户，具有各种性质",
-  "和对成功的大胆愿景。",
-  "正如科学中的催化剂能够不断改变汽车上工作一样，作为一个团队，我们大胆的方法",
-  "作为，我们的客\"催化剂\"区域了我们加速制造和制造的能力307万。",
-  "我们团队为美国各地的客户带来市场系统，专业知识和化妆品\"公司改进力\"",
-]
+const viewConfig = ref<ViewConfig>(
+  {
+    partners_intro_paragraphs: [
+      "我们通过化妆品牌，现在，我们正在工作7个不同的品牌的客户，具有各种性质",
+      "和对成功的大胆愿景。",
+      "正如科学中的催化剂能够不断改变汽车上工作一样，作为一个团队，我们大胆的方法",
+      "作为，我们的客\"催化剂\"区域了我们加速制造和制造的能力307万。",
+      "我们团队为美国各地的客户带来市场系统，专业知识和化妆品\"公司改进力\"",
+    ],
+    footer_copyright: "Copyright © 2023 Your Company. All rights reserved."
+  }
+);
+
 
 
 const api = useFrontApi();
 // 加载合作伙伴数据
 const loadPartners = async () => {
   try {
-
     const { code, data, message } = await api.partner.all()
     if (code == 200 && data) {
       partners.value = data
-      console.log("合作伙伴数据:", data);
+      console.log("合作伙伴数据:", message);
     }
   } catch (error) {
     console.error("获取合作伙伴数据失败:", error);
   }
 };
 
-interface ViewConfig {
-  partners_intro_paragraphs: string[];
-  footer_copyright: string;
-}
+
 
 // 加载当前界面配置数据
 const loadViewConfig = async () => {
   try {
     const { code, data, message } = await api.siteConfigs.getByCategory("footer");
-    if (code == 200) {
-
+    if (code === 200) {
       console.log("配置数据", data)
       // 将配置数组转换为对象，便于模板使用
       const configObj: Record<string, any> = {};
@@ -67,7 +83,6 @@ const loadViewConfig = async () => {
         footer_copyright: configObj.footer_copyright.replaceAll('\n', ''),
         partners_intro_paragraphs: graphArr,
       };
-
       console.log("当前界面配置对象:", viewConfig.value);
     }
   } catch (error) {
@@ -82,7 +97,7 @@ const initScrollSnap = () => {
   let isScrolling = false;
 
   const scrollToSection = (index: number) => {
-    if (index >= 0 && index < sections.length) {
+    if (index >= 0 && index < sections.length && sections[index]) {
       isScrolling = true;
       sections[index].scrollIntoView({ behavior: 'smooth' });
       currentSectionIndex = index;
@@ -91,7 +106,6 @@ const initScrollSnap = () => {
       }, 800);
     }
   };
-
   const handleWheel = (e: WheelEvent) => {
     if (isScrolling) {
       e.preventDefault();
@@ -195,7 +209,7 @@ onUnmounted(() => {
           </div>
 
           <div class="text-white text-lg leading-relaxed space-y-4 mb-12">
-            <p v-for="(paragraph, index) in viewConfig.partners_intro_paragraphs || defaultIntroParagraphs" :key="index"
+            <p v-for="(paragraph, index) in viewConfig.partners_intro_paragraphs" :key="index"
               :class="index === viewConfig.partners_intro_paragraphs?.length - 1 ? 'font-semibold text-yellow-300' : ''">
               {{ paragraph }}</p>
           </div>
@@ -210,12 +224,14 @@ onUnmounted(() => {
 
       <!-- 合作伙伴展示区域 -->
       <section v-for="(partner, index) in partners" :key="partner.id"
-        class="h-screen hover:shadow-xl transition-all duration-300 snap-start snap-always"
+        class="h-screen hover:shadow-xl transition-all duration-300 snap-start snap-always relative"
         style="scroll-snap-align: start; scroll-snap-stop: always;">
-        <div class="flex flex-col lg:flex-row" :class="index % 2 === 1 ? 'lg:flex-row-reverse' : ''">
+        <!-- 桌面端布局 -->
+        <div class="hidden md:flex flex-row" :class="index % 2 === 1 ? 'lg:flex-row-reverse' : ''">
           <!-- 图片区域 -->
-          <div class="lg:w-1/2">
-            <img :src="partner.image" :alt="partner.name" class="w-full h-screen lg:h-screen object-cover">
+          <div class="lg:w-1/2 w-full">
+            <img :src="partner.imageUrl ?? 'http://example.com'" :alt="partner.name"
+              class="w-full lg:h-screen object-cover">
           </div>
           <!-- 内容区域 -->
           <div
@@ -225,6 +241,23 @@ onUnmounted(() => {
               <p class="text-lg lg:text-xl opacity-90 mb-8 leading-relaxed">{{ partner.description }}</p>
               <a :href="partner.url" target="_blank" rel="noopener noreferrer"
                 class="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 text-lg">
+                访问官网
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手机端布局 - 文字覆盖在图片上 -->
+        <div class="md:hidden relative h-full">
+          <!-- 背景图片 -->
+          <img :src="partner.imageUrl ?? 'http://example.com'" :alt="partner.name" class="w-full h-full object-cover">
+          <!-- 覆盖的文字内容 -->
+          <div class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-center p-8">
+            <div class="text-white">
+              <h3 class="text-3xl font-bold mb-4">{{ partner.name }}</h3>
+              <p class="text-base opacity-90 mb-6 leading-relaxed">{{ partner.description }}</p>
+              <a :href="partner.url" target="_blank" rel="noopener noreferrer"
+                class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300">
                 访问官网
               </a>
             </div>
