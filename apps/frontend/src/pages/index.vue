@@ -206,7 +206,7 @@ onUnmounted(() => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center">
-            <h1 class="text-2xl font-bold text-white">Catalyst Brands</h1>
+            <h1 class="text-2xl font-bold text-white"> Dongqi Footwear</h1>
           </div>
           <div class="hidden md:block">
             <div class="ml-10 flex items-baseline space-x-4">
@@ -223,7 +223,7 @@ onUnmounted(() => {
         <div class="max-w-4xl mx-auto">
           <h2 class="text-5xl font-bold text-white mb-6">Introducing</h2>
           <div class="text-6xl font-bold text-white mb-8">
-            <span class="text-red-600">Catalyst</span>
+            <span class="text-red-600"> Dongqi</span>
             <span class="text-yellow-400">Brands</span>
           </div>
 
@@ -248,9 +248,9 @@ onUnmounted(() => {
         <!-- 桌面端布局 -->
         <div class="hidden md:flex flex-row" :class="index % 2 === 1 ? 'lg:flex-row-reverse' : ''">
           <!-- 图片区域 -->
-          <div class="lg:w-1/2 w-full">
+          <div class="lg:w-1/2 w-full bg-gray-100">
             <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="partner.name"
-              class="w-full lg:h-screen object-cover">
+              class="w-full lg:h-screen object-contain">
           </div>
           <!-- 内容区域 -->
           <div
@@ -260,17 +260,17 @@ onUnmounted(() => {
               <p class="w-full  text-lg lg:text-xl opacity-90 mb-8 leading-relaxed">{{ partner.description }}</p>
               <a :href="partner.url" target="_blank" rel="noopener noreferrer"
                 class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 text-lg">
-                访问官网
+                Visit the official website
               </a>
             </div>
           </div>
         </div>
 
         <!-- 手机端布局 - 文字覆盖在图片上 -->
-        <div class="md:hidden relative h-full">
+        <div class="md:hidden relative h-full bg-gray-100">
           <!-- 背景图片 -->
           <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="partner.name"
-            class="w-full h-full object-cover">
+            class="w-full h-full object-contain">
           <!-- 覆盖的文字内容 -->
           <div class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-center p-8">
             <div class="text-white">
@@ -278,7 +278,7 @@ onUnmounted(() => {
               <p class="text-base opacity-90 mb-6 leading-relaxed">{{ partner.description }}</p>
               <a :href="partner.url" target="_blank" rel="noopener noreferrer"
                 class="inline-block bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300">
-                访问官网
+                Visit the official website
               </a>
             </div>
           </div>
@@ -292,8 +292,8 @@ onUnmounted(() => {
       style="scroll-snap-align: start; scroll-snap-stop: always;">
       <div class="text-center">
         <div class="mb-8">
-          <h2 class="text-4xl font-bold text-white mb-4">感谢您的关注</h2>
-          <p class="text-xl text-gray-300">期待与您的合作</p>
+          <h2 class="text-4xl font-bold text-white mb-4">Thank you for your attention</h2>
+          <p class="text-xl text-gray-300">Looking forward to working with you</p>
         </div>
         <div class="border-t border-orange-400/40 pt-6">
           <p class="text-gray-400">

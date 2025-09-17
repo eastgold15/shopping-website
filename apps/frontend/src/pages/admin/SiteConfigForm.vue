@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { SiteConfigModel } from "@backend/modules/siteConfig";
+
+import type { SelectSiteConfigVo } from "@backend/types";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { Form } from '@primevue/forms';
 import { zodResolver } from '@primevue/forms/resolvers/zod';
@@ -82,6 +83,9 @@ const initialValues = ref({
   icp_number: "",
   footer_copyright: "",
   footer_back_to_top_text: "",
+
+  // 伙伴介绍
+  partners_intro_paragraphs: ""
 });
 
 // 表单验证规则
@@ -117,6 +121,9 @@ const resolver = zodResolver(
     icp_number: z.string().optional(),
     footer_copyright: z.string().optional(),
     footer_back_to_top_text: z.string().optional(),
+
+    // 伙伴介绍验证
+    partners_intro_paragraphs: z.string().optional(),
   })
 );
 
@@ -149,13 +156,13 @@ const removeFooterSection = (index: number) => {
 
 // 添加底部链接
 const addFooterLink = (sectionIndex: number) => {
-  footerSections.value[sectionIndex].links.push({ text: "", url: "" });
+  footerSections?.value[sectionIndex]?.links.push({ text: "", url: "" });
 };
 
 // 删除底部链接
 const removeFooterLink = (sectionIndex: number, linkIndex: number) => {
   const section = footerSections.value[sectionIndex];
-  if (section.links.length > 1) {
+  if (section?.links?.length > 1) {
     section.links.splice(linkIndex, 1);
   }
 };
@@ -188,10 +195,7 @@ const configProcessors = {
   }
 };
 
-// 配置字段类型映射表
-// 添加新配置类型示例：
-// new_config_key: { type: 'number', defaultValue: 100 },
-// complex_json_config: { type: 'jsonArray', defaultValue: [], target: 'ref', refName: 'complexConfigRef' },
+
 const configTypeMap: Record<string, {
   type: keyof typeof configProcessors;
   defaultValue?: any;
@@ -248,12 +252,12 @@ const loadConfigs = async () => {
     loading.value = true;
 
     const api = useCmsApi();
-    const { code, message, data } = await api.siteConfigs.list();
+    const { code, message, data } = await api.siteConfigs.all({ category: 'site' });
     if (code === 200) {
       // 将配置数组转换为对象并更新初始值
       const configData: any = {};
 
-      data.items.forEach((config: SiteConfigModel) => {
+      data.forEach((config: SelectSiteConfigVo) => {
         // 检查配置是否在initialValues中或者在configTypeMap中定义
         if (config.key in initialValues.value || config.key in configTypeMap) {
           const configMeta = configTypeMap[config.key];
@@ -365,7 +369,6 @@ const onFormSubmit = async (formData: any) => {
       if (code === 200) {
         // 保存成功后重新加载配置数据，确保表单显示最新值
         await loadConfigs();
-
         toast.add({
           severity: "success",
           summary: "成功",
@@ -703,6 +706,18 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </TabPanel>
+        <!-- 伙伴介绍 -->
+        <TabPanel header="伙伴介绍" value="7">
+          <div class="space-y-6">
+            <div class="flex flex-col gap-1">
+              <label for="partners_intro_paragraphs" class="block text-sm font-medium text-gray-700 mb-2">
+                伙伴介绍内容
+              </label>
+              <Textarea name="partners_intro_paragraphs" placeholder="请输入伙伴介绍的详细内容..." rows="8" fluid />
+              <small class="text-gray-500">支持多段落文本，用于展示合作伙伴的介绍信息</small>
             </div>
           </div>
         </TabPanel>

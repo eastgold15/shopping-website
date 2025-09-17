@@ -103,7 +103,7 @@ const templateData = await genPrimeCmsTemplateData<
     },
 
     // 5. 数据转换
-    transformSubmitData: (data, mode: CrudMode) => {
+    transformSubmitData: (data: any, mode: CrudMode) => {
       if (mode === 'NEW') {
         // 创建时，确保image_id为-1
         data.image_id = (data.imageRef as any).id

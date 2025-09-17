@@ -22,6 +22,16 @@ export const siteConfigsController = new Elysia({ prefix: "/site-configs", tags:
     },
   )
   .get(
+    "/all",
+    async ({ query, siteConfigsService }) => {
+      const configs = await siteConfigsService.getAll(query.category);
+      return commonRes(configs, 200, "获取配置成功");
+    },
+    {
+      query: "querySiteConfigByCategoryOptionalDto",
+    },
+  )
+  .get(
     "/:id",
     async ({ params: { id }, siteConfigsService }) => {
       const config = await siteConfigsService.getById(id);

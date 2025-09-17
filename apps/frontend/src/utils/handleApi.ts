@@ -1,7 +1,6 @@
 
-import type { InsertPartnersDto, ListImagesQueryDto, ListProductQueryDto, PartnersListQueryDto, SiteConfigListQueryDto, UpdateImagesDto, UpdatePartnersDto, UpdateSortDtoType } from "@backend/types";
+import type { InsertPartnersDto, ListImagesQueryDto, ListProductQueryDto, PartnersListQueryDto, SiteConfigByCategoryQueryDto, SiteConfigListQueryDto, UpdateImagesDto, UpdatePartnersDto, UpdateSortDtoType } from "@backend/types";
 import { client } from "./useTreaty";
-
 const pageDefaultValue = {
   code: 200,
   message: "操作成功",
@@ -495,6 +494,14 @@ export const useCmsApi = () => {
         if (error) {
           console.error('SiteConfigs list error:', error)
           return pageDefaultValue
+        }
+        return data
+      },
+      all: async (params?: SiteConfigByCategoryQueryDto) => {
+        const { data, error } = await client.api["site-configs"].all.get({ query: params })
+        if (error) {
+          console.error('SiteConfigs all error:', error)
+          return comDefaultValue
         }
         return data
       },
