@@ -9,29 +9,24 @@ export const stringToNumber = z.codec(
   }
 );
 
-
-
-
-
-
 // 公共查询列表类型
 export const UnoQueryZod = z.object({
   search: z.optional(z.string()),
   // HTTP查询参数传输时会变成字符串，需要转换为数字
-  page: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined)),
-  pageSize: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined)),
+  page: z.coerce.number().default(1),
+  pageSize: z.coerce.number().default(10),
   sortBy: z.optional(z.string()),
   sortOrder: z.optional(z.enum(["asc", "desc"])),
   fields: z.optional(z.string()),
 })
 
 export const paramIdZod = z.object({
-  id: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined)),
+  id: z.coerce.number()
 })
 
 // 通用排序更新类型
 export const UpdateSortDto = z.object({
-  sortOrder: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined))
+  sortOrder: z.coerce.number()
 });
 
 // 导出类型

@@ -1,5 +1,5 @@
 
-import type { ImagesListQueryDto, InsertPartnersDto, PartnersListQueryDto, ProductListQueryDto, SiteConfigListQueryDto, UpdateImagesDto, UpdatePartnersDto, UpdateSortDtoType } from "@backend/types";
+import type { InsertPartnersDto, ListImagesQueryDto, ListProductQueryDto, PartnersListQueryDto, SiteConfigListQueryDto, UpdateImagesDto, UpdatePartnersDto, UpdateSortDtoType } from "@backend/types";
 import { client } from "./useTreaty";
 
 const pageDefaultValue = {
@@ -424,7 +424,7 @@ export const useCmsApi = () => {
 
     // 产品相关
     products: {
-      list: async (params?: ProductListQueryDto) => {
+      list: async (params?: ListProductQueryDto) => {
         const { data, error } = await client.api.products.get({ query: params })
         if (error) {
           console.error('Products list error:', error)
@@ -520,7 +520,7 @@ export const useCmsApi = () => {
 
     // 图片相关
     images: {
-      list: async (params: ImagesListQueryDto) => {
+      list: async (params: ListImagesQueryDto) => {
         const { data, error } = await client.api.images.get({ query: params })
         if (error) {
           console.error('Images list error:', error)
@@ -624,7 +624,7 @@ export const useFrontApi = () => {
         }
         return data
       },
-      list: async (params?: ProductListQueryDto) => {
+      list: async (params?: ListProductQueryDto) => {
         const { data, error } = await client.api.products.get({ query: params })
         if (error) {
           console.error('Products list error:', error)

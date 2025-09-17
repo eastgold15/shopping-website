@@ -3,4 +3,4 @@
  */
 export { uploadsController } from "./uploads.controller";
 
-export { uploadService } from "./uploads.service";
+export { UploadService } from "./uploads.service";

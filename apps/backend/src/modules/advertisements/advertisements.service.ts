@@ -47,7 +47,7 @@ export class AdvertisementsService {
       // 构建基础查询
       let baseQuery = db.select(
         {
-          image_url: imagesTable.url,
+          image_url: imagesTable.imageUrl,
           ...rest
         }
       ).from(advertisementsTable).leftJoin(imagesTable, eq(advertisementsTable.image_id, imagesTable.id)).$dynamic();
@@ -166,7 +166,7 @@ export class AdvertisementsService {
     const [advertisement] = await db
       .select({
         ...this.columns,
-        image: imagesTable.url,
+        image: imagesTable.imageUrl,
       })
       .from(advertisementsTable)
       .leftJoin(

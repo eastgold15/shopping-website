@@ -108,8 +108,8 @@ export const productsModel = {
 export type InsertProductDto = z.infer<typeof productsModel.insertProductDto>;  // 请求用
 export type UpdateProductDto = z.infer<typeof productsModel.updateProductDto>;  // 请求用
 export type SelectProductType = z.infer<typeof productsModel.selectProductcTable>; // 查询返回原始类型
-export type ProductSearchQueryDto = z.infer<typeof productsModel.querySearchProductDto>// 搜索用
-export type ProductListQueryDto = z.infer<typeof productsModel.queryProductListDto>;
+export type SearchProductQueryDto = z.infer<typeof productsModel.querySearchProductDto>// 搜索用
+export type ListProductQueryDto = z.infer<typeof productsModel.queryProductListDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
 export type SelectProductVo = SelectProductType; // 可直接复用，或扩展字段（比如格式化日期等）

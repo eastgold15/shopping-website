@@ -36,7 +36,14 @@ const currencyOptions = [
 
 // 帮助链接和底部栏目的响应式数据
 const headerHelpLinks = ref([{ text: "Help", url: "/help" }]);
-const footerSections = ref([
+export interface footerLink {
+  title: string,
+  links: {
+    text: string,
+    url: string
+  }[]
+}
+const footerSections = ref<footerLink[]>([
   {
     title: "For You",
     links: [{ text: "Favorites", url: "/favorites" }],

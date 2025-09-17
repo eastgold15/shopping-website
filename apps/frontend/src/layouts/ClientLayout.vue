@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { footerLink } from "@frontend/pages/admin/SiteConfigForm.vue";
 import { useRouter } from "vue-router";
 import CategoryNav from "../components/CategoryNav.vue";
 const router = useRouter();
@@ -13,7 +14,7 @@ const cartCount = ref(0);
 
 // 底部配置数据
 const footerConfig = reactive<{
-  sections: FooterSection[];
+  sections: footerLink[];
   copyright: string;
   loading: boolean;
 }>({
@@ -57,21 +58,21 @@ const toggleMobileLanguageMenu = (event: any) => {
   mobileLanguageMenu.value.toggle(event);
 };
 
-const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value;
-  if (isDarkMode.value) {
-    document.documentElement.classList.add("dark");
-    localStorage.setItem("theme", "dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
-  }
-};
+// const toggleTheme = () => {
+//   isDarkMode.value = !isDarkMode.value;
+//   if (isDarkMode.value) {
+//     document.documentElement.classList.add("dark");
+//     localStorage.setItem("theme", "dark");
+//   } else {
+//     document.documentElement.classList.remove("dark");
+//     localStorage.setItem("theme", "light");
+//   }
+// };
 
-const toggleFavorites = () => {
-  // TODO: 实现收藏功能
-  console.log("切换收藏");
-};
+// const toggleFavorites = () => {
+//   // TODO: 实现收藏功能
+//   console.log("切换收藏");
+// };
 
 const handleLogin = () => {
   // 检查用户是否已登录
@@ -219,10 +220,10 @@ onMounted(() => {
             <Menu ref="languageMenu" :model="languageOptions" :popup="true" class="language-menu" />
           </div>
 
-          <!-- 主题切换按钮 -->
+          <!-- 主题切换按钮
           <button @click="toggleTheme" class="theme-btn" :title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
             <div :class="isDarkMode ? 'i-ic:baseline-light-mode' : 'i-ic:baseline-dark-mode'"></div>
-          </button>
+          </button> -->
 
 
 
@@ -259,10 +260,10 @@ onMounted(() => {
               </button>
 
               <!-- 移动端主题切换 -->
-              <button @click="toggleTheme" class="mobile-theme-btn" :title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
+              <!-- <button @click="toggleTheme" class="mobile-theme-btn" :title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
                 <div :class="isDarkMode ? 'i-ic:baseline-light-mode' : 'i-ic:baseline-dark-mode'">
                 </div>
-              </button>
+              </button> -->
 
 
               <!-- 移动端语言切换 -->

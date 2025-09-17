@@ -1,4 +1,4 @@
-import { InsertProductDto, productImagesTable, ProductListQueryDto, productsModel, productsTable, SelectProductType, UpdateProductDto } from "@backend/db/models/product.model";
+import { InsertProductDto, ListProductQueryDto, productImagesTable, productsModel, productsTable, SelectProductType, UpdateProductDto } from "@backend/db/models/product.model";
 
 import { categoriesTable, imagesTable } from "@backend/db/models";
 import {
@@ -73,7 +73,7 @@ export class ProductsService extends BaseService<
   /**
    * 获取分页商品列表
    */
-  static async getList(query: ProductListQueryDto) {
+  static async getList(query: ListProductQueryDto) {
     try {
       // 处理查询参数
       const {
@@ -101,7 +101,7 @@ export class ProductsService extends BaseService<
 
       if (categoryId) {
         conditions.push(
-          eq(productsTable.categoryId, parseInt(categoryId as string)),
+          eq(productsTable.categoryId, categoryId),
         );
       }
 
@@ -134,7 +134,7 @@ export class ProductsService extends BaseService<
           categoryName: categoriesTable.name,
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: productImagesTable.isMain,
           },
@@ -247,7 +247,7 @@ export class ProductsService extends BaseService<
           categoryName: categoriesTable.name,
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: productImagesTable.isMain,
           },
@@ -325,7 +325,7 @@ export class ProductsService extends BaseService<
       const productImages = await db
         .select({
           id: imagesTable.id,
-          url: imagesTable.url,
+          url: imagesTable.imageUrl,
           fileName: imagesTable.fileName,
           isMain: productImagesTable.isMain,
         })

@@ -35,7 +35,7 @@ export class PartnersService {
     return await db
       .select({
         ...rest,
-        imageUrl: imagesTable.url, // 添加图片URL字段  
+        imageUrl: imagesTable.imageUrl, // 添加图片URL字段  
       })
       .from(partnersTable)
       .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
@@ -65,7 +65,7 @@ export class PartnersService {
     let baseQuery = db
       .select({
         ...this.columns,
-        image: imagesTable.url, // 添加图片URL字段
+        image: imagesTable.imageUrl, // 添加图片URL字段
       })
       .from(partnersTable)
       .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
@@ -126,7 +126,7 @@ export class PartnersService {
     const [partner] = await db
       .select({
         ...this.columns,
-        image: imagesTable.url, // 添加图片URL字段
+        image: imagesTable.imageUrl, // 添加图片URL字段
       })
       .from(partnersTable)
       .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))

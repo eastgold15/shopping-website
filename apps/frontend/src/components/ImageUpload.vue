@@ -5,18 +5,18 @@ import { ref } from "vue";
 
 // Props
 interface Props {
-	category?: string;
+  category?: string;
 }
 
 const visible = defineModel("visible", { default: false });
 
 const props = withDefaults(defineProps<Props>(), {
-	category: "general",
+  category: "general",
 });
 
 // Emits
 interface Emits {
-	"upload-success": [images: any[]];
+  "upload-success": [images: any[]];
 }
 
 const emit = defineEmits<Emits>();
@@ -27,117 +27,125 @@ const uploadCategory = ref(props.category);
 const uploading = ref(false);
 const totalSize = ref(0);
 const totalSizePercent = ref(0);
+const selectedFiles = ref<File[]>([]);
 
 // 分类选项
 const categoryOptions = [
-	{ label: "通用", value: "general" },
-	{ label: "产品", value: "product" },
-	{ label: "用户头像", value: "avatar" },
-	{ label: "轮播图", value: "banner" },
-	{ label: "其他", value: "other" },
+  { label: "通用", value: "general" },
+  { label: "产品", value: "product" },
+  { label: "用户头像", value: "avatar" },
+  { label: "轮播图", value: "banner" },
+  { label: "logo", value: "logo" },
+  { label: "其他", value: "other" },
 ];
 
 /**
  * 获取上传URL
+ * 根据选择的文件数量决定使用单文件还是多文件上传接口
  */
 const getUploadUrl = () => {
-	console.log("ssss", import.meta.env.VITE_API_URL);
-	return `${import.meta.env.VITE_API_URL}/api/upload/images`;
+  const apiUrl = import.meta.env.VITE_API_URL;
+  // 如果只选择了一个文件，使用单文件上传接口
+  if (selectedFiles.value.length === 1) {
+    return `${apiUrl}/api/upload/image`;
+  }
+  // 否则使用多文件上传接口
+  return `${apiUrl}/api/upload/images`;
 };
 
 /**
  * 获取上传请求头
  */
 const getUploadHeaders = () => {
-	return {
-		Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-	};
+  return {
+    Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+  };
 };
 
 /**
  * 文件选择事件
  */
 const onSelectedFiles = (event: any) => {
-	totalSize.value = 0;
-	totalSizePercent.value = 0;
+  totalSize.value = 0;
+  totalSizePercent.value = 0;
+  selectedFiles.value = event.files || [];
 
-	event.files.forEach((file: File) => {
-		totalSize.value += file.size;
-	});
+  event.files.forEach((file: File) => {
+    totalSize.value += file.size;
+  });
 
-	// 计算总大小百分比（基于5MB限制）
-	totalSizePercent.value = Math.round((totalSize.value / 5000000) * 100);
+  // 计算总大小百分比（基于5MB限制）
+  totalSizePercent.value = Math.round((totalSize.value / 5000000) * 100);
 };
 
 /**
  * 上传文件
  */
 const uploadFiles = async (uploadCallback: Function) => {
-	if (!uploadCategory.value) {
-		toast.add({
-			severity: "warn",
-			summary: "请选择分类",
-			detail: "请先选择图片分类",
-			life: 3000,
-		});
-		return;
-	}
+  if (!uploadCategory.value) {
+    toast.add({
+      severity: "warn",
+      summary: "请选择分类",
+      detail: "请先选择图片分类",
+      life: 3000,
+    });
+    return;
+  }
 
-	uploading.value = true;
+  uploading.value = true;
 
-	try {
-		// 调用PrimeVue的上传回调
-		uploadCallback();
-	} catch (error) {
-		console.error("Upload error:", error);
-		toast.add({
-			severity: "error",
-			summary: "上传失败",
-			detail: (error as Error).message,
-			life: 3000,
-		});
-	} finally {
-		uploading.value = false;
-	}
+  try {
+    // 调用PrimeVue的上传回调
+    uploadCallback();
+  } catch (error) {
+    console.error("Upload error:", error);
+    toast.add({
+      severity: "error",
+      summary: "上传失败",
+      detail: (error as Error).message,
+      life: 3000,
+    });
+  } finally {
+    uploading.value = false;
+  }
 };
 
 /**
  * 上传完成事件
  */
 const onUploadComplete = (event: any) => {
-	try {
-		const { code, data, message } = JSON.parse(event.xhr.response);
-		if (code === 200) {
-			toast.add({
-				severity: "success",
-				summary: "上传成功",
-				detail: `成功上传 ${data.length} 张图片`,
-				life: 3000,
-			});
+  try {
+    const { code, data, message } = JSON.parse(event.xhr.response);
+    console.log("Upload complete:", data);
+    if (code === 200) {
+      toast.add({
+        severity: "success",
+        summary: "上传成功",
+        detail: `成功上传 ${Array.isArray(data) ? data.length : 1} 张图片`,
+        life: 3000,
+      });
 
-			// 发送上传成功事件
-			emit("upload-success", data);
+      // 发送上传成功事件
+      emit("upload-success", Array.isArray(data) ? data : [data]);
 
-			// 关闭对话框
-			// visible.value = false
-		} else {
-			throw new Error(message || "上传失败");
-		}
-	} catch (error) {
-		console.error("Upload response error:", error);
-		toast.add({
-			severity: "error",
-			summary: "上传失败",
-			detail: (error as Error).message,
-			life: 3000,
-		});
-	}
+      // 关闭对话框
+      visible.value = false;
+    } else {
+      throw new Error(message || "上传失败");
+    }
+  } catch (error) {
+    console.error("Upload response error:", error);
+    toast.add({
+      severity: "error",
+      summary: "上传失败",
+      detail: (error as Error).message,
+      life: 3000,
+    });
+  }
 };
 </script>
 
 <template>
-
-
   <Dialog v-model:visible="visible" :modal="true" :closable="true" :draggable="false" class="upload-dialog  min-w-600px"
     header="上传图片">
     <div class="flex flex-col gap-4">
@@ -176,8 +184,7 @@ const onUploadComplete = (event: any) => {
                 <div v-for="(file, index) of files" :key="file.name + file.type + file.size"
                   class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
                   <div>
-
-                    <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                    <img role="presentation" :alt="file.name" :src="(file as any).objectURL" width="100" height="50" />
                   </div>
                   <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name
                     }}</span>
@@ -195,9 +202,8 @@ const onUploadComplete = (event: any) => {
                 <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size"
                   class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
                   <div>
-
                     <!-- 类型没有问题 -->
-                    <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                    <img role="presentation" :alt="file.name" :src="(file as any).objectURL" width="100" height="50" />
                   </div>
                   <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name
                     }}</span>

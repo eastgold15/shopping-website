@@ -7,7 +7,6 @@ export * from "../db/models";
 export * from "../db/models/images.model";
 
 export * from "../db/models/category.model";
-export * from "../db/models/orders.model";
 export * from "../db/models/product.model";
 export * from "../db/models/statistics.model";
 export * from "../db/models/users.model";
@@ -26,8 +25,8 @@ export interface QueryOptions {
 
 // 分页参数
 export interface PaginationParams {
-  page: number;
-  pageSize: number;
+  page?: number;
+  pageSize?: number;
 }
 
 // 查询过滤器 - 用于构建数据库查询的过滤条件

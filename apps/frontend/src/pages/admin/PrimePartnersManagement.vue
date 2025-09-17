@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import type { PartnerModel, PartnerQueryDto } from "@backend/modules/partner";
+
+import type { PartnersListQueryDto, SelectPartnersVo } from "@backend/types";
 import ImageSelector from "@frontend/components/ImageSelector.vue";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { formatDate, getImageUrl } from "@frontend/utils/formatUtils";
@@ -48,8 +49,8 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-  PartnerModel,
-  PartnerQueryDto
+  SelectPartnersVo,
+  PartnersListQueryDto
 >(
   {
     // 1. 定义查询表单
@@ -64,7 +65,7 @@ const templateData = await genPrimeCmsTemplateData<
       id: 0,
       name: "",
       description: "",
-      image_id: 0,
+      imageUrl: '',
       image: "",
       selectedImageUrl: "",
       url: "",
@@ -95,7 +96,7 @@ const templateData = await genPrimeCmsTemplateData<
       // @ts-ignore
       delete data.updatedAt
 
-      data.image_id = currentFormData.value?.image_id || data.image_id;
+      data.imageUrl = currentFormData.value?.image_id || data.imageUrl;
       // 移除前端显示用的字段，不提交到后端
       // @ts-ignore
       delete data.selectedImageUrl;

@@ -1,3 +1,4 @@
+import { FOLDDER_TYPE } from "@backend/modules/oss";
 import { relations } from "drizzle-orm";
 import { integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
@@ -16,7 +17,7 @@ import { UnoQueryZod } from "./utils";
 export const imagesTable = pgTable("images", {
   id: serial("id").primaryKey(), // 图片唯一标识
   fileName: varchar("file_name", { length: 255 }).notNull(), // 存储文件名
-  url: text("url").notNull().unique(), // 图片访问URL - 添加唯一约束用于外键引用
+  imageUrl: text("url").notNull().unique(), // 图片访问URL - 添加唯一约束用于外键引用
   category: varchar("category", { length: 50 }).notNull().default("general"), // 图片分类
   fileSize: integer("file_size").notNull(), // 文件大小(字节)
   mimeType: varchar("mime_type", { length: 100 }).notNull(), // 文件MIME类型
@@ -27,13 +28,11 @@ export const imagesTable = pgTable("images", {
 
 // 2. Zod Schema（基于 Drizzle 表生成，并可扩展校验）
 export const insertImagesSchema = createInsertSchema(imagesTable, {
-
-  url: z.string().url("请提供有效的URL"),
+  imageUrl: z.string(),
   mimeType: z.string().min(1, "MIME类型不能为空"),
-
 });
 export const updateImagesSchema = createUpdateSchema(imagesTable, {
-  url: z.string().url("请提供有效的URL"),
+  imageUrl: z.string(),
   mimeType: z.string().min(1, "MIME类型不能为空"),
 });
 export const selectImagesSchema = createSelectSchema(imagesTable);
@@ -43,24 +42,13 @@ export const imagesModel = {
   selectImagesTable: selectImagesSchema,
   // 创建图片请求参数
   insertImagesDto: insertImagesSchema.omit({ id: true, createdAt: true, updatedAt: true }),
-
   updateImagesDto: updateImagesSchema.omit({ id: true, createdAt: true, updatedAt: true }),
-
-  // 图片上传DTO
-  uploadImageDto: z.object({
-    file: z.any(), // 文件对象
-    alt: z.string().optional(),
-    description: z.string().optional(),
-    category: z.string().default("general"),
-  }),
-
   // 图片列表查询参数
   queryImagesListDto: UnoQueryZod.extend({
     category: z.string().optional(),
     mimeType: z.string().optional(),
     filename: z.string().optional(),
   }),
-
   // 批量删除图片参数
   batchDeleteImagesDto: z.object({
     ids: z.array(z.number().positive()),
@@ -71,27 +59,15 @@ export const imagesModel = {
 // 类型来源于 Zod 推断，但用更语义化的名字导出
 export type InsertImagesDto = z.infer<typeof imagesModel.insertImagesDto>;  // 请求用
 export type UpdateImagesDto = z.infer<typeof imagesModel.updateImagesDto>;  // 请求用
-export type UploadImageDto = z.infer<typeof imagesModel.uploadImageDto>;  // 上传用
 export type SelectImagesType = z.infer<typeof imagesModel.selectImagesTable>; // 查询返回原始类型
-export type ImagesListQueryDto = z.infer<typeof imagesModel.queryImagesListDto>;
+export type ListImagesQueryDto = z.infer<typeof imagesModel.queryImagesListDto>;
 export type BatchDeleteImagesDto = z.infer<typeof imagesModel.batchDeleteImagesDto>;
-
+// 导出选择的图片类型（从 images 模型）
+export type SelectImageType = z.infer<typeof imagesModel.selectImagesTable>;
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
-export type SelectImagesVo = SelectImagesType & {
-  // 可以添加计算字段，如格式化的文件大小
-  formattedSize?: string;
-  // 缩略图URL
-  thumbnailUrl?: string;
-};
+export type SelectImagesVo = SelectImagesType
 
-// 5. 关系定义（图片表通常被其他表引用）
-// export const imagesRelations = relations(imagesTable, ({ many }) => ({
-//   products: many(productsTable), // 一个图片可能被多个产品使用
-//   advertisements: many(advertisementsTable), // 一个图片可能被多个广告使用
-// }));
-
-
-
+//5. 创建关联
 export const imagesRelations = relations(imagesTable, ({ many }) => ({
   // 图片可以被多个广告使用 - 外键在advertisements表中
   advertisements: many(advertisementsTable),
@@ -102,3 +78,47 @@ export const imagesRelations = relations(imagesTable, ({ many }) => ({
   // 图片可以被多个商品使用(通过中间表)
   productImages: many(productImagesTable),
 }));
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Zod 模型定义
+export const uploadsModel = {
+  // 单文件上传请求参数
+  UploadImageDto: z.object({
+    file: z.any(), // 文件对象，在运行时验证
+    folder: z.enum([
+      FOLDDER_TYPE.GENERAL,
+      FOLDDER_TYPE.BANNER,
+      FOLDDER_TYPE.PRODUCT,
+      FOLDDER_TYPE.LOGO,
+      FOLDDER_TYPE.USER_AVATAR,
+      FOLDDER_TYPE.OTHER,
+    ]).optional().default(FOLDDER_TYPE.GENERAL),
+  }),
+  // 多文件上传请求参数
+  UploadImagesDto: z.object({
+    files: z.array(z.any()).min(1, "至少需要上传一个文件"), // 文件数组，在运行时验证
+    folder: z.enum([
+      FOLDDER_TYPE.GENERAL,
+      FOLDDER_TYPE.BANNER,
+      FOLDDER_TYPE.PRODUCT,
+      FOLDDER_TYPE.LOGO,
+      FOLDDER_TYPE.USER_AVATAR,
+      FOLDDER_TYPE.OTHER,
+    ]).optional().default(FOLDDER_TYPE.GENERAL),
+  })
+};
+// 导出 Zod 推断类型
+export type UploadImageDto = z.infer<typeof uploadsModel.UploadImageDto>;
+export type UploadImagesDto = z.infer<typeof uploadsModel.UploadImagesDto>
+

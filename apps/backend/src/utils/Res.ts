@@ -1,158 +1,17 @@
 // Elysia + Drizzle 统一响应格式工具文件
 
-import { type TSchema, t } from "elysia";
 import { z } from "zod/v4";
-import type { Column, SQL } from "drizzle-orm";
-import type { QueryScope, SoftDeletableTable } from "./soft-delete/types";
-/**
- * 分页查询参数的 Zod 类型定义
- */
-export const PaginationQueryZod = z.object({
-	page: z.number().min(1).optional(),
-	pageSize: z.number().min(1).max(100).optional(),
-});
 
-/**
- * 分页查询参数的 Elysia 类型定义（兼容性保留）
- */
-export const PaginationQuery = t.Object({
-	page: t.Optional(t.Number({ minimum: 1 })),
-	pageSize: t.Optional(t.Number({ minimum: 1, maximum: 100 })),
-});
-
-export type PaginationQueryType = z.infer<typeof PaginationQueryZod>;
-
-/**
- * 分页选项 Zod 类型定义
- */
-export const PaginationOptionsZod = z.object({
-	page: z.number(),
-	pageSize: z.number(),
-	orderBy: z.any().optional(), // Column | SQL | SQL.Aliased 类型复杂，使用 any
-	orderDirection: z.enum(["asc", "desc"]).optional(),
-	scope: z.any().optional(), // QueryScope 类型
-	table: z.any().optional(), // SoftDeletableTable 类型
-});
-
-/**
- * 分页选项接口（兼容性保留）
- */
-export interface PaginationOptions {
-	page: number;
-	pageSize: number;
-	orderBy?: Column | SQL | SQL.Aliased;
-	orderDirection?: "asc" | "desc";
-	scope?: QueryScope;
-	table?: SoftDeletableTable;
-}
-
-export type PaginationOptionsType = z.infer<typeof PaginationOptionsZod>;
-
-/**
- * 分页元数据 Zod 类型定义
- */
-export const PageMetaZod = z.object({
-	total: z.number(),
-	page: z.number(),
-	pageSize: z.number(),
-	totalPages: z.number(),
-
-});
-
-/**
- * 分页元数据 Elysia 类型定义（兼容性保留）
- */
-export const PageMetaSchema = t.Object({
-	total: t.Number(),
-	page: t.Number(),
-	pageSize: t.Number(),
-	totalPages: t.Number(),
-});
-
-export type PageMeta = z.infer<typeof PageMetaZod>;
-
-/**
- * 分页结果 Zod 类型定义工厂
- */
-export const createPaginationResultZod = <T extends z.ZodTypeAny>(itemSchema: T) => {
-	return z.object({
-		code: z.number(),
-		message: z.string(),
-		data: z.object({
-			items: z.array(itemSchema),
-			meta: PageMetaZod,
-		}),
-	});
-};
-
-/**
- * 分页结果接口（兼容性保留）
- */
-export interface PaginationResult<T> {
-	code: number;
-	message: string;
-	data: {
-		items: T[];
-		meta: {
-			total: number;
-			page: number;
-			pageSize: number;
-			totalPages: number;
-		};
-	};
-}
-
-/**
- * 分页数据 Zod 类型定义工厂
- */
-export const createPageDataZod = <T extends z.ZodTypeAny>(itemSchema: T) => {
-	return z.object({
-		items: z.array(itemSchema),
-		meta: PageMetaZod,
-	});
-};
-
-/**
- * 分页数据类型（兼容性保留）
- */
-export type PageData<T> = {
-	items: T[];
-	meta: PageMeta;
-};
-
-/**
- * 通用响应 Zod 类型定义工厂
- */
-export const createCommonResZod = <T extends z.ZodTypeAny>(dataSchema: T) => {
-	return z.object({
-		code: z.number(),
-		message: z.string(),
-		data: dataSchema,
-	});
-};
-
-/**
- * 通用响应 Elysia 类型定义工厂（兼容性保留）
- */
-export const CreateCommonResSchema = <T extends TSchema>(dataSchema: T) => {
-	return t.Object({
-		code: t.Number(),
-		message: t.String(),
-		data: dataSchema,
-	});
-};
 
 /**
  * 前端用的响应类型定义
  * 错误也使用这个
  */
 export type CommonRes<T> = {
-	code: number;
-	message: string;
-	data: T;
+  code: number;
+  message: string;
+  data: T;
 };
-
-export type CommonResType<T> = z.infer<ReturnType<typeof createCommonResZod<z.ZodType<T>>>>;
 
 /**
  * // 成功响应函数
@@ -163,57 +22,97 @@ export type CommonResType<T> = z.infer<ReturnType<typeof createCommonResZod<z.Zo
  * @returns
  */
 export function commonRes<T>(
-	data: T,
-	code = 200,
-	message = "操作成功",
+  data: T,
+  code = 200,
+  message = "操作成功",
 ): CommonRes<T> {
-	return {
-		code,
-		message,
-		data,
-	};
+  return {
+    code,
+    message,
+    data,
+  };
 }
-/**
- * 分页响应 Zod 类型定义工厂
- * @param dataSchema 数据项的类型定义
- * @returns 完整的分页响应类型定义（使用 CommonRes 结构）
- */
-export const createPageResZod = <T extends z.ZodTypeAny>(dataSchema: T) => {
-	return createCommonResZod(
-		z.object({
-			items: z.array(dataSchema),
-			meta: PageMetaZod,
-		})
-	);
-};
+
 
 /**
- * 分页响应的 Elysia 类型定义工厂（兼容性保留）
- * 复用  函数
- * @param dataSchema 数据项的类型定义
- * @returns 完整的分页响应类型定义
+ * 分页查询参数的 Zod 类型定义
  */
-export const CreatePageResSchema = <T extends TSchema>(dataSchema: T) => {
-	return t.Object({
-		code: t.Number(),
-		message: t.String(),
-		data: t.Object({
-			items: t.MaybeEmpty(t.Array(dataSchema)),
-			meta: PageMetaSchema,
-		}),
-	});
-};
+export const PaginationQueryZod = z.object({
+  page: z.coerce.number().min(1).optional(),
+  pageSize: z.coerce.number().min(1).max(100).optional(),
+});
+
+export type PaginationQueryType = z.infer<typeof PaginationQueryZod>;
+/**
+ * 分页元数据 Zod 类型定义
+ */
+export const PageMetaZod = z.object({
+  total: z.coerce.number(),
+  page: z.coerce.number(),
+  pageSize: z.coerce.number(),
+  totalPages: z.coerce.number(),
+});
+export type PageMeta = z.infer<typeof PageMetaZod>;
+export interface PageData<T> {
+  items: T[]; // 当前页数据
+  meta: PageMeta,
+}
+
 
 /**
  * 前端用的分页响应类型定义
  */
 export type PageRes<T> = {
-	code: number;
-	message: string;
-	data: PageData<T>;
+  code: number;
+  message: string;
+  data: PageData<T>;
 };
 
-export type PageResType<T> = z.infer<ReturnType<typeof createPageResZod<z.ZodType<T>>>>;
+
+
+
+
+/**
+ * 分页选项 Zod 类型定义
+ */
+export const PaginationOptionsZod = z.object({
+  page: z.coerce.number(),
+  pageSize: z.coerce.number(),
+  orderBy: z.any().optional(), // Column | SQL | SQL.Aliased 类型复杂，使用 any
+  orderDirection: z.enum(["asc", "desc"]).optional(),
+  scope: z.any().optional(), // QueryScope 类型
+  table: z.any().optional(), // SoftDeletableTable 类型
+});
+
+export type PaginationOptionsType = z.infer<typeof PaginationOptionsZod>;
+
+
+
+/**
+ * 分页结果 Zod 类型定义工厂
+ */
+export const createPaginationResultZod = <T extends z.ZodTypeAny>(itemSchema: T) => {
+  return z.object({
+    code: z.number(),
+    message: z.string(),
+    data: z.object({
+      items: z.array(itemSchema),
+      meta: PageMetaZod,
+    }),
+  });
+};
+
+
+/**
+ * 分页数据 Zod 类型定义工厂
+ */
+export const createPageDataZod = <T extends z.ZodTypeAny>(itemSchema: T) => {
+  return z.object({
+    items: z.array(itemSchema),
+    meta: PageMetaZod,
+  });
+};
+
 
 // ==================== Zod 工具函数 ====================
 
@@ -223,7 +122,7 @@ export type PageResType<T> = z.infer<ReturnType<typeof createPageResZod<z.ZodTyp
  * @returns 合并后的 zod 对象类型
  */
 export const mergeZodObjects = <T extends z.ZodRawShape[]>(...schemas: T) => {
-	return schemas.reduce((acc, schema) => acc.merge(schema), z.object({}) as any);
+  return schemas.reduce((acc, schema) => acc.merge(schema), z.object({}) as any);
 };
 
 /**
@@ -232,7 +131,7 @@ export const mergeZodObjects = <T extends z.ZodRawShape[]>(...schemas: T) => {
  * @returns 所有字段都变为可选的 zod 对象
  */
 export const makeOptional = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) => {
-	return schema.partial();
+  return schema.partial();
 };
 
 /**
@@ -241,7 +140,7 @@ export const makeOptional = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
  * @returns 所有字段都变为必填的 zod 对象
  */
 export const makeRequired = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) => {
-	return schema.required();
+  return schema.required();
 };
 
 /**
@@ -251,14 +150,14 @@ export const makeRequired = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
  * @returns 验证结果
  */
 export const validateWithZod = <T extends z.ZodTypeAny>(
-	schema: T,
-	data: unknown,
+  schema: T,
+  data: unknown,
 ): { success: true; data: z.infer<T> } | { success: false; error: z.ZodError } => {
-	const result = schema.safeParse(data);
-	if (result.success) {
-		return { success: true, data: result.data };
-	}
-	return { success: false, error: result.error };
+  const result = schema.safeParse(data);
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+  return { success: false, error: result.error };
 };
 
 /**
@@ -266,13 +165,13 @@ export const validateWithZod = <T extends z.ZodTypeAny>(
  * 注意：这是一个简化的转换，复杂类型可能需要手动处理
  */
 export const elysiaToZod = {
-	// 基础类型转换映射
-	string: () => z.string(),
-	number: () => z.number(),
-	boolean: () => z.boolean(),
-	array: <T extends z.ZodTypeAny>(itemSchema: T) => z.array(itemSchema),
-	object: <T extends z.ZodRawShape>(shape: T) => z.object(shape),
-	optional: <T extends z.ZodTypeAny>(schema: T) => schema.optional(),
+  // 基础类型转换映射
+  string: () => z.string(),
+  number: () => z.number(),
+  boolean: () => z.boolean(),
+  array: <T extends z.ZodTypeAny>(itemSchema: T) => z.array(itemSchema),
+  object: <T extends z.ZodRawShape>(shape: T) => z.object(shape),
+  optional: <T extends z.ZodTypeAny>(schema: T) => schema.optional(),
 };
 
 // ==================== 响应函数 ====================
@@ -288,50 +187,50 @@ export const elysiaToZod = {
  * @returns 符合项目规范的分页响应
  */
 export function pageRes<T>(
-	data: T[],
-	total: number,
-	page = 1,
-	pageSize = 10,
-	message = "获取成功",
+  data: T[],
+  total: number,
+  page = 1,
+  pageSize = 10,
+  message = "获取成功",
 ) {
-	return commonRes(
-		{
-			items: data,
-			meta: {
-				total,
-				page,
-				pageSize,
-				totalPages: Math.ceil(total / pageSize),
-			},
-		},
-		200,
-		message,
-	);
+  return commonRes(
+    {
+      items: data,
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    },
+    200,
+    message,
+  );
 }
 
 // ==================== 使用示例 ====================
 
 /**
  * 使用示例：
- * 
+ *
  * // 1. 创建用户数据的 zod 类型
  * const UserZod = z.object({
  *   id: z.number(),
  *   name: z.string(),
  *   email: z.string().email(),
  * });
- * 
+ *
  * // 2. 创建用户列表的分页响应类型
  * const UserPageResZod = createPageResZod(UserZod);
- * 
+ *
  * // 3. 创建通用响应类型
  * const UserResZod = createCommonResZod(UserZod);
- * 
+ *
  * // 4. 合并类型示例
  * const BaseUserZod = z.object({ id: z.number(), name: z.string() });
  * const ExtendedUserZod = z.object({ email: z.string(), age: z.number() });
  * const FullUserZod = mergeZodObjects(BaseUserZod, ExtendedUserZod);
- * 
+ *
  * // 5. 验证数据
  * const result = validateWithZod(UserZod, userData);
  * if (result.success) {

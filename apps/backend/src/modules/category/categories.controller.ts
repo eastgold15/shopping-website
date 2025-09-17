@@ -15,94 +15,88 @@ export const categoriesController = new Elysia({
 })
   .model(categoriesModel)
   .decorate("categoriesService", new CategoriesService())
-  .guard(
-    {
-      transform({ body }: { body: any }) {
-        // 只对有 body 的请求进行处理
-        if (!body) return;
+  .onBeforeHandle(({ body }: { body: any }) => {
+    // 只对有 body 的请求进行处理
+    if (!body) return;
 
-        // 处理parentId：支持字符串转整数和对象格式{"key":true}
-        if (body?.parentId) {
-          if (typeof body.parentId === "string") {
-            // 字符串转整数
-            const parsed = parseInt(body.parentId);
-            body.parentId = isNaN(parsed) ? null : parsed;
-          } else if (
-            typeof body.parentId === "object" &&
-            body.parentId !== null
-          ) {
-            // 从对象中提取第一个key作为parentId
-            const keys = Object.keys(body.parentId);
-            if (keys.length > 0) {
-              body.parentId = parseInt(keys[0]);
-            }
-          }
+    // 处理parentId：支持字符串转整数和对象格式{"key":true}
+    if (body?.parentId !== undefined) {
+      if (typeof body.parentId === "string") {
+        // 字符串转整数
+        const parsed = parseInt(body.parentId);
+        body.parentId = isNaN(parsed) ? null : parsed;
+      } else if (
+        typeof body.parentId === "object" &&
+        body.parentId !== null
+      ) {
+        // 从对象中提取第一个key作为parentId
+        const keys = Object.keys(body.parentId);
+        if (keys.length > 0) {
+          body.parentId = parseInt(keys[0]);
         }
+      }
+    }
+  })
+  // 创建分类 - RESTful标准设计
+  .post(
+    "/",
+    async ({ body, categoriesService }: { body: any; categoriesService: CategoriesService }) => {
+      try {
+        const newCategory = await categoriesService.createCategory(body);
+        return commonRes(newCategory, 201, "分类创建成功");
+      } catch (error) {
+        console.error("创建分类失败:", error);
+        return commonRes(
+          null,
+          500,
+          error instanceof Error ? error.message : "创建分类失败",
+        );
+      }
+    },
+    {
+      body: categoriesModel.insertCategoryDto,
+      detail: {
+        tags: ["Categories"],
+        summary: "创建分类",
+        description: "创建分类",
       },
     },
-    (app) =>
-      app
-        // 创建分类 - RESTful标准设计
-        .post(
-          "/",
-          async ({ body, categoriesService }) => {
-            try {
-              const newCategory = await categoriesService.createCategory(body);
-              return commonRes(newCategory, 201, "分类创建成功");
-            } catch (error) {
-              console.error("创建分类失败:", error);
-              return commonRes(
-                null,
-                500,
-                error instanceof Error ? error.message : "创建分类失败",
-              );
-            }
-          },
-          {
-            body: categoriesModel.insertCategoryDto,
-            detail: {
-              tags: ["Categories"],
-              summary: "创建分类",
-              description: "创建分类",
-            },
-          },
-        )
+  )
 
-        // 更新分类
-        .put(
-          "/:id",
-          async ({ params: { id }, body, categoriesService }) => {
-            try {
-              const updatedCategory = await categoriesService.updateCategory(
-                id,
-                body,
-              );
-              return commonRes(updatedCategory, 200, "分类更新成功");
-            } catch (error) {
-              console.error("更新分类失败:", error);
-              const statusCode =
-                error instanceof Error && error.message === "分类不存在"
-                  ? 404
-                  : 500;
-              return commonRes(
-                null,
-                statusCode,
-                error instanceof Error ? error.message : "更新分类失败",
-              );
-            }
-          },
-          {
-            params: z.object({
-              id: z.number(),
-            }),
-            body: categoriesModel.updateCategoryDto,
-            detail: {
-              tags: ["Categories"],
-              summary: "更新分类",
-              description: "更新分类",
-            },
-          },
-        ),
+  // 更新分类
+  .put(
+    "/:id",
+    async ({ params: { id }, body, categoriesService }: { params: { id: number }; body: any; categoriesService: CategoriesService }) => {
+      try {
+        const updatedCategory = await categoriesService.updateCategory(
+          id,
+          body,
+        );
+        return commonRes(updatedCategory, 200, "分类更新成功");
+      } catch (error) {
+        console.error("更新分类失败:", error);
+        const statusCode =
+          error instanceof Error && error.message === "分类不存在"
+            ? 404
+            : 500;
+        return commonRes(
+          null,
+          statusCode,
+          error instanceof Error ? error.message : "更新分类失败",
+        );
+      }
+    },
+    {
+      params: z.object({
+        id: z.number(),
+      }),
+      body: categoriesModel.updateCategoryDto,
+      detail: {
+        tags: ["Categories"],
+        summary: "更新分类",
+        description: "更新分类",
+      },
+    },
   )
 
   // 获取分类树形列表 - 管理端使用

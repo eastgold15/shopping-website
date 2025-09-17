@@ -9,6 +9,7 @@ import { categoriesController } from "./modules/category";
 import { imagesController } from "./modules/image";
 import { partnersController } from "./modules/partner";
 import { productsController } from "./modules/product";
+import { productStatisticsController } from "./modules/productStatistics/productStatistics.controller";
 import { siteConfigsController } from "./modules/siteConfig";
 import { uploadsController } from "./modules/upload";
 import { logPlugin } from "./plugins/logger";
@@ -25,6 +26,7 @@ const api = new Elysia({ prefix: "/api" })
   .use(categoriesController)
   .use(advertisementsController)
   .use(productsController)
+  .use(productStatisticsController)
   .use(siteConfigsController)
 
 // .use(ordersController)
@@ -38,7 +40,6 @@ export const app = new Elysia()
       hide: true,
     },
   })
-  .get("/favicon.ico", () => "ssds")
   .use(
     openapi({
       references: fromTypes(
@@ -52,6 +53,7 @@ export const app = new Elysia()
       ),
     }),
   )
+  .get("/favicon.ico", () => "ssds")
   .use(logPlugin)
   .use(err_handler)
   .use(api)
