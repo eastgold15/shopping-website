@@ -10,7 +10,17 @@ const partners = ref<SelectPartnersVo[]>([
   {
     id: 1,
     name: "Partner 1",
-    imageUrl: "https://via.placeholder.com/150",
+    imageRef: {
+      id: 1,
+      fileName: "partner1.jpg",
+      imageUrl: "https://via.placeholder.com/150",
+      category: "partner",
+      fileSize: 1024,
+      mimeType: "image/jpeg",
+      alt: "Partner 1",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
     description: "This is a partner description.",
     url: "https://example.com",
     sortOrder: 0,
@@ -24,15 +34,23 @@ interface ViewConfig {
   partners_intro_paragraphs: string[];
   footer_copyright: string;
 }
+
+
+
+
+
+
+
+
+
 // 当前界面配置数据
 const viewConfig = ref<ViewConfig>(
   {
     partners_intro_paragraphs: [
-      "我们通过化妆品牌，现在，我们正在工作7个不同的品牌的客户，具有各种性质",
-      "和对成功的大胆愿景。",
-      "正如科学中的催化剂能够不断改变汽车上工作一样，作为一个团队，我们大胆的方法",
-      "作为，我们的客\"催化剂\"区域了我们加速制造和制造的能力307万。",
-      "我们团队为美国各地的客户带来市场系统，专业知识和化妆品\"公司改进力\"",
+      "Founded in 2008 and headquartered in Dongguan since 2025, Dongqi Footwear combines decades of footwear expertise with global sales experience to serve international brands and industrial clients.",
+      "We specialize in high-performance outdoor and safety footwear — from puncture-proof work boots to athletic sneakers — all compliant with global standards and trusted by industries like power, mining, and electronics.",
+      "With two dedicated factories and certifications including BSCI, SEDEX, WRAP, Walmart, and Disney, we ensure responsible manufacturing and premium quality at scale.",
+      "Partner with us to step forward — together, we build durable footwear for every journey, and lasting value for every business."
     ],
     footer_copyright: "Copyright © 2023 Your Company. All rights reserved."
   }
@@ -183,7 +201,8 @@ onUnmounted(() => {
   <div
     class="min-h-screen bg-gradient-to-br from-red-500 via-orange-500 to-yellow-400 overflow-y-scroll scroll-smooth snap-y mandatory">
     <!-- 顶部导航栏 -->
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/20">
+    <nav
+      class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-pink-500/20 backdrop-blur-sm border-b border-orange-300/30">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center">
@@ -230,17 +249,17 @@ onUnmounted(() => {
         <div class="hidden md:flex flex-row" :class="index % 2 === 1 ? 'lg:flex-row-reverse' : ''">
           <!-- 图片区域 -->
           <div class="lg:w-1/2 w-full">
-            <img :src="partner.imageUrl ?? 'http://example.com'" :alt="partner.name"
+            <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="partner.name"
               class="w-full lg:h-screen object-cover">
           </div>
           <!-- 内容区域 -->
           <div
-            class="lg:w-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex flex-col justify-center p-12 lg:p-16">
-            <div class="max-w-lg" :class="index % 2 === 1 ? 'lg:ml-auto' : ''">
-              <h3 class="text-4xl lg:text-5xl font-bold mb-6">{{ partner.name }}</h3>
-              <p class="text-lg lg:text-xl opacity-90 mb-8 leading-relaxed">{{ partner.description }}</p>
+            class="lg:w-1/2 bg-gradient-to-r from-orange-600 via-red-500 to-pink-500 text-white flex flex-col justify-center md:p-16 ">
+            <div class="max-w-fit" :class="index % 2 === 1 ? 'lg:mr-auto' : ''">
+              <h3 class="whitespace-nowrap text-4xl lg:text-5xl font-bold mb-6  ">{{ partner.name }}</h3>
+              <p class="w-full  text-lg lg:text-xl opacity-90 mb-8 leading-relaxed">{{ partner.description }}</p>
               <a :href="partner.url" target="_blank" rel="noopener noreferrer"
-                class="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 text-lg">
+                class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 text-lg">
                 访问官网
               </a>
             </div>
@@ -250,14 +269,15 @@ onUnmounted(() => {
         <!-- 手机端布局 - 文字覆盖在图片上 -->
         <div class="md:hidden relative h-full">
           <!-- 背景图片 -->
-          <img :src="partner.imageUrl ?? 'http://example.com'" :alt="partner.name" class="w-full h-full object-cover">
+          <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="partner.name"
+            class="w-full h-full object-cover">
           <!-- 覆盖的文字内容 -->
           <div class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-center p-8">
             <div class="text-white">
               <h3 class="text-3xl font-bold mb-4">{{ partner.name }}</h3>
               <p class="text-base opacity-90 mb-6 leading-relaxed">{{ partner.description }}</p>
               <a :href="partner.url" target="_blank" rel="noopener noreferrer"
-                class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300">
+                class="inline-block bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300">
                 访问官网
               </a>
             </div>
@@ -268,14 +288,14 @@ onUnmounted(() => {
 
     <!-- 页脚版权信息区域 -->
     <section
-      class="h-screen bg-black/80 backdrop-blur-sm text-white flex items-center justify-center snap-start snap-always"
+      class="h-screen bg-gradient-to-br from-orange-900/90 via-red-900/90 to-pink-900/90 backdrop-blur-sm text-white flex items-center justify-center snap-start snap-always"
       style="scroll-snap-align: start; scroll-snap-stop: always;">
       <div class="text-center">
         <div class="mb-8">
           <h2 class="text-4xl font-bold text-white mb-4">感谢您的关注</h2>
           <p class="text-xl text-gray-300">期待与您的合作</p>
         </div>
-        <div class="border-t border-gray-600 pt-6">
+        <div class="border-t border-orange-400/40 pt-6">
           <p class="text-gray-400">
             {{ viewConfig.footer_copyright || '© 2024 Catalyst Brands. All rights reserved.' }}
           </p>
