@@ -88,7 +88,7 @@ export type UpdateAdvertisementStatsDto = z.infer<typeof advertisementsModel.upd
 export type BatchUpdateAdvertisementStatusDto = z.infer<typeof advertisementsModel.batchUpdateAdvertisementStatusDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
-export type SelectAdvertisementsVo = Omit<SelectAdvertisementsType, 'image_id'> & { image_url: string }
+export type SelectAdvertisementsVo = Omit<SelectAdvertisementsType, 'image_id'> & { imageUrl: string }
 
 // 5. 关系定义（广告表通常不需要复杂的关系定义）
 // export const advertisementsRelations = relations(advertisementsTable, ({ }) => ({}));

@@ -1,719 +1,308 @@
 <script setup lang="ts">
-import type {
-	BatchDeleteImageDto,
-	ImageModel,
-	UpdateImageDto,
-} from "@backend/modules/image/images.model";
-import {
-	copyToClipboard,
-	formatDate,
-	formatSize,
-	getImageUrl,
-	openInNewTab,
-} from "@frontend/utils/formatUtils";
+import type { ListImagesQueryDto, SelectImagesVo } from "@backend/types";
+import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
+import { formatDate, formatSize, getImageUrl } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
-import { computed, onMounted, ref } from "vue";
+import { FormField } from "@primevue/forms";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Select from "primevue/select";
+import Tag from "primevue/tag";
+import Textarea from "primevue/textarea";
+import { onMounted, ref } from "vue";
+import { z } from "zod";
+
+const $crud = useCmsApi().images;
+
+// 使用zod定义表单验证schema
+const imageSchema = z.object({
+  fileName: z.string().min(1, "文件名不能为空").max(255, "文件名不能超过255个字符"),
+  category: z.string().min(1, "请选择分类"),
+  alt: z.string().max(500, "Alt文本不能超过500个字符").optional(),
+});
+
+// 查询表单验证schema
+const querySchema = z.object({
+  filename: z.string().max(255, "搜索文件名不能超过255个字符").optional(),
+  category: z.string().optional(),
+});
+
+// 创建resolver
+const resolver = zodResolver(imageSchema);
+const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
-const loading = ref(false);
-const saving = ref(false);
-const images = ref<ImageModel[]>([]);
-const selectedImages = ref<string[]>([]);
-const searchQuery = ref("");
-const selectedCategory = ref("all");
+const templateData = await genPrimeCmsTemplateData<
+  SelectImagesVo,
+  ListImagesQueryDto
+>(
+  {
+    // 1. 定义查询表单
+    getList: async (params) => {
+      // 调用API获取图片列表
+      const result = await $crud.list(params as ListImagesQueryDto);
+      // 确保返回正确的类型
+      return result as any;
+    },
+    create: async (data) => {
+      // 图片创建通过上传实现，这里返回成功
+      return { code: 200, message: "操作成功", data: null };
+    },
+    update: async (id, data) => {
+      // 调用API更新图片信息
+      const result = await $crud.update(id, data);
+      // 确保返回正确的类型
+      return result as any;
+    },
+    delete: async (id) => {
+      // 调用API删除图片
+      const result = await $crud.delete(id);
+      // 确保返回正确的类型
+      return result as any;
+    },
+    deletes: async (ids) => {
+      // 调用API批量删除图片
+      const result = await $crud.batchDelete({ ids });
+      // 确保返回正确的类型
+      return result as any;
+    },
 
-const showPreviewDialog = ref(false);
-const showEditDialog = ref(false);
-const previewImageData = ref<ImageModel | null>(null);
-const editImageData = ref<ImageModel | null>(null);
+    // 2. 定义初始表格列 初始值
+    getEmptyModel: () => ({
+      id: 0,
+      fileName: "",
+      imageUrl: "",
+      category: "general",
+      fileSize: 0,
+      mimeType: "",
+      alt: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }),
 
-// 分页
-const first = ref(0);
-const pageSize = ref(12);
+    // 3. 定义删除框标题
+    getDeleteBoxTitle(id: number) {
+      return `删除图片${id}`;
+    },
+    getDeleteBoxTitles(ids: Array<number>) {
+      return ` 图片#${ids.join(",")} `;
+    },
 
-// Toast 和 Confirm
-const toast = useToast();
-const confirm = useConfirm();
+    // 5. 数据转换
+    transformSubmitData: (data, type) => {
+      // 移除只读字段
+      // @ts-ignore
+      delete data.imageUrl;
+      // @ts-ignore
+      delete data.fileSize;
+      // @ts-ignore
+      delete data.mimeType;
+      // @ts-ignore
+      delete data.createdAt;
+      // @ts-ignore
+      delete data.updatedAt;
+    },
+  },
+  // 6. 定义查询表单
+  {
+    filename: "",
+    category: undefined,
+    page: 1,
+    pageSize: 12,
+  },
+);
+
+const { tableData, queryForm, fetchList } = templateData;
+
+onMounted(async () => {
+  await fetchList();
+});
 
 // 分类选项
 const categoryOptions = [
-	{ label: "全部", value: "all" },
-	{ label: "轮播图", value: "carousel" },
-	{ label: "Banner图", value: "banner" },
-	{ label: "新闻图片", value: "news" },
-	{ label: "产品图片", value: "product" },
-	{ label: "分类图片", value: "category" },
-	{ label: "其他", value: "general" },
+  { label: "全部", value: "all" },
+  { label: "常规图", value: "general" },
+  { label: "轮播图", value: "banner" },
+  { label: "商品图片", value: "product" },
+  { label: "logo图片", value: "logo" },
+  { label: "头像图片", value: "avatar" },
+  { label: "其他图片", value: "other" },
 ];
 
-// 计算属性
-
-/**
- * 过滤后的图片列表
- */
-const filteredImages = computed(() => {
-	let result = images.value;
-
-	// 按分类过滤
-	if (selectedCategory.value !== "all") {
-		result = result.filter((img) => img.category === selectedCategory.value);
-	}
-
-	// 按搜索关键词过滤
-	if (searchQuery.value.trim()) {
-		const query = searchQuery.value.toLowerCase();
-		result = result.filter(
-			(img) =>
-				img.fileName.toLowerCase().includes(query) ||
-				img.altText?.toLowerCase().includes(query),
-		);
-	}
-
-	return result;
-});
-
-/**
- * 分页后的图片列表
- */
-const paginatedImages = computed(() => {
-	const start = first.value;
-	const end = start + pageSize.value;
-	return filteredImages.value.slice(start, end);
-});
-
-/**
- * 总页数
- */
-const totalPages = computed(() => {
-	return Math.ceil(filteredImages.value.length / pageSize.value);
-});
-
-// 方法
-
-/**
- * 加载图片列表
- */
-const loadImages = async () => {
-	loading.value = true;
-	try {
-		const api = useCmsApi();
-		const res = await api.images.list();
-		if (!res) {
-			toast.add({
-				severity: "error",
-				summary: "加载失败",
-				detail: (res as Error).message,
-				life: 3000,
-			});
-		} else {
-			images.value = res.data.items;
-		}
-	} catch (error) {
-		toast.add({
-			severity: "error",
-			summary: "加载失败",
-			detail: "无法加载图片列表",
-			life: 3000,
-		});
-	} finally {
-		loading.value = false;
-	}
-};
-
-/**
- * 按分类过滤
- */
-const filterByCategory = () => {
-	first.value = 0; // 重置到第一页
-};
-
-/**
- * 搜索图片
- */
-const searchImages = () => {
-	first.value = 0; // 重置到第一页
-};
-
-/**
- * 分页变化
- */
-const onPageChange = (event: any) => {
-	first.value = event.first;
-	pageSize.value = event.rows;
-};
-
-/**
- * 预览图片
- */
-const previewImage = (image: ImageModel) => {
-	previewImageData.value = image;
-	showPreviewDialog.value = true;
-};
-
-/**
- * 编辑图片
- */
-const editImage = (image: ImageModel) => {
-	editImageData.value = { ...image };
-	showEditDialog.value = true;
-};
-
-/**
- * 保存图片编辑
- */
-const saveImageEdit = async () => {
-	if (!editImageData.value) return;
-
-	saving.value = true;
-	try {
-		const updateData: UpdateImageDto = {
-			fileName: editImageData.value.fileName,
-			category: editImageData.value.category,
-			altText: editImageData.value.altText,
-		};
-
-		const api = useCmsApi();
-		const response = await api.images.update(
-			editImageData.value.id,
-			updateData,
-		);
-
-		if (response.status === 200 && response.data?.code == 200) {
-			// 更新本地数据
-			const index = images.value.findIndex(
-				(img) => img.id === editImageData.value!.id,
-			);
-			if (index !== -1) {
-				images.value[index] = { ...editImageData.value };
-			}
-
-			showEditDialog.value = false;
-			toast.add({
-				severity: "success",
-				summary: "保存成功",
-				detail: "图片信息已更新",
-				life: 3000,
-			});
-		} else {
-			throw new Error(response.data?.error || "保存失败");
-		}
-	} catch (error) {
-		console.error("保存失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "保存失败",
-			detail: "无法保存图片信息",
-			life: 3000,
-		});
-	} finally {
-		saving.value = false;
-	}
-};
-
-/**
- * 复制图片URL
- */
-const copyImageUrl = async (image: ImageModel) => {
-	const success = await copyToClipboard(getImageUrl(image.url));
-
-	if (success) {
-		toast.add({
-			severity: "success",
-			summary: "复制成功",
-			detail: "图片链接已复制到剪贴板",
-			life: 2000,
-		});
-	} else {
-		toast.add({
-			severity: "error",
-			summary: "复制失败",
-			detail: "无法复制到剪贴板",
-			life: 2000,
-		});
-	}
-};
-
-/**
- * 在新标签页打开图片
- */
-const openImageInNewTab = (image: ImageModel) => {
-	openInNewTab(getImageUrl(image.url));
-};
-
-/**
- * 确认删除单个图片
- */
-const confirmDelete = (image: ImageModel) => {
-	confirm.require({
-		message: `确定要删除图片 "${image.fileName}" 吗？`,
-		header: "删除确认",
-		icon: "pi pi-exclamation-triangle",
-		acceptClass: "p-button-danger",
-		accept: () => deleteImage(image.id),
-	});
-};
-
-/**
- * 确认批量删除
- */
-const confirmBatchDelete = () => {
-	confirm.require({
-		message: `确定要删除选中的 ${selectedImages.value.length} 张图片吗？`,
-		header: "批量删除确认",
-		icon: "pi pi-exclamation-triangle",
-		acceptClass: "p-button-danger",
-		accept: () => batchDeleteImages(),
-	});
-};
-
-/**
- * 删除单个图片
- */
-const deleteImage = async (imageId: string) => {
-	try {
-		const api = useCmsApi();
-		await api.images.delete(imageId);
-
-		// 从列表中移除
-		images.value = images.value.filter((img) => img.id !== imageId);
-
-		// 从选中列表中移除
-		selectedImages.value = selectedImages.value.filter((id) => id !== imageId);
-
-		toast.add({
-			severity: "success",
-			summary: "删除成功",
-			detail: "图片已删除",
-			life: 2000,
-		});
-	} catch (error) {
-		console.error("删除失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "删除失败",
-			detail: "无法删除图片",
-			life: 2000,
-		});
-	}
-};
-
-/**
- * 批量删除图片
- */
-const batchDeleteImages = async () => {
-	try {
-		const batchDeleteData: BatchDeleteImageDto = {
-			imageIds: selectedImages.value,
-		};
-
-		const api = useCmsApi();
-		const response = await api.images.batchDelete(batchDeleteData);
-
-		// 从列表中移除
-		images.value = images.value.filter(
-			(img) => !selectedImages.value.includes(img.id),
-		);
-		// 清空选中列表
-		selectedImages.value = [];
-		toast.add({
-			severity: "success",
-			summary: "删除成功",
-			detail: `已删除 ${response.data.deletedCount} 张图片`,
-			life: 3000,
-		});
-	} catch (error) {
-		console.error("批量删除失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "删除失败",
-			detail: "无法批量删除图片",
-			life: 3000,
-		});
-	}
-};
-
-/**
- * 获取分类标签
- */
-const getCategoryLabel = (category: string): string => {
-	const option = categoryOptions.find((opt) => opt.value === category);
-	return option?.label || category;
-};
-// 生命周期
-onMounted(() => {
-	loadImages();
-});
-
+// 上传相关
 const showUploadDialog = ref(false);
+
+// 上传成功回调
+const onUploadSuccess = async () => {
+  showUploadDialog.value = false;
+  await fetchList();
+};
 </script>
+
 <template>
-  <div class="image-manager">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h1 class="page-title">图片管理</h1>
-      <p class="page-description">管理网站中的所有图片资源，包括轮播图、Banner图、新闻图片等</p>
-    </div>
+  <PrimeCrudTemplate name="图片" identifier="image" :table-data="tableData" :template-data="templateData"
+    :crud-controller="15" :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver">
+    <!-- 查询表单 -->
+    <template #QueryForm>
+      <div class="flex flex-column gap-2">
+        <FormField v-slot="$field" name="filename" class="flex flex-column gap-1">
+          <div class="flex items-center gap-2">
+            <label for="query-filename" class="text-sm font-medium">文件名</label>
+            <InputText id="query-filename" placeholder="搜索文件名" />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
 
-    <!-- 操作工具栏 -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <!-- 分类筛选 -->
-        <Dropdown v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
-          placeholder="选择分类" class="category-filter" @change="filterByCategory" />
-
-        <!-- 搜索框 -->
-        <span class="p-input-icon-left search-box">
-
-          <InputGroup>
-            <InputGroupAddon>
-              <i class="pi pi-search" />
-            </InputGroupAddon>
-            <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" />
-          </InputGroup>
-
-
-        </span>
+        <FormField v-slot="$field" name="category" class="flex flex-column gap-1">
+          <div class="flex items-center gap-2">
+            <label for="query-category" class="text-sm font-medium">分类</label>
+            <Select id="query-category" :options="categoryOptions" option-label="label" option-value="value"
+              placeholder="选择分类" clearable />
+          </div>
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
       </div>
+    </template>
 
-      <div class="toolbar-right">
-        <!-- 批量操作 -->
-        <Button v-if="selectedImages.length > 0" icon="pi pi-trash" label="批量删除" severity="danger"
-          @click="confirmBatchDelete" class="batch-delete-btn" />
+    <!-- 表格列 -->
+    <template #TableColumn>
+      <Column field="id" header="ID" style="width: 80px" />
 
-        <!-- 上传按钮 -->
-        <Button icon="pi pi-upload" label="上传图片" @click="showUploadDialog = true" class="upload-btn" />
-
-      </div>
-    </div>
-
-    <!-- 图片网格 -->
-    <div class="images-container">
-      <div v-if="loading" class="loading-container">
-        <ProgressSpinner />
-        <p>加载中...</p>
-      </div>
-
-      <div v-else-if="filteredImages.length === 0" class="empty-state">
-        <i class="pi pi-image empty-icon"></i>
-        <h3>暂无图片</h3>
-        <p>点击上传按钮添加图片</p>
-      </div>
-
-      <div v-else class="images-grid">
-        <div v-for="image in paginatedImages" :key="image.id" class="image-card"
-          :class="{ 'selected': selectedImages.includes(image.id) }">
-          <!-- 选择框 -->
-          <Checkbox v-model="selectedImages" :inputId="`img-${image.id}`" :value="image.id" class="image-checkbox" />
-
-          <!-- 图片预览 -->
-          <div class="image-preview" @click="previewImage(image)">
-            <img :src="getImageUrl(image.url)" :alt="image.fileName" class="preview-img" loading="lazy" />
-            <div class="image-overlay">
-              <Button icon="pi pi-eye" class="p-button-rounded p-button-sm p-button-secondary"
-                @click.stop="previewImage(image)" v-tooltip="'预览'" />
-              <Button icon="pi pi-copy" class="p-button-rounded p-button-sm p-button-info"
-                @click.stop="copyImageUrl(image)" v-tooltip="'复制链接'" />
-              <Button icon="pi pi-pencil" class="p-button-rounded p-button-sm p-button-warning"
-                @click.stop="editImage(image)" v-tooltip="'编辑'" />
-              <Button icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger"
-                @click.stop="confirmDelete(image)" v-tooltip="'删除'" />
+      <Column field="image" header="图片" style="width: 120px">
+        <template #body="{ data }">
+          <div class="flex justify-center">
+            <img v-if="data.imageUrl" :src="getImageUrl(data.imageUrl)" :alt="data.fileName"
+              class="w-12 h-12 object-cover rounded-lg border border-gray-200" />
+            <div v-else class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-image text-gray-400 text-sm"></i>
             </div>
           </div>
+        </template>
+      </Column>
 
-          <!-- 图片信息 -->
-          <div class="image-info">
-            <h4 class="image-name" :title="image.fileName">{{ image.fileName }}</h4>
-            <div class="image-meta">
-              <span class="image-category">{{ getCategoryLabel(image.category) }}</span>
-              <span class="image-size">{{ formatSize(image.fileSize) }}</span>
+      <Column field="fileName" header="文件名" style="width: 200px">
+        <template #body="{ data }">
+          <span class="font-medium">{{ data.fileName }}</span>
+        </template>
+      </Column>
+
+      <Column field="category" header="分类" style="width: 120px">
+        <template #body="{ data }">
+          <Tag :value="data.category" severity="info" />
+        </template>
+      </Column>
+
+      <Column field="fileSize" header="大小" style="width: 100px">
+        <template #body="{ data }">
+          <span class="text-gray-600 text-sm">
+            {{ formatSize(data.fileSize) }}
+          </span>
+        </template>
+      </Column>
+
+      <Column field="mimeType" header="类型" style="width: 120px">
+        <template #body="{ data }">
+          <span class="text-gray-600 text-sm">
+            {{ data.mimeType }}
+          </span>
+        </template>
+      </Column>
+
+      <Column field="alt" header="Alt文本" style="width: 200px">
+        <template #body="{ data }">
+          <span class="text-gray-600 text-sm line-clamp-2">
+            {{ data.alt || '-' }}
+          </span>
+        </template>
+      </Column>
+
+      <Column field="createdAt" header="创建时间" style="width: 150px">
+        <template #body="{ data }">
+          <span class="text-gray-500 text-sm">
+            {{ formatDate(data.createdAt) }}
+          </span>
+        </template>
+      </Column>
+
+      <Column field="updatedAt" header="更新时间" style="width: 150px">
+        <template #body="{ data }">
+          <span class="text-gray-500 text-sm">
+            {{ formatDate(data.updatedAt) }}
+          </span>
+        </template>
+      </Column>
+    </template>
+
+    <!-- 表单 -->
+    <template #CrudForm="{ data, disabled }: { data: SelectImagesVo, disabled: boolean }">
+      <div class="h-full">
+        <!-- 文件名 -->
+        <FormField v-slot="$field" name="fileName" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">文件名 *</label>
+          <InputText fluid size="small" placeholder="请输入文件名" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <!-- 分类 -->
+        <FormField v-slot="$field" name="category" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">分类 *</label>
+          <Select fluid :options="categoryOptions.filter(c => c.value !== undefined)" option-label="label"
+            option-value="value" placeholder="请选择分类" :disabled="disabled" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <!-- Alt文本 -->
+        <FormField v-slot="$field" name="alt" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">Alt文本</label>
+          <Textarea fluid placeholder="请输入图片描述" :disabled="disabled" rows="2" />
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          </Message>
+        </FormField>
+
+        <!-- 图片预览 -->
+        <div class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">图片预览</label>
+          <div class="flex justify-center">
+            <img v-if="data.imageUrl" :src="getImageUrl(data.imageUrl)" :alt="data.fileName"
+              class="w-32 h-32 object-cover rounded-lg border border-gray-200" />
+            <div v-else class="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="pi pi-image text-gray-400 text-2xl"></i>
             </div>
-            <div class="image-actions">
-              <small class="image-date">{{ formatDate(image.createdAt) }}</small>
-              <div class="action-buttons">
-                <Button icon="pi pi-external-link" class="p-button-text p-button-sm" @click="openImageInNewTab(image)"
-                  v-tooltip="'在新标签页打开'" />
-              </div>
-            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
 
-    <!-- 分页 -->
-    <div v-if="totalPages > 1" class="pagination-container">
-      <Paginator v-model:first="first" :rows="pageSize" :totalRecords="filteredImages.length"
-        :rowsPerPageOptions="[12, 24, 48]" @page="onPageChange" />
-    </div>
-
-
-
-    <!-- 图片预览对话框 -->
-    <Dialog v-model:visible="showPreviewDialog" :modal="true" :closable="true" :draggable="false" class="preview-dialog"
-      :header="previewImageData?.fileName">
-      <div class="preview-dialog-content" v-if="previewImageData">
-        <img :src="getImageUrl(previewImageData.url)" :alt="previewImageData.fileName" class="preview-large-img" />
-        <div class="preview-info">
-          <div class="info-row">
-            <strong>文件名:</strong> {{ previewImageData.fileName }}
-          </div>
-          <div class="info-row">
-            <strong>分类:</strong> {{ getCategoryLabel(previewImageData.category) }}
-          </div>
-          <div class="info-row">
-            <strong>大小:</strong> {{ formatSize(previewImageData.fileSize) }}
-          </div>
-          <div class="info-row">
-            <strong>上传时间:</strong> {{ formatDate(previewImageData.createdAt) }}
-          </div>
-          <div class="info-row">
-            <strong>URL:</strong>
-            <InputText :value="previewImageData.url" readonly class="url-input" />
-            <Button icon="pi pi-copy" class="p-button-sm" @click="copyImageUrl(previewImageData)" />
-          </div>
+    <!-- 查询表单操作 -->
+    <template #QueryFormAction>
+      <div class="md:col-auto">
+        <div class="flex gap-2">
+          <Button class="md:w-22" label="重置" icon="pi pi-refresh" severity="secondary"
+            @click="templateData.resetForm(null)" />
+          <Button class="w-22" label="查询" icon="pi pi-search" :loading="templateData.formLoading.value"
+            @click="templateData.FormSearch(null)" />
+          <Button class="w-42" label="上传图片" icon="pi pi-upload" severity="success" @click="showUploadDialog = true" />
         </div>
       </div>
-    </Dialog>
+    </template>
+  </PrimeCrudTemplate>
 
-    <!-- 编辑图片对话框 -->
-    <Dialog v-model:visible="showEditDialog" :modal="true" :closable="true" :draggable="false" class="edit-dialog"
-      header="编辑图片">
-      <div class="edit-dialog-content" v-if="editImageData">
-        <div class="form-field">
-          <label for="edit-filename">文件名</label>
-          <InputText v-model="editImageData.fileName" inputId="edit-filename" />
-        </div>
-
-        <div class="form-field">
-          <label for="edit-category">分类</label>
-          <Dropdown v-model="editImageData.category" :options="categoryOptions.filter(c => c.value !== 'all')"
-            optionLabel="label" optionValue="value" inputId="edit-category" />
-        </div>
-
-        <div class="form-field">
-          <label for="edit-alt">Alt文本</label>
-          <InputText v-model="editImageData.altText" inputId="edit-alt" placeholder="图片描述" />
-        </div>
-      </div>
-
-      <template #footer>
-        <Button label="取消" icon="pi pi-times" @click="showEditDialog = false" class="p-button-text" />
-        <Button label="保存" icon="pi pi-check" @click="saveImageEdit" :loading="saving" />
-      </template>
-    </Dialog>
-
-    <!-- 删除确认对话框 -->
-    <ConfirmDialog />
-    <!-- 上传组件 -->
-    <ImageUpload v-model:visible="showUploadDialog" @uploaded="loadImages" />
-  </div>
+  <!-- 上传组件 -->
+  <ImageUpload v-model:visible="showUploadDialog" @upload-success="onUploadSuccess" />
 </template>
 
-
-
 <style scoped>
-.image-manager {
-  @apply p-6;
-}
-
-/* 页面标题 */
-.page-header {
-  @apply mb-6;
-}
-
-.page-title {
-  @apply text-3xl font-bold text-gray-900 mb-2;
-}
-
-.page-description {
-  @apply text-gray-600;
-}
-
-/* 工具栏 */
-.toolbar {
-  @apply flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-sm;
-}
-
-.toolbar-left {
-  @apply flex items-center gap-4;
-}
-
-.toolbar-right {
-  @apply flex items-center gap-3;
-}
-
-.category-filter {
-  @apply w-48;
-}
-
-.search-box {
-  @apply w-64;
-}
-
-.batch-delete-btn {
-  @apply mr-2;
-}
-
-/* 图片容器 */
-.images-container {
-  @apply min-h-96;
-}
-
-.loading-container {
-  @apply flex flex-col items-center justify-center py-12;
-}
-
-.loading-container p {
-  @apply mt-4 text-gray-600;
-}
-
-.empty-state {
-  @apply flex flex-col items-center justify-center py-12 text-gray-500;
-}
-
-.empty-icon {
-  @apply text-6xl mb-4;
-}
-
-.empty-state h3 {
-  @apply text-xl font-semibold mb-2;
-}
-
-/* 图片网格 */
-.images-grid {
-  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4;
-}
-
-.image-card {
-  @apply bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md;
-  @apply border-2 border-transparent;
-}
-
-.image-card.selected {
-  @apply border-primary;
-}
-
-.image-checkbox {
-  @apply absolute top-2 left-2 z-10;
-}
-
-.image-preview {
-  @apply relative cursor-pointer;
-  height: 200px;
-}
-
-.preview-img {
-  @apply w-full h-full object-cover;
-}
-
-.image-overlay {
-  @apply absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-2 opacity-0 transition-opacity duration-300;
-}
-
-.image-card:hover .image-overlay {
-  @apply opacity-100;
-}
-
-.image-info {
-  @apply p-3;
-}
-
-.image-name {
-  @apply text-sm font-medium text-gray-800 truncate mb-2;
-}
-
-.image-meta {
-  @apply flex justify-between items-center mb-2;
-}
-
-.image-category {
-  @apply text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded;
-}
-
-.image-size {
-  @apply text-xs text-gray-500;
-}
-
-.image-actions {
-  @apply flex justify-between items-center;
-}
-
-.image-date {
-  @apply text-xs text-gray-500;
-}
-
-.action-buttons {
-  @apply flex gap-1;
-}
-
-/* 分页 */
-.pagination-container {
-  @apply mt-6 flex justify-center;
-}
-
-/* 对话框 */
-.upload-dialog,
-.preview-dialog,
-.edit-dialog {
-  @apply w-full max-w-4xl;
-}
-
-.upload-dialog-content,
-.edit-dialog-content {
-  @apply space-y-4;
-}
-
-.form-field {
-  @apply space-y-2;
-}
-
-.form-field label {
-  @apply block text-sm font-medium text-gray-700;
-}
-
-.preview-dialog-content {
-  @apply text-center;
-}
-
-.preview-large-img {
-  @apply max-w-full max-h-96 object-contain mx-auto mb-4;
-}
-
-.preview-info {
-  @apply text-left space-y-3;
-}
-
-.info-row {
-  @apply flex items-center gap-2;
-}
-
-.url-input {
-  @apply flex-1 mr-2;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .toolbar {
-    @apply flex-col gap-4;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    @apply w-full justify-center;
-  }
-
-  .category-filter,
-  .search-box {
-    @apply w-full;
-  }
-
-  .images-grid {
-    @apply grid-cols-2;
-  }
-
-  .image-preview {
-    height: 150px;
-  }
+/* 文本截断样式 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

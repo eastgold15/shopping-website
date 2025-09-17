@@ -1,7 +1,6 @@
 
-import type { ImagesListQueryDto, InsertPartnersDto, PartnersListQueryDto, ProductListQueryDto, SiteConfigListQueryDto, UpdateImagesDto, UpdatePartnersDto, UpdateSortDtoType } from "@backend/types";
+import type { InsertPartnersDto, ListImagesQueryDto, ListProductQueryDto, PartnersListQueryDto, SiteConfigByCategoryQueryDto, SiteConfigListQueryDto, UpdateImagesDto, UpdatePartnersDto, UpdateSortDtoType } from "@backend/types";
 import { client } from "./useTreaty";
-
 const pageDefaultValue = {
   code: 200,
   message: "操作成功",
@@ -424,7 +423,7 @@ export const useCmsApi = () => {
 
     // 产品相关
     products: {
-      list: async (params?: ProductListQueryDto) => {
+      list: async (params?: ListProductQueryDto) => {
         const { data, error } = await client.api.products.get({ query: params })
         if (error) {
           console.error('Products list error:', error)
@@ -488,6 +487,159 @@ export const useCmsApi = () => {
       },
     },
 
+    // 颜色相关
+    colors: {
+      list: async (params?: any) => {
+        const { data, error } = await client.api.colors.get({ query: params })
+        if (error) {
+          console.error('Colors list error:', error)
+          return pageDefaultValue
+        }
+        return data
+      },
+
+      getById: async (id: number) => {
+        const { data, error } = await client.api.colors({ id }).get()
+        if (error) {
+          console.error('Colors getById error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+
+      create: async (data: any) => {
+        const { data: result, error } = await client.api.colors.post(data)
+        if (error) {
+          console.error('Colors create error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      update: async (id: number, data: any) => {
+        const { data: result, error } = await client.api.colors({ id }).put(data)
+        if (error) {
+          console.error('Colors update error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      delete: async (id: number) => {
+        const { data: result, error } = await client.api.colors({ id }).delete()
+        if (error) {
+          console.error('Colors delete error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+    },
+
+    // 尺寸相关
+    sizes: {
+      list: async (params?: any) => {
+        const { data, error } = await client.api.sizes.get({ query: params })
+        if (error) {
+          console.error('Sizes list error:', error)
+          return pageDefaultValue
+        }
+        return data
+      },
+
+      getById: async (id: number) => {
+        const { data, error } = await client.api.sizes({ id }).get()
+        if (error) {
+          console.error('Sizes getById error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+
+      create: async (data: any) => {
+        const { data: result, error } = await client.api.sizes.post(data)
+        if (error) {
+          console.error('Sizes create error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      update: async (id: number, data: any) => {
+        const { data: result, error } = await client.api.sizes({ id }).put(data)
+        if (error) {
+          console.error('Sizes update error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      delete: async (id: number) => {
+        const { data: result, error } = await client.api.sizes({ id }).delete()
+        if (error) {
+          console.error('Sizes delete error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+    },
+
+    // SKU相关
+    skus: {
+      list: async (params?: any) => {
+        const { data, error } = await client.api.skus.get({ query: params })
+        if (error) {
+          console.error('SKUs list error:', error)
+          return pageDefaultValue
+        }
+        return data
+      },
+
+      getByProductId: async (productId: number) => {
+        const { data, error } = await client.api.skus.product({ productId }).get()
+        if (error) {
+          console.error('SKUs getByProductId error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+
+      getById: async (id: number) => {
+        const { data, error } = await client.api.skus({ id }).get()
+        if (error) {
+          console.error('SKUs getById error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+
+      create: async (data: any) => {
+        const { data: result, error } = await client.api.skus.post(data)
+        if (error) {
+          console.error('SKUs create error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      update: async (id: number, data: any) => {
+        const { data: result, error } = await client.api.skus({ id }).put(data)
+        if (error) {
+          console.error('SKUs update error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+
+      delete: async (id: number) => {
+        const { data: result, error } = await client.api.skus({ id }).delete()
+        if (error) {
+          console.error('SKUs delete error:', error)
+          return comDefaultValue
+        }
+        return result
+      },
+    },
+
     // 站点配置相关
     siteConfigs: {
       list: async (params: SiteConfigListQueryDto) => {
@@ -495,6 +647,14 @@ export const useCmsApi = () => {
         if (error) {
           console.error('SiteConfigs list error:', error)
           return pageDefaultValue
+        }
+        return data
+      },
+      all: async (params?: SiteConfigByCategoryQueryDto) => {
+        const { data, error } = await client.api["site-configs"].all.get({ query: params })
+        if (error) {
+          console.error('SiteConfigs all error:', error)
+          return comDefaultValue
         }
         return data
       },
@@ -520,7 +680,7 @@ export const useCmsApi = () => {
 
     // 图片相关
     images: {
-      list: async (params: ImagesListQueryDto) => {
+      list: async (params: ListImagesQueryDto) => {
         const { data, error } = await client.api.images.get({ query: params })
         if (error) {
           console.error('Images list error:', error)
@@ -616,31 +776,59 @@ export const useFrontApi = () => {
     },
 
     products: {
+      // 获取商品详情（前端展示用）
       getById: async (id: number) => {
         const { data, error } = await client.api.products({ id }).get()
         if (error) {
-          console.error('SiteConfigs getByCategory error:', error)
+          console.error('Products getById error:', error)
           return comDefaultValue
         }
         return data
       },
-      list: async (params?: ProductListQueryDto) => {
+      list: async (params?: ListProductQueryDto) => {
         const { data, error } = await client.api.products.get({ query: params })
         if (error) {
           console.error('Products list error:', error)
           return pageDefaultValue
         }
         return data
+      },
+      
+      // 根据slug获取商品详情（前端展示用）
+      getBySlug: async (slug: string) => {
+        const { data, error } = await client.api.products.slug({ slug }).get()
+        if (error) {
+          console.error('Products getBySlug error:', error)
+          return comDefaultValue
+        }
+        return data
+      }
+    },
+    
+    // SKU相关接口（前端展示用）
+    skus: {
+      // 根据商品ID获取所有SKU
+      getByProductId: async (productId: number) => {
+        const { data, error } = await client.api.skus.product({ productId }).get()
+        if (error) {
+          console.error('SKUs getByProductId error:', error)
+          return comDefaultValue
+        }
+        return data
+      },
+      
+      // 根据ID获取SKU详情
+      getById: async (id: number) => {
+        const { data, error } = await client.api.skus({ id }).get()
+        if (error) {
+          console.error('SKUs getById error:', error)
+          return comDefaultValue
+        }
+        return data
       }
     }
   }
-
-
-
-
 };
 export type UnPromisify<T> = T extends Promise<infer U> ? U : T;
 
 
-const res = await useCmsApi().products.list()
-console.log(res)

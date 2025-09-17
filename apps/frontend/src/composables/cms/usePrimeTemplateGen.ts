@@ -1,9 +1,8 @@
-import type { CommonRes, PageData } from "@backend/types";
+import type { CommonRes, PageData, PageRes } from "@backend/types";
 import type {
   BaseQueryParams,
   CrudDialogOptions,
   CrudMode,
-
   PrimeTemplateCrudHandler
 } from "@frontend/types/prime-cms";
 import type { UnPromisify } from "@frontend/utils/handleApi";
@@ -42,8 +41,9 @@ export async function submitForm(formEl: FormInstance | null) {
 export async function genPrimeCmsTemplateData<
   T extends { id: number },
   PageQuery extends BaseQueryParams,
+  TForm extends Record<string, any> = T,
 >(
-  dataCrudHandler: PrimeTemplateCrudHandler<T, Omit<T, "id">, PageQuery>,
+  dataCrudHandler: PrimeTemplateCrudHandler<T, PageQuery, TForm>,
   queryData: Partial<PageQuery>,
 ) {
   // PrimeVue服务
@@ -83,6 +83,16 @@ export async function genPrimeCmsTemplateData<
     };
   });
 
+  // 类型守卫函数，用于检查是否提供了 getList 方法
+  function hasGetList(handler: PrimeTemplateCrudHandler<T, PageQuery, TForm>): handler is PrimeTemplateCrudHandler<T, PageQuery, TForm> & { getList: (query: Partial<PageQuery>) => Promise<PageRes<T[]>> } {
+    return 'getList' in handler;
+  }
+
+  // 类型守卫函数，用于检查是否提供了 getTree 方法
+  function hasGetTree(handler: PrimeTemplateCrudHandler<T, PageQuery, TForm>): handler is PrimeTemplateCrudHandler<T, PageQuery, TForm> & { getTree: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>> } {
+    return 'getTree' in handler;
+  }
+
   // 获取数据方法
   const fetchList = async (params: Partial<PageQuery> = queryParams.value) => {
     try {
@@ -91,6 +101,12 @@ export async function genPrimeCmsTemplateData<
         params,
         (v) => v == null || v === "",
       ) as Partial<PageQuery>;
+
+      // 使用类型守卫确保 getList 存在
+      if (!hasGetList(dataCrudHandler)) {
+        throw new Error('getList 方法未定义');
+      }
+
       const { code, data, message } = await dataCrudHandler.getList(safeParams);
 
       if (code === 200) {
@@ -129,6 +145,12 @@ export async function genPrimeCmsTemplateData<
         params,
         (v) => v == null || v === "",
       ) as Partial<PageQuery>;
+
+      // 使用类型守卫确保 getTree 存在
+      if (!hasGetTree(dataCrudHandler)) {
+        throw new Error('getTree 方法未定义');
+      }
+
       const { code, data, message } = await dataCrudHandler.getTree(safeParams);
 
       if (code === 200) {
@@ -207,7 +229,7 @@ export async function genPrimeCmsTemplateData<
             res = await dataCrudHandler.deletes!(ids);
           }
 
-          if (res.code !== 200) {
+          if (res.code !== 204) {
             toast.add({
               severity: "error",
               summary: "删除失败",
@@ -253,18 +275,12 @@ export async function genPrimeCmsTemplateData<
   const fetchData = async (useTreeTable: boolean = false, params: Partial<PageQuery> = queryParams.value) => {
     if (useTreeTable) {
       // 树形表格使用getTree方法
-      if (dataCrudHandler.getTree) {
-        await fetchTree(params);
-      } else {
-        console.warn('树形表格模式需要提供getTree方法');
-      }
+      // 现在getTree是必需的，不再需要检查是否存在
+      await fetchTree(params);
     } else {
       // 普通表格使用getList方法
-      if (dataCrudHandler.getList) {
-        await fetchList(params);
-      } else {
-        console.warn('列表表格模式需要提供getList方法');
-      }
+      // 现在getList是必需的，不再需要检查是否存在
+      await fetchList(params);
     }
   };
 
@@ -295,4 +311,5 @@ export async function genPrimeCmsTemplateData<
 export type GenCmsTemplateData<
   T extends { id: number },
   PageQuery extends BaseQueryParams,
-> = UnPromisify<ReturnType<typeof genPrimeCmsTemplateData<T, PageQuery>>>;
+  TForm extends Record<string, any> = T,
+> = UnPromisify<ReturnType<typeof genPrimeCmsTemplateData<T, PageQuery, TForm>>>;

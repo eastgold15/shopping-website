@@ -9,6 +9,9 @@ import { categoriesController } from "./modules/category";
 import { imagesController } from "./modules/image";
 import { partnersController } from "./modules/partner";
 import { productsController } from "./modules/product";
+import { colorsController } from "./modules/product/colors.controller"; // 添加颜色控制器导入
+import { sizesController } from "./modules/product/sizes.controller"; // 添加尺寸控制器导入
+import { skusController } from "./modules/product/skus.controller";
 import { siteConfigsController } from "./modules/siteConfig";
 import { uploadsController } from "./modules/upload";
 import { logPlugin } from "./plugins/logger";
@@ -25,11 +28,15 @@ const api = new Elysia({ prefix: "/api" })
   .use(categoriesController)
   .use(advertisementsController)
   .use(productsController)
+  .use(skusController) // 添加SKU控制器
+  .use(colorsController) // 添加颜色控制器
+  .use(sizesController) // 添加尺寸控制器
   .use(siteConfigsController)
+
 
 // .use(ordersController)
 // .use(statisticsController)
-// .use(usersController);
+// .use(usersController)
 
 export const app = new Elysia()
   .use(cors())
@@ -38,7 +45,6 @@ export const app = new Elysia()
       hide: true,
     },
   })
-  .get("/favicon.ico", () => "ssds")
   .use(
     openapi({
       references: fromTypes(
@@ -52,12 +58,15 @@ export const app = new Elysia()
       ),
     }),
   )
+  .get("/favicon.ico", () => "ssds")
   .use(logPlugin)
   .use(err_handler)
   .use(api)
   .listen(Number(process.env.APP_PORT || "3000"));
 
 export type EndApp = typeof app;
+
+
 
 // 构建时版本号 - 避免运行时依赖package.json
 const APP_VERSION = "1.0.71";

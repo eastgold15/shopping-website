@@ -1,8 +1,8 @@
-/**
- * Product 模块统一导出
- * 按照 Elysia 开发指南规范组织
- */
-
-export { productsController } from "./products.controller";
-
-export { ProductsService } from "./products.service";
+export * from "./products.controller";
+export * from "./products.service";
+export * from "./skus.controller";
+export * from "./skus.service";
+export * from "./colors.controller";
+export * from "./colors.service";
+export * from "./sizes.controller";
+export * from "./sizes.service";

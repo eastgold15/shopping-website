@@ -10,19 +10,13 @@ import { UsersService } from "./users.service";
  * 用户管理控制器
  * 处理用户相关的HTTP请求
  */
-export const usersController = new Elysia({ prefix: "/users" })
+export const usersController = new Elysia({ prefix: "/users", tags: ['用戶管理'] })
   .decorate("usersService", new UsersService())
   .model(usersModel)
-  .guard({
-    detail: {
-      tags: ["Users"],
-    },
-  })
-
   // 获取用户列表 - RESTful标准设计，支持角色和状态筛选
   .get(
     "/",
-    async ({ query, usersService }) => {
+    async ({ query, usersService }: { query: any; usersService: UsersService }) => {
       const users = await usersService.getUsers({
         search: query.search,
 
@@ -41,7 +35,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // 根据ID获取用户详情
   .get(
     "/:id",
-    async ({ params, usersService }) => {
+    async ({ params, usersService }: { params: { id: number }; usersService: UsersService }) => {
       const user = await db
         .select()
         .from(usersTable)
@@ -67,7 +61,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // 创建新用户
   .post(
     "/",
-    async ({ body, usersService }) => {
+    async ({ body, usersService }: { body: any; usersService: UsersService }) => {
       const user = await usersService.create(body);
 
       return commonRes(user);
@@ -84,7 +78,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // 更新用户信息
   .put(
     "/:id",
-    async ({ params, body, usersService }) => {
+    async ({ params, body, usersService }: { params: { id: number }; body: any; usersService: UsersService }) => {
       const user = await usersService.update(params.id, body);
 
       return commonRes(user);
@@ -102,7 +96,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // 删除用户（软删除，设置状态为禁用）
   .delete(
     "/:id",
-    async ({ params, usersService }) => {
+    async ({ params, usersService }: { params: { id: number }; usersService: UsersService }) => {
       await usersService.delete(params.id);
       return commonRes(null, 200, "User deleted successfully");
     },
@@ -117,30 +111,10 @@ export const usersController = new Elysia({ prefix: "/users" })
     },
   )
 
-  // // 批量更新用户状态
-  // .patch(
-  //   "/batch-status",
-  //   async ({ body, usersService }) => {
-  //     const updatedCount = await usersService.updateStatusBatch(
-  //       body.userIds,
-  //       body.status,
-  //     );
-
-  //     return commonRes({ updatedCount });
-  //   },
-  //   {
-  //     body: "updateUsersDto",
-  //     detail: {
-  //       summary: "批量更新用户状态",
-  //       description: "批量更新多个用户的状态（启用/禁用）",
-  //     },
-  //   },
-  // )
-
   // 获取用户统计信息 - 作为子资源
   .get(
     "/statistics",
-    async ({ usersService }) => {
+    async ({ usersService }: { usersService: UsersService }) => {
       const stats = await usersService.getStatistics();
 
       return commonRes(stats);
@@ -156,7 +130,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // 根据用户名查找用户 - 保留特殊查询接口
   .get(
     "/by-username/:username",
-    async ({ params, usersService }) => {
+    async ({ params, usersService }: { params: { username: string }; usersService: UsersService }) => {
       const user = await usersService.getByUsername(params.username);
       return commonRes(user);
     },

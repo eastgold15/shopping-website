@@ -4,7 +4,6 @@ const IndexRoutes = [
 	{
 		path: "/",
 		component: HomeLayout,
-
 		children: [
 			{
 				path: "",

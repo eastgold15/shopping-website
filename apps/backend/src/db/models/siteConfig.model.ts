@@ -34,9 +34,9 @@ export const siteConfigModel = {
   selectSiteConfigTable: selectSiteConfigSchema,
   // 创建配置请求参数
   insertSiteConfigDto: insertSiteConfigSchema.omit({ id: true, createdAt: true, updatedAt: true }),
-  
+
   updateSiteConfigDto: updateSiteConfigSchema.omit({ id: true, createdAt: true, updatedAt: true }),
-  
+
   // 批量更新配置DTO
   batchUpdateSiteConfigDto: z.array(z.object({
     key: z.string(),
@@ -48,12 +48,16 @@ export const siteConfigModel = {
     category: z.string().optional(),
     key: z.string().optional(),
   }),
-  
+
   // 按分类查询配置参数
   querySiteConfigByCategoryDto: z.object({
     category: z.string(),
   }),
-  
+
+  querySiteConfigByCategoryOptionalDto: z.object({
+    category: z.string(),
+  }).optional(),
+
   // 按键名查询配置参数
   querySiteConfigByKeysDto: z.object({
     keys: z.array(z.string()),
@@ -68,6 +72,7 @@ export type BatchUpdateSiteConfigDto = z.infer<typeof siteConfigModel.batchUpdat
 export type SelectSiteConfigType = z.infer<typeof siteConfigModel.selectSiteConfigTable>; // 查询返回原始类型
 export type SiteConfigListQueryDto = z.infer<typeof siteConfigModel.querySiteConfigListDto>;
 export type SiteConfigByCategoryQueryDto = z.infer<typeof siteConfigModel.querySiteConfigByCategoryDto>;
+export type SiteConfigByCategoryOptionalQueryDto = z.infer<typeof siteConfigModel.querySiteConfigByCategoryOptionalDto>;
 export type SiteConfigByKeysQueryDto = z.infer<typeof siteConfigModel.querySiteConfigByKeysDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）

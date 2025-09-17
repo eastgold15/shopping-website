@@ -40,7 +40,7 @@
  */
 import { and, asc, desc, type SQL } from "drizzle-orm";
 import type { PgColumn, PgSelect } from "drizzle-orm/pg-core";
-import type { PageData, PaginationOptions } from "../Res";
+import type { PageData, PaginationOptionsType } from "../Res";
 import type { SoftDeletableTable } from "../soft-delete/types";
 import { QueryScope as QueryScopeEnum } from "../soft-delete/types";
 import { createSoftDeleteCondition } from "../soft-delete/utils";
@@ -57,69 +57,69 @@ import { createSoftDeleteCondition } from "../soft-delete/utils";
  * @returns 分页结果
  */
 export async function paginate<T>(
-	db: any, // 数据库实例
-	dataQuery: PgSelect,
-	options: PaginationOptions,
+  db: any, // 数据库实例
+  dataQuery: PgSelect,
+  options: PaginationOptionsType,
 ): Promise<PageData<T>> {
-	const {
-		page,
-		pageSize,
-		orderBy,
-		orderDirection = "asc",
-		scope = QueryScopeEnum.ACTIVE,
-		table,
-	} = options;
+  const {
+    page,
+    pageSize,
+    orderBy,
+    orderDirection = "asc",
+    scope = QueryScopeEnum.ACTIVE,
+    table,
+  } = options;
 
-	// 验证分页参数
-	validatePaginationParams(page, pageSize);
+  // 验证分页参数
+  validatePaginationParams(page, pageSize);
 
-	// 计算偏移量
-	const offset = calculateOffset(page, pageSize);
+  // 计算偏移量
+  const offset = calculateOffset(page, pageSize);
 
-	// 构建查询条件数组
-	const conditions: (SQL | undefined)[] = [];
+  // 构建查询条件数组
+  const conditions: (SQL | undefined)[] = [];
 
-	// 添加软删除条件（如果提供了 table）
-	if (table && "deletedAt" in table) {
-		const softDeleteCondition = createSoftDeleteCondition(table, scope);
-		if (softDeleteCondition) {
-			conditions.push(softDeleteCondition);
-		}
-	}
+  // 添加软删除条件（如果提供了 table）
+  if (table && "deletedAt" in table) {
+    const softDeleteCondition = createSoftDeleteCondition(table, scope);
+    if (softDeleteCondition) {
+      conditions.push(softDeleteCondition);
+    }
+  }
 
-	// 合并所有条件
-	const whereCondition = conditions.length > 0 ? and(...conditions.filter(Boolean)) : undefined;
+  // 合并所有条件
+  const whereCondition = conditions.length > 0 ? and(...conditions.filter(Boolean)) : undefined;
 
-	// 应用条件到数据查询
-	let filteredDataQuery = dataQuery;
-	if (whereCondition) {
-		filteredDataQuery = dataQuery.where(whereCondition);
-	}
+  // 应用条件到数据查询
+  let filteredDataQuery = dataQuery;
+  if (whereCondition) {
+    filteredDataQuery = dataQuery.where(whereCondition);
+  }
 
-	// 构建最终数据查询
-	let finalDataQuery = filteredDataQuery.limit(pageSize).offset(offset);
+  // 构建最终数据查询
+  let finalDataQuery = filteredDataQuery.limit(pageSize).offset(offset);
 
-	// 添加排序（建议使用唯一键如主键确保分页稳定性）
-	if (orderBy) {
-		finalDataQuery =
-			orderDirection === "desc"
-				? finalDataQuery.orderBy(desc(orderBy))
-				: finalDataQuery.orderBy(asc(orderBy));
-	}
+  // 添加排序（建议使用唯一键如主键确保分页稳定性）
+  if (orderBy) {
+    finalDataQuery =
+      orderDirection === "desc"
+        ? finalDataQuery.orderBy(desc(orderBy))
+        : finalDataQuery.orderBy(asc(orderBy));
+  }
 
-	// 创建计数查询（使用相同的条件）
-	let countQuery = filteredDataQuery;
+  // 创建计数查询（使用相同的条件）
+  let countQuery = filteredDataQuery;
 
-	// 并行执行数据查询和计数查询
-	const [data, total] = await Promise.all([
-		finalDataQuery,
-		db.$count(countQuery), // 使用 Drizzle 官方推荐的 $count() 方法
-	]);
+  // 并行执行数据查询和计数查询
+  const [data, total] = await Promise.all([
+    finalDataQuery,
+    db.$count(countQuery), // 使用 Drizzle 官方推荐的 $count() 方法
+  ]);
 
-	return {
-		items: data as T[],
-		meta: buildPageMeta(total, page, pageSize),
-	};
+  return {
+    items: data as T[],
+    meta: buildPageMeta(total, page, pageSize),
+  };
 }
 
 
@@ -133,23 +133,23 @@ export async function paginate<T>(
  * @returns 分页器函数
  */
 export function createPaginator<T>(
-	db: any,
-	dataQuery: PgSelect,
-	defaultOrderBy?: PgColumn | SQL | SQL.Aliased,
-	table?: SoftDeletableTable,
+  db: any,
+  dataQuery: PgSelect,
+  defaultOrderBy?: PgColumn | SQL | SQL.Aliased,
+  table?: SoftDeletableTable,
 ) {
-	return async (options: Partial<PaginationOptions>): Promise<PageData<T>> => {
-		const finalOptions: PaginationOptions = {
-			page: options.page || 1,
-			pageSize: options.pageSize || 10,
-			orderBy: options.orderBy || defaultOrderBy,
-			orderDirection: options.orderDirection || "asc",
-			scope: options.scope,
-			table: options.table || table,
-		};
+  return async (options: Partial<PaginationOptionsType>): Promise<PageData<T>> => {
+    const finalOptions: PaginationOptionsType = {
+      page: options.page || 1,
+      pageSize: options.pageSize || 10,
+      orderBy: options.orderBy || defaultOrderBy,
+      orderDirection: options.orderDirection || "asc",
+      scope: options.scope,
+      table: options.table || table,
+    };
 
-		return paginate<T>(db, dataQuery, finalOptions);
-	};
+    return paginate<T>(db, dataQuery, finalOptions);
+  };
 }
 
 /**
@@ -159,12 +159,12 @@ export function createPaginator<T>(
  * @throws Error 当参数无效时抛出错误
  */
 export function validatePaginationParams(page: number, pageSize: number): void {
-	if (!Number.isInteger(page) || page < 1) {
-		throw new Error("页码必须是大于等于1的整数");
-	}
-	if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
-		throw new Error("每页大小必须是1-100之间的整数");
-	}
+  if (!Number.isInteger(page) || page < 1) {
+    throw new Error("页码必须是大于等于1的整数");
+  }
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    throw new Error("每页大小必须是1-100之间的整数");
+  }
 }
 
 /**
@@ -174,7 +174,7 @@ export function validatePaginationParams(page: number, pageSize: number): void {
  * @returns 偏移量
  */
 export function calculateOffset(page: number, pageSize: number): number {
-	return (page - 1) * pageSize;
+  return (page - 1) * pageSize;
 }
 
 /**
@@ -184,7 +184,7 @@ export function calculateOffset(page: number, pageSize: number): number {
  * @returns 总页数
  */
 export function calculateTotalPages(total: number, pageSize: number): number {
-	return Math.ceil(total / pageSize);
+  return Math.ceil(total / pageSize);
 }
 
 /**
@@ -195,10 +195,10 @@ export function calculateTotalPages(total: number, pageSize: number): number {
  * @returns 分页元数据
  */
 export function buildPageMeta(total: number, page: number, pageSize: number) {
-	return {
-		total,
-		page,
-		pageSize,
-		totalPages: calculateTotalPages(total, pageSize),
-	};
+  return {
+    total,
+    page,
+    pageSize,
+    totalPages: calculateTotalPages(total, pageSize),
+  };
 }

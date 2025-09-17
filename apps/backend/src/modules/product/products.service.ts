@@ -1,5 +1,4 @@
-import { InsertProductDto, productImagesTable, ProductListQueryDto, productsModel, productsTable, SelectProductType, UpdateProductDto } from "@backend/db/models/product.model";
-
+import { InsertProductDto, productImagesTable, ProductListQueryDto, productsModel, productsTable, SelectProductType, SelectProductDetailVo, UpdateProductDto } from "@backend/db/models/product.model";
 import { categoriesTable, imagesTable } from "@backend/db/models";
 import {
   handleDatabaseError,
@@ -17,6 +16,7 @@ import {
   or,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
+import { SkusService } from "./skus.service";
 
 /**
  * 商品服务类
@@ -73,7 +73,7 @@ export class ProductsService extends BaseService<
   /**
    * 获取分页商品列表
    */
-  static async getList(query: ProductListQueryDto) {
+  static async getList(query: ListProductQueryDto) {
     try {
       // 处理查询参数
       const {
@@ -101,7 +101,7 @@ export class ProductsService extends BaseService<
 
       if (categoryId) {
         conditions.push(
-          eq(productsTable.categoryId, parseInt(categoryId as string)),
+          eq(productsTable.categoryId, categoryId),
         );
       }
 
@@ -134,7 +134,7 @@ export class ProductsService extends BaseService<
           categoryName: categoriesTable.name,
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: productImagesTable.isMain,
           },
@@ -235,10 +235,11 @@ export class ProductsService extends BaseService<
       throw handleDatabaseError(error);
     }
   }
+
   /**
-   * 根据ID获取商品详情
+   * 根据ID获取商品详情（包含SKU信息）
    */
-  static async getById(id: number) {
+  static async getById(id: number): Promise<SelectProductDetailVo> {
     try {
       // 使用与列表查询相同的关联方式
       const rawProduct = await db
@@ -247,7 +248,7 @@ export class ProductsService extends BaseService<
           categoryName: categoriesTable.name,
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: productImagesTable.isMain,
           },
@@ -290,9 +291,16 @@ export class ProductsService extends BaseService<
           return 0;
         });
 
+      // 如果商品有多规格，获取SKU信息
+      let skus = [];
+      if (baseProduct.hasVariants) {
+        skus = await SkusService.getByProductId(id);
+      }
+
       return {
         ...baseProduct,
         images,
+        skus, // 添加SKU信息
       };
     } catch (error) {
       throw handleDatabaseError(error);
@@ -325,7 +333,7 @@ export class ProductsService extends BaseService<
       const productImages = await db
         .select({
           id: imagesTable.id,
-          url: imagesTable.url,
+          url: imagesTable.imageUrl,
           fileName: imagesTable.fileName,
           isMain: productImagesTable.isMain,
         })

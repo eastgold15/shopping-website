@@ -3,15 +3,15 @@ import ClientLayout from "@frontend/layouts/ClientLayout.vue";
 import Home from "@frontend/pages/Home.vue";
 import ProductDetail from "@frontend/pages/ProductDetail.vue";
 import Search from "@frontend/pages/Search.vue";
-import Test from "@frontend/pages/test.vue";
+
 
 const clientRoutes = [
   {
-    path: "/",
+    path: "/home",
     component: ClientLayout,
     children: [
       {
-        path: "home",
+        path: "/",
         name: "home",
         component: Home,
       },
@@ -24,11 +24,6 @@ const clientRoutes = [
         path: "search",
         name: "search",
         component: Search,
-      },
-      {
-        path: "test",
-        name: "test",
-        component: Test,
       },
     ],
   },

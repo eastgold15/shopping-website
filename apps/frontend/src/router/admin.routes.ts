@@ -9,6 +9,9 @@ import AdvertisementManagement from "@frontend/pages/admin/AdvertisementManageme
 import CategoryManagement from "@frontend/pages/admin/CategoryManagement.vue";
 import ProductsManagement from "@frontend/pages/admin/ProductsManagement.vue";
 import SiteConfigForm from "@frontend/pages/admin/SiteConfigForm.vue";
+import ColorsManagement from "@frontend/pages/admin/ColorsManagement.vue";
+import SizesManagement from "@frontend/pages/admin/SizesManagement.vue";
+import SkusManagement from "@frontend/pages/admin/SkusManagement.vue";
 
 const adminRoutes = [{
   path: "/admin",
@@ -53,6 +56,21 @@ const adminRoutes = [{
       path: "partners",
       name: "partners-management",
       component: PrimePartnersManagement,
+    },
+    {
+      path: "colors",
+      name: "colors-management",
+      component: ColorsManagement,
+    },
+    {
+      path: "sizes",
+      name: "sizes-management",
+      component: SizesManagement,
+    },
+    {
+      path: "skus",
+      name: "skus-management",
+      component: SkusManagement,
     },
     // 	{
     // 		path: "orders",
