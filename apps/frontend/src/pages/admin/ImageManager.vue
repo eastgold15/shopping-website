@@ -122,12 +122,13 @@ onMounted(async () => {
 
 // 分类选项
 const categoryOptions = [
-  { label: "全部", value: undefined },
-  { label: "通用", value: "general" },
-  { label: "产品", value: "product" },
-  { label: "用户头像", value: "avatar" },
+  { label: "全部", value: "all" },
+  { label: "常规图", value: "general" },
   { label: "轮播图", value: "banner" },
-  { label: "其他", value: "other" },
+  { label: "商品图片", value: "product" },
+  { label: "logo图片", value: "logo" },
+  { label: "头像图片", value: "avatar" },
+  { label: "其他图片", value: "other" },
 ];
 
 // 上传相关

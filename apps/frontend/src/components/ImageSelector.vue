@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type {
-  ImageModel,
-  ImageQueryDto,
-} from "@backend/modules/image/images.model";
+
+import type { ListImagesQueryDto, SelectImagesVo } from "@backend/types";
 import {
   formatDate,
   formatSize,
@@ -20,7 +18,11 @@ interface Props {
 const visible = defineModel("visible", { default: false });
 
 // Emits
-type Emits = (e: "select", imageUrl: string, imageData: ImageModel) => void;
+type Emits = (
+  e: "select",
+  imageUrl: string,
+  imageData: SelectImagesVo
+) => void;
 
 const props = withDefaults(defineProps<Props>(), {
   category: "all",
@@ -30,7 +32,7 @@ const emit = defineEmits<Emits>();
 
 // 响应式数据
 const loading = ref(false);
-const images = ref<ImageModel[]>([]);
+const images = ref<SelectImagesVo[]>([]);
 const searchQuery = ref("");
 const selectedCategory = ref(props.category);
 const hoveredImage = ref<number | undefined>(undefined);
@@ -44,10 +46,12 @@ const meta = reactive({
 // 分类选项
 const categoryOptions = [
   { label: "全部", value: "all" },
-  { label: "轮播图", value: "carousel" },
+  { label: "常规图", value: "general" },
+  { label: "轮播图", value: "banner" },
   { label: "商品图片", value: "product" },
-  { label: "分类图片", value: "category" },
-  { label: "其他", value: "general" },
+  { label: "logo图片", value: "logo" },
+  { label: "头像图片", value: "avatar" },
+  { label: "其他图片", value: "other" },
 ];
 
 // 计算属性
@@ -60,7 +64,7 @@ const categoryOptions = [
 const loadImages = async () => {
   loading.value = true;
   try {
-    const params: ImageQueryDto = {
+    const params: ListImagesQueryDto = {
       page: meta.page,
       pageSize: meta.pageSize,
     };
@@ -76,11 +80,6 @@ const loadImages = async () => {
     }
 
     const { code, data, message } = await useCmsApi().images.list(params);
-
-    console.log(code, data, message);
-    console.log("data", data);
-
-    console.log("code", code);
     if (code !== 200) {
       toast.add({
         severity: "error",
@@ -135,9 +134,13 @@ const searchImages = () => {
 /**
  * 选择图片
  */
-const selectImage = (image: ImageModel) => {
-  const imageUrl = getImageUrl(image.url);
+const selectImage = (image: SelectImagesVo) => {
+  // 设置 v-model 值
+  // modelValue.value = image.id
+  const imageUrl = getImageUrl(image.imageUrl);
   emit("select", imageUrl, image);
+  // 关闭对话框
+  visible.value = false;
 };
 
 /**
@@ -146,6 +149,22 @@ const selectImage = (image: ImageModel) => {
 const getCategoryLabel = (category: string): string => {
   const option = categoryOptions.find((opt) => opt.value === category);
   return option?.label || category;
+};
+
+/**
+ * 获取分类图标
+ */
+const getCategoryIcon = (category: string): string => {
+  const iconMap: Record<string, string> = {
+    all: 'pi pi-images',
+    general: 'pi pi-image',
+    banner: 'pi pi-desktop',
+    product: 'pi pi-shopping-bag',
+    logo: 'pi pi-star',
+    avatar: 'pi pi-user',
+    other: 'pi pi-folder'
+  };
+  return iconMap[category] || 'pi pi-image';
 };
 
 /**
@@ -188,15 +207,43 @@ onMounted(() => {
 <template>
   <Dialog v-model:visible="visible" modal :header="'选择图片'" class="w-80vw h-80vh">
     <!-- 工具栏 -->
-    <div class=" flex justify-between items-center ">
-      <!-- 分类筛选 -->
-      <Select v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
-        placeholder="选择分类" @change="filterByCategory">
-        <template #emptyfilter></template>
-      </Select>
+    <div class="flex justify-between items-center gap-4">
+      <!-- 分类筛选 - 使用自定义模板的Select -->
+      <div class="card flex justify-center">
+        <Select v-model="selectedCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
+          placeholder="选择分类" @change="filterByCategory" class="w-full md:w-56">
+          <template #value="slotProps">
+            <div v-if="slotProps.value" class="flex items-center">
+              <i :class="getCategoryIcon(slotProps.value)" class="mr-2" style="width: 18px" />
+              <div>{{ getCategoryLabel(slotProps.value) }}</div>
+            </div>
+            <span v-else>
+              {{ slotProps.placeholder }}
+            </span>
+          </template>
+          <template #option="slotProps">
+            <div class="flex items-center">
+              <i :class="getCategoryIcon(slotProps.option.value)" class="mr-2" style="width: 18px" />
+              <div>{{ slotProps.option.label }}</div>
+            </div>
+          </template>
+          <template #dropdownicon>
+            <i class="pi pi-filter" />
+          </template>
+          <template #header>
+            <div class="font-medium p-3">图片分类</div>
+          </template>
+          <template #footer>
+            <div class="p-3">
+              <Button label="刷新" fluid severity="secondary" variant="text" size="small" icon="pi pi-refresh"
+                @click="loadImages" />
+            </div>
+          </template>
+        </Select>
+      </div>
 
       <!-- 搜索框 -->
-      <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" />
+      <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" class="flex-1" />
     </div>
 
     <!-- 图片网格 -->
@@ -218,7 +265,7 @@ onMounted(() => {
           @mouseleave="hoveredImage = undefined" @click="selectImage(image)">
           <!-- 图片预览 -->
           <div class="image-preview">
-            <img :src="getImageUrl(image.url)" :alt="image.fileName" class="preview-img" loading="lazy" />
+            <img :src="getImageUrl(image.imageUrl)" :alt="image.fileName" class="preview-img" loading="lazy" />
 
             <div class="image-overlay">
               <Button icon="pi pi-check" class="p-button-rounded p-button-sm p-button-success" label="选择" />

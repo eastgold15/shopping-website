@@ -10,7 +10,7 @@ import { UsersService } from "./users.service";
  * 用户管理控制器
  * 处理用户相关的HTTP请求
  */
-export const usersController = new Elysia({ prefix: "/users", tage: ['用戶管理'] })
+export const usersController = new Elysia({ prefix: "/users", tags: ['用戶管理'] })
   .decorate("usersService", new UsersService())
   .model(usersModel)
   // 获取用户列表 - RESTful标准设计，支持角色和状态筛选

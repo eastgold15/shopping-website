@@ -5,16 +5,14 @@ import {
   InternalServerError,
   NotFoundError,
 } from "@backend/utils/error/customError";
-import { paginate } from "@backend/utils/services/pagination";
 import {
   and,
-  asc,
   eq,
   getTableColumns,
   like,
-  or
+  or,
+  sql
 } from "drizzle-orm";
-import { imagesTable } from "../../db/models/images.model";
 import { InsertPartnersDto, PartnersListQueryDto, partnersTable, UpdatePartnersDto } from "../../db/models/partners.model";
 
 
@@ -30,19 +28,21 @@ export class PartnersService {
    * @returns 启用的合作伙伴列表，按排序权重排序
    */
   async getActivePartnersList() {
+    // 使用Drizzle ORM的关联查询功能
+    const result = await db.query.partnersTable.findMany({
+      with: {
+        imageRef: true, // 关联查询图片信息
+      },
+      where: (partners, { eq }) => eq(partners.isActive, true),
+      orderBy: (partners, { asc }) => asc(partners.sortOrder),
+    });
 
-    const { image_id, ...rest } = getTableColumns(partnersTable);
-    return await db
-      .select({
-        ...rest,
-        imageUrl: imagesTable.imageUrl, // 添加图片URL字段  
-      })
-      .from(partnersTable)
-      .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
-      .where(eq(partnersTable.isActive, true))
-      .orderBy(asc(partnersTable.sortOrder));
-
-
+    // 转换数据格式以匹配前端期望
+    return result.map(partner => ({
+      ...partner,
+      imageUrl: partner.imageRef?.imageUrl || null,
+      image: undefined, // 移除image字段，因为我们现在有imageRef
+    }));
   }
 
   /**
@@ -61,22 +61,58 @@ export class PartnersService {
       isActive,
     } = params;
 
-    // 构建基础查询
-    let baseQuery = db
-      .select({
-        ...this.columns,
-        image: imagesTable.imageUrl, // 添加图片URL字段
-      })
-      .from(partnersTable)
-      .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
-      .$dynamic();
+    // 使用Drizzle ORM的关联查询功能
+    const result = await db.query.partnersTable.findMany({
+      with: {
+        imageRef: true, // 关联查询图片信息
+      },
+      where: (partners, { and, like, eq, or }) => {
+        const conditions = [];
+
+        // search参数：使用or连接多个字段搜索
+        if (search) {
+          conditions.push(
+            or(
+              like(partners.name, `%${search}%`),
+              like(partners.description, `%${search}%`),
+            ),
+          );
+        }
+
+        // 独立的精确搜索条件
+        if (name) {
+          conditions.push(like(partners.name, `%${name}%`));
+        }
+        if (isActive !== undefined) {
+          conditions.push(eq(partners.isActive, isActive));
+        }
+
+        return conditions.length > 0 ? and(...conditions) : undefined;
+      },
+      orderBy: (partners, { asc, desc }) => {
+        const sortFieldMap: Record<string, any> = {
+          name: partners.name,
+          sortOrder: partners.sortOrder,
+          createdAt: partners.createdAt,
+          updatedAt: partners.updatedAt,
+        };
+        // 确定排序字段和方向
+        const orderBy = sortFieldMap[sortBy] || partners.sortOrder;
+        return sortOrder === "asc" ? asc(orderBy) : desc(orderBy);
+      },
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    });
+
+    // 构建计算总数的查询，考虑搜索条件
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(partnersTable);
 
     // 搜索条件构建
-    const conditions = [];
+    const whereConditions = [];
 
     // search参数：使用or连接多个字段搜索
     if (search) {
-      conditions.push(
+      whereConditions.push(
         or(
           like(partnersTable.name, `%${search}%`),
           like(partnersTable.description, `%${search}%`),
@@ -86,35 +122,30 @@ export class PartnersService {
 
     // 独立的精确搜索条件
     if (name) {
-      conditions.push(like(partnersTable.name, `%${name}%`));
+      whereConditions.push(like(partnersTable.name, `%${name}%`));
     }
     if (isActive !== undefined) {
-      conditions.push(eq(partnersTable.isActive, isActive));
+      whereConditions.push(eq(partnersTable.isActive, isActive));
     }
 
     // 应用查询条件
-    if (conditions.length > 0) {
-      baseQuery = baseQuery.where(and(...conditions));
+    if (whereConditions.length > 0) {
+      // @ts-ignore
+      countQuery = countQuery.where(and(...whereConditions));
     }
 
-    // 排序字段映射
-    const sortFieldMap: Record<string, any> = {
-      name: partnersTable.name,
-      sortOrder: partnersTable.sortOrder,
-      createdAt: partnersTable.createdAt,
-      updatedAt: partnersTable.updatedAt,
+    // @ts-ignore
+    const totalCountResult = await countQuery;
+    const totalCount = Number(totalCountResult[0].count);
+    return {
+      items: result,
+      meta: {
+        page,
+        pageSize,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
     };
-    // 确定排序字段和方向
-    const orderBy = sortFieldMap[sortBy] || partnersTable.sortOrder;
-    const orderDirection = sortOrder as "asc" | "desc";
-
-    // 使用统一的分页函数
-    return await paginate(db, baseQuery, {
-      page,
-      pageSize,
-      orderBy,
-      orderDirection,
-    });
   }
 
   /**
@@ -123,19 +154,23 @@ export class PartnersService {
    * @returns 合作伙伴详情或null
    */
   async getPartnerById(id: number) {
-    const [partner] = await db
-      .select({
-        ...this.columns,
-        image: imagesTable.imageUrl, // 添加图片URL字段
-      })
-      .from(partnersTable)
-      .leftJoin(imagesTable, eq(partnersTable.image_id, imagesTable.id))
-      .where(eq(partnersTable.id, id));
+    const result = await db.query.partnersTable.findFirst({
+      with: {
+        imageRef: true, // 关联查询图片信息
+      },
+      where: (partners, { eq }) => eq(partners.id, id),
+    });
 
-    if (!partner) {
+    if (!result) {
       throw new NotFoundError("合作伙伴不存在", "com");
     }
-    return partner;
+
+    // 转换数据格式以匹配前端期望
+    return {
+      ...result,
+      imageUrl: result.imageRef?.imageUrl || null,
+      image: undefined, // 移除image字段，因为我们现在有imageRef
+    };
   }
 
   /**

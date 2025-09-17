@@ -2,6 +2,7 @@ import { FOLDDER_TYPE } from "@backend/modules/oss";
 import { relations } from "drizzle-orm";
 import { integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { t } from "elysia";
 import { z } from "zod/v4";
 import { advertisementsTable } from "./advertisements.model";
 import { orderItemsTable } from "./orderItems.model";
@@ -17,7 +18,7 @@ import { UnoQueryZod } from "./utils";
 export const imagesTable = pgTable("images", {
   id: serial("id").primaryKey(), // 图片唯一标识
   fileName: varchar("file_name", { length: 255 }).notNull(), // 存储文件名
-  imageUrl: text("url").notNull().unique(), // 图片访问URL - 添加唯一约束用于外键引用
+  imageUrl: text("image_url").notNull().unique(), // 图片访问URL - 添加唯一约束用于外键引用
   category: varchar("category", { length: 50 }).notNull().default("general"), // 图片分类
   fileSize: integer("file_size").notNull(), // 文件大小(字节)
   mimeType: varchar("mime_type", { length: 100 }).notNull(), // 文件MIME类型
@@ -94,31 +95,31 @@ export const imagesRelations = relations(imagesTable, ({ many }) => ({
 // Zod 模型定义
 export const uploadsModel = {
   // 单文件上传请求参数
-  UploadImageDto: z.object({
-    file: z.any(), // 文件对象，在运行时验证
-    folder: z.enum([
+  UploadImageDto: t.Object({
+    file: t.File(),
+    folder: t.UnionEnum([
       FOLDDER_TYPE.GENERAL,
       FOLDDER_TYPE.BANNER,
       FOLDDER_TYPE.PRODUCT,
       FOLDDER_TYPE.LOGO,
       FOLDDER_TYPE.USER_AVATAR,
       FOLDDER_TYPE.OTHER,
-    ]).optional().default(FOLDDER_TYPE.GENERAL),
+    ])
   }),
   // 多文件上传请求参数
-  UploadImagesDto: z.object({
-    files: z.array(z.any()).min(1, "至少需要上传一个文件"), // 文件数组，在运行时验证
-    folder: z.enum([
+  UploadImagesDto: t.Object({
+    files: t.Files(),
+    folder: t.UnionEnum([
       FOLDDER_TYPE.GENERAL,
       FOLDDER_TYPE.BANNER,
       FOLDDER_TYPE.PRODUCT,
       FOLDDER_TYPE.LOGO,
       FOLDDER_TYPE.USER_AVATAR,
       FOLDDER_TYPE.OTHER,
-    ]).optional().default(FOLDDER_TYPE.GENERAL),
+    ])
   })
 };
 // 导出 Zod 推断类型
-export type UploadImageDto = z.infer<typeof uploadsModel.UploadImageDto>;
-export type UploadImagesDto = z.infer<typeof uploadsModel.UploadImagesDto>
+export type UploadImageDto = typeof uploadsModel.UploadImageDto.static
+export type UploadImagesDto = typeof uploadsModel.UploadImagesDto.static
 

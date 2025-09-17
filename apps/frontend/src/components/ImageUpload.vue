@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatSize } from "@frontend/utils/formatUtils";
+import type { FileUploadSelectEvent } from "primevue/fileupload";
 import { useToast } from "primevue/usetoast";
 import { ref } from "vue";
 
@@ -9,6 +10,8 @@ interface Props {
 }
 
 const visible = defineModel("visible", { default: false });
+
+
 
 const props = withDefaults(defineProps<Props>(), {
   category: "general",
@@ -29,14 +32,26 @@ const totalSize = ref(0);
 const totalSizePercent = ref(0);
 const selectedFiles = ref<File[]>([]);
 
+const onSelectedFiles = (event: FileUploadSelectEvent) => {
+  selectedFiles.value = event.files;
+  // 计算总大小
+  totalSize.value = 0;
+  totalSizePercent.value = 0;
+  event.files.forEach((file: File) => {
+    totalSize.value += file.size;
+  });
+  // 计算总大小百分比（基于5MB限制）
+  totalSizePercent.value = Math.round((totalSize.value / 5000000) * 100);
+}
 // 分类选项
 const categoryOptions = [
-  { label: "通用", value: "general" },
-  { label: "产品", value: "product" },
-  { label: "用户头像", value: "avatar" },
+  { label: "全部", value: "all" },
+  { label: "常规图", value: "general" },
   { label: "轮播图", value: "banner" },
-  { label: "logo", value: "logo" },
-  { label: "其他", value: "other" },
+  { label: "商品图片", value: "product" },
+  { label: "logo图片", value: "logo" },
+  { label: "头像图片", value: "avatar" },
+  { label: "其他图片", value: "other" },
 ];
 
 /**
@@ -54,28 +69,71 @@ const getUploadUrl = () => {
 };
 
 /**
- * 获取上传请求头
+ * 自定义上传处理
  */
-const getUploadHeaders = () => {
-  return {
-    Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-  };
-};
+const customUpload = async (event: any) => {
+  if (!uploadCategory.value) {
+    toast.add({
+      severity: "warn",
+      summary: "请选择分类",
+      detail: "请先选择图片分类",
+      life: 3000,
+    });
+    return;
+  }
 
-/**
- * 文件选择事件
- */
-const onSelectedFiles = (event: any) => {
-  totalSize.value = 0;
-  totalSizePercent.value = 0;
-  selectedFiles.value = event.files || [];
+  uploading.value = true;
 
-  event.files.forEach((file: File) => {
-    totalSize.value += file.size;
-  });
+  try {
+    // 构造 FormData
+    const formData = new FormData();
 
-  // 计算总大小百分比（基于5MB限制）
-  totalSizePercent.value = Math.round((totalSize.value / 5000000) * 100);
+    // 根据上传URL决定如何添加文件
+    if (getUploadUrl().endsWith('/image')) {
+      // 单文件上传
+      if (selectedFiles.value.length > 0 && selectedFiles.value[0]) {
+        const file = selectedFiles.value[0];
+        formData.append('file', file, file.name);
+        formData.append('folder', uploadCategory.value);
+      }
+    } else {
+      // 多文件上传
+      selectedFiles.value.forEach((file) => {
+        formData.append('files', file, file.name);
+      });
+      formData.append('folder', uploadCategory.value);
+    }
+
+    // 发送请求
+    const response = await fetch(getUploadUrl(), {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem("token") || ""}`,
+      }
+    });
+
+    const result = await response.json();
+
+    // 模拟 PrimeVue 的上传完成事件
+    const fakeEvent = {
+      xhr: {
+        response: JSON.stringify(result)
+      }
+    };
+
+    onUploadComplete(fakeEvent);
+  } catch (error) {
+    console.error("Upload error:", error);
+    toast.add({
+      severity: "error",
+      summary: "上传失败",
+      detail: (error as Error).message,
+      life: 3000,
+    });
+  } finally {
+    uploading.value = false;
+  }
 };
 
 /**
@@ -95,8 +153,8 @@ const uploadFiles = async (uploadCallback: Function) => {
   uploading.value = true;
 
   try {
-    // 调用PrimeVue的上传回调
-    uploadCallback();
+    // 使用自定义上传而不是 PrimeVue 的默认上传
+    await customUpload(uploadCallback);
   } catch (error) {
     console.error("Upload error:", error);
     toast.add({
@@ -157,9 +215,9 @@ const onUploadComplete = (event: any) => {
       </div>
 
       <!-- 图片上传组件 -->
-      <FileUpload name="files" :url="getUploadUrl()" @upload="onUploadComplete($event)" :multiple="true"
-        accept="image/*" :maxFileSize="5000000" @select="onSelectedFiles" :headers="getUploadHeaders()"
-        :disabled="uploading">
+      <FileUpload name="files" @upload="onUploadComplete($event)" :multiple="true" accept="image/*"
+        :maxFileSize="5000000" @select="onSelectedFiles" :disabled="uploading" :customUpload="true"
+        @uploader="customUpload">
         <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
           <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
             <div class="flex gap-2">

@@ -2,21 +2,26 @@ import { commonRes, uploadsModel } from "@backend/types";
 import { Elysia } from "elysia";
 import { UploadService } from "./uploads.service";
 
-
-
-
 /**
  * 文件上传控制器
  * 处理文件上传相关的HTTP请求
  */
-export const uploadsController = new Elysia({ prefix: "/upload", tages: ["Upload"] })
+export const uploadsController = new Elysia({ prefix: "/upload", tags: ["Upload"] })
   .model(uploadsModel)
   .decorate('uploadService', new UploadService)
   // 上传图片
   .post(
     "/image",
-    async ({ body: { file, folder }, uploadService }) => {
-      // 将单个文件转换为数组，调用批量上传服务
+    async ({ body, uploadService }) => {
+      // 处理单文件上传 - 支持 file 或 files[0] 格式
+      const file = body.file
+      const folder = body.folder || "general";
+
+      if (!file) {
+        return commonRes(null, 400, "文件不能为空");
+      }
+
+      // 调用批量上传服务
       const result = await uploadService.uploadImages({
         files: [file],
         folder,
@@ -36,8 +41,15 @@ export const uploadsController = new Elysia({ prefix: "/upload", tages: ["Upload
   .post(
     "/images",
     async ({ body, uploadService }) => {
+      const files = body.files;
+      const folder = body.folder || "general";
+
+      if (!files || files.length === 0) {
+        return commonRes(null, 400, "至少需要上传一个文件");
+      }
+
       // 直接调用批量上传服务
-      const result = await uploadService.uploadImages(body);
+      const result = await uploadService.uploadImages({ files, folder });
       return commonRes(result);
     },
     {

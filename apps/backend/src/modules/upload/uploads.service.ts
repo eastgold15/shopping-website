@@ -27,7 +27,7 @@ export class UploadService {
 
           // 上传到OSS
           const key = `${folder}/${fileName}`;
-          const url = await ossService.uploadFile(buffer, key, file.type);
+          const url = await ossService.uploadFileDirect(buffer, key, file.type);
 
           const fileInfo: FileInfo = {
             url,
@@ -79,7 +79,7 @@ export class UploadService {
   /**
    * 批量上传图片
    */
-  async uploadImages({ files, folder = "general" }: UploadImagesDto) {
+  async uploadImages({ files, folder }: UploadImagesDto) {
     try {
       const uploadPromises = files.map(async (file) => {
         try {

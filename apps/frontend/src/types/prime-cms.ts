@@ -8,6 +8,7 @@ import type { FormInstance } from "@primevue/forms";
 // CRUD 操作模式
 export type CrudMode = "NEW" | "EDIT" | "READ";
 
+
 /**
  * CRUD 控制器权限
  */
@@ -58,20 +59,17 @@ export interface BaseQueryParams {
 }
 
 /**
- * 通用CRUD处理器接口
+ * 通用CRUD处理器接口 - 至少需要提供 getList 或 getTree 方法之一
  */
-export interface PrimeTemplateCrudHandler<
+export type PrimeTemplateCrudHandler<
   T extends { id: number },
-  TBase,
   PageQuery extends BaseQueryParams,
-> {
-  // 查询 → 返回带id的数据 (二选一：普通列表或树形数据)
-  getList?: (query: Partial<PageQuery>) => Promise<PageRes<T[]>>;
-  getTree?: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>>;
-  // 新增 → 必须用 TBase（禁止传入id）
-  create: (data: TBase) => Promise<CommonRes<null>>;
-  // 修改 → 必须用 TModel（强制要求id）
-  update: (id: number, data: T) => Promise<CommonRes<null>>;
+  TForm extends Record<string, any> = T,
+> = {
+  // 新增 → 必须用 TForm（禁止传入id）
+  create: (data: Omit<TForm, "id">) => Promise<CommonRes<null>>;
+  // 修改 → 必须用 TForm（强制要求id）
+  update: (id: number, data: TForm) => Promise<CommonRes<null>>;
   delete?: (id: number) => Promise<CommonRes<null>>;
   deletes?: (ids: number[]) => Promise<CommonRes<null>>;
   // 外部处理内部弹窗的方法
@@ -83,16 +81,28 @@ export interface PrimeTemplateCrudHandler<
   // 回调
   onFetchSuccess?: (data: PageData<T[]>) => Promise<void>;
   // 转换提交数据的方法
-  transformSubmitData?: TransformSubmitData<T>;
-}
+  transformSubmitData?: TransformSubmitData<TForm>;
+} & (
+    // 要求至少提供 getList 或 getTree 方法之一
+    | {
+      // 查询 → 返回带id的数据 (普通列表)
+      getList: (query: Partial<PageQuery>) => Promise<PageRes<T[]>>;
+      getTree?: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>>;
+    }
+    | {
+      // 查询 → 返回带id的数据 (树形数据)
+      getTree: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>>;
+      getList?: (query: Partial<PageQuery>) => Promise<PageRes<T[]>>;
+    }
+  );
 
 /**
  * 模板数据返回类型
  */
 export interface GenCmsTemplateData<
   T extends { id: number },
-  TBase,
   PageQuery extends BaseQueryParams,
+  TForm extends Record<string, any> = T,
 > {
   tableData: Ref<PageData<T[]>>;
   treeData: Ref<T[]>;
@@ -111,7 +121,7 @@ export interface GenCmsTemplateData<
   submitForm: (formEl: FormInstance | null) => Promise<void>;
   handleDeletes: (ids: Array<number>) => Promise<void>;
   // 添加CRUD操作方法
-  create: (data: Omit<T, "id">) => Promise<CommonRes<null>>;
-  update: (id: number, data: T) => Promise<CommonRes<null>>;
-  transformSubmitData?: TransformSubmitData<T>;
+  create: (data: Omit<TForm, "id">) => Promise<CommonRes<null>>;
+  update: (id: number, data: TForm) => Promise<CommonRes<null>>;
+  transformSubmitData?: TransformSubmitData<TForm>;
 }

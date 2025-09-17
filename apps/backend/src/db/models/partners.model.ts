@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from "zod/v4";
-import { imagesTable } from "./images.model";
+import { imagesTable, SelectImageType } from "./images.model";
 import { UnoQueryZod } from "./utils";
 
 /**
@@ -88,7 +88,7 @@ export const partnersModel = {
 // 类型来源于 Zod 推断，但用更语义化的名字导出
 export type InsertPartnersDto = z.infer<typeof partnersModel.insertPartnersDto>;  // 请求用
 export type UpdatePartnersDto = z.infer<typeof partnersModel.updatePartnersDto>;  // 请求用
-export type SelectPartnersType = z.infer<typeof partnersModel.selectPartnersTable>; // 查询返回原始类型
+export type SelectPartnersDto = z.infer<typeof partnersModel.selectPartnersTable>; // 查询返回原始类型
 export type PartnersListQueryDto = z.infer<typeof partnersModel.queryPartnersListDto>;
 export type PublicPartnersQueryDto = z.infer<typeof partnersModel.queryPublicPartnersDto>;
 export type UpdatePartnerStatusDto = z.infer<typeof partnersModel.updatePartnerStatusDto>;
@@ -96,16 +96,11 @@ export type RecordClickDto = z.infer<typeof partnersModel.recordClickDto>;
 export type BatchUpdateOrderDto = z.infer<typeof partnersModel.batchUpdateOrderDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰） 左连接一般都有null
-export type SelectPartnersVo = Omit<SelectPartnersType, 'image_id'> & {
-  imageUrl: string | null
+export type SelectPartnersVo = Omit<SelectPartnersDto, 'image_id'> & {
+  imageRef: SelectImageType
 }
-// 5. 关系定义
-// 合作伙伴表通常是独立的，不需要复杂的关系定义
-// 如果需要关联其他表（如用户表、订单表等），可以在这里定义
-// export const partnersRelations = relations(partnersTable, ({ many }) => ({
-//   // 如果有合作伙伴相关的订单或其他关联数据
-//   // orders: many(ordersTable),
-// }));
+
+
 
 export const partnersRelations = relations(partnersTable, ({ one }) => ({
   // 合作伙伴Logo关联到图片管理表 - 外键在partners表中
