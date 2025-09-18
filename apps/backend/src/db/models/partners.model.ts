@@ -15,9 +15,9 @@ export const partnersTable = pgTable("partners", {
   name: varchar("name", { length: 255 }).notNull(), // 合作伙伴名称
   description: text("description").notNull(), // 合作伙伴描述
   url: varchar("url", { length: 255 }).notNull(), // 合作伙伴官网链接
-  image_id: integer("image_id")
-    .notNull()
-    .references(() => imagesTable.id), // 合作伙伴Logo图片URL - 引用imagesSchema.url
+  // image_id: integer("image_id")
+  //   .notNull()
+  //   .references(() => imagesTable.id), // 合作伙伴Logo图片URL - 引用imagesSchema.url
   sortOrder: integer("sort_order").default(0), // 排序权重
   isActive: boolean("is_active").default(true), // 是否显示
   createdAt: timestamp("created_at").defaultNow(), // 创建时间
@@ -104,8 +104,35 @@ export type SelectPartnersVo = Omit<SelectPartnersDto, 'image_id'> & {
 
 export const partnersRelations = relations(partnersTable, ({ one }) => ({
   // 合作伙伴Logo关联到图片管理表 - 外键在partners表中
+  partnerImageRef: one(partnerImagesTable, {
+    fields: [partnersTable.id],
+    references: [partnerImagesTable.partnerId],
+  }),
+}));
+
+
+
+
+/**
+ * 伙伴图片关联表 - 处理伙伴与图片的多对多关系
+ */
+export const partnerImagesTable = pgTable("partner_images", {
+  partnerId: integer("partner_id")
+    .references(() => partnersTable.id)
+    .notNull(),
+  imageId: integer("image_id")
+    .references(() => imagesTable.id)
+    .notNull(),
+  isMain: boolean("is_main").default(false),
+});
+
+export const partnerImagesRelations = relations(partnerImagesTable, ({ one }) => ({
+  partnerRef: one(partnersTable, {
+    fields: [partnerImagesTable.partnerId],
+    references: [partnersTable.id],
+  }),
   imageRef: one(imagesTable, {
-    fields: [partnersTable.image_id],
+    fields: [partnerImagesTable.imageId],
     references: [imagesTable.id],
   }),
 }));

@@ -45,7 +45,8 @@
     "drizzle-zod": "^0.8.3",
     "elysia": "*",
     "pg": "^8.16.3",
-    "zod": "^4.1.8"
+    "zod": "^4.1.8",
+    "drizzle-dynamic-query": "link:drizzle-dynamic-query"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

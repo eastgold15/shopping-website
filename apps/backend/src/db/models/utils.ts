@@ -8,6 +8,13 @@ export const stringToNumber = z.codec(
     encode: (val) => val.toString(),    // number -> string，存数据库用
   }
 );
+export const numberToString = z.codec(
+  z.number(),      //输入
+  z.string(),      //输出
+  {
+    decode: (val) => val.toString(),
+    encode: (val) => Number(val)
+  })
 
 // 公共查询列表类型
 export const UnoQueryZod = z.object({

@@ -2,11 +2,11 @@ import { relations } from "drizzle-orm";
 
 
 import { boolean, decimal, integer, json, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { createSchemaFactory, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from "zod/v4";
 
 import { categoriesTable, imagesTable, orderItemsTable, reviewsTable } from ".";
-import { stringToNumber, UnoQueryZod } from "./utils";
+import { numberToString, UnoQueryZod } from "./utils";
 
 
 /**
@@ -50,9 +50,15 @@ export const productsTable = pgTable("products", {
 });
 
 // 2. Zod Schema（基于 Drizzle 表生成，并可扩展校验）
+const { createInsertSchema } = createSchemaFactory({
+  // This configuration will only coerce dates. Set `coerce` to `true` to coerce all data types or specify others
+  coerce: {
+    date: true
+  }
+});
 
 // 2. Zod 校验规则（运行时校验）
-export const insertProductSchema = createInsertSchema(productsTable,);
+export const insertProductSchema = createInsertSchema(productsTable);
 export const updateProductSchema = createUpdateSchema(productsTable,);
 export const selectProductSchema = createSelectSchema(productsTable);
 
@@ -61,23 +67,23 @@ export const productsModel = {
   selectProductcTable: selectProductSchema,
   // 创建商品请求参数 - 前端传入 number，后端转换为 string 存储
   insertProductDto: insertProductSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
-    cost: stringToNumber,
-    price: stringToNumber,
-    comparePrice: stringToNumber,
-    weight: stringToNumber,
+    cost: numberToString,
+    price: numberToString,
+    comparePrice: numberToString,
+    weight: numberToString,
     image_ids: z.array(z.number()),
   }),
 
   updateProductDto: updateProductSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
-    cost: stringToNumber,
-    price: stringToNumber,
-    comparePrice: stringToNumber,
-    weight: stringToNumber,
+    cost: numberToString,
+    price: numberToString,
+    comparePrice: numberToString,
+    weight: numberToString,
     image_ids: z.array(z.number()),
   }),
-  UpdateSortDto: z.object({ sortOrder: z.number() }),
+  UpdateSortDto: z.object({ sortOrder: z.coerce.number() }), //强制类型转为number
 
-  // // 商品列表查询参数
+  // // 商品列表查询参数  和查询 区别在于有没有分页
   queryProductListDto: UnoQueryZod.extend({
     // HTTP查询参数传输时会变成字符串，需要转换为数字
     categoryId: z.optional(z.string().transform((val) => val ? parseInt(val, 10) : undefined)),
@@ -98,6 +104,18 @@ export const productsModel = {
     isFeatured: z.optional(z.string().transform((val) => val === 'true')),
   }),
 
+
+  listProductRes: selectProductSchema.extend({
+    imageRef: z.object({
+      id: z.number(),
+      imageUrl: z.string(),
+    }),
+    categoryRef: z.object({
+      id: z.number(),
+      name: z.string(),
+    }),
+  }),
+
   // 筛选选项查询参数
   queryFilterOptionsDto: z.object({
     categoryId: z.string().optional(),
@@ -105,14 +123,17 @@ export const productsModel = {
 };
 // 3. 类型定义（可选，但推荐） 导出 TypeScript 类型（方便路由、service 等使用）
 // 类型来源于 Zod 推断，但用更语义化的名字导出
-export type InsertProductDto = z.infer<typeof productsModel.insertProductDto>;  // 请求用
-export type UpdateProductDto = z.infer<typeof productsModel.updateProductDto>;  // 请求用
+export type InsertProductDto = z.input<typeof productsModel.insertProductDto>;  // create请求用
+export type UpdateProductDto = z.input<typeof productsModel.updateProductDto>;  // 更新请求用
 export type SelectProductType = z.infer<typeof productsModel.selectProductcTable>; // 查询返回原始类型
 export type SearchProductQueryDto = z.infer<typeof productsModel.querySearchProductDto>// 搜索用
 export type ListProductQueryDto = z.infer<typeof productsModel.queryProductListDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
 export type SelectProductVo = SelectProductType; // 可直接复用，或扩展字段（比如格式化日期等）
+
+export type listProductRes = z.output<typeof productsModel.listProductRes>
+
 export type SelectProductDetailVo = SelectProductType & {
   images: {
     id: number

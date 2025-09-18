@@ -218,6 +218,12 @@ onUnmounted(() => {
 
     <!-- 主要内容区域 -->
     <main class="relative">
+
+      <section class="relative h-screen text-center px-4 flex flex-col justify-center snap-start snap-always pt-4rem">
+
+        13
+
+      </section>
       <!-- 品牌介绍区域 -->
       <section class="relative h-screen text-center px-4 flex flex-col justify-center snap-start snap-always pt-4rem">
         <div class="max-w-4xl mx-auto">
@@ -245,28 +251,33 @@ onUnmounted(() => {
       <section v-for="(partner, index) in partners" :key="partner.id"
         class="h-screen hover:shadow-xl transition-all duration-300 snap-start snap-always relative"
         style="scroll-snap-align: start; scroll-snap-stop: always;">
-        <!-- 桌面端布局 -->
-        <div class="hidden md:flex flex-row" :class="index % 2 === 1 ? 'lg:flex-row-reverse' : ''">
-          <!-- 图片区域 -->
-          <div class="lg:w-1/2 w-full bg-gray-100">
-            <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="partner.name"
-              class="w-full lg:h-screen object-contain">
-          </div>
-          <!-- 内容区域 -->
-          <div
-            class="lg:w-1/2 bg-gradient-to-r from-orange-600 via-red-500 to-pink-500 text-white flex flex-col justify-center md:p-16 ">
-            <div class="max-w-fit" :class="index % 2 === 1 ? 'lg:mr-auto' : ''">
-              <h3 class="whitespace-nowrap text-4xl lg:text-5xl font-bold mb-6  ">{{ partner.name }}</h3>
-              <p class="w-full  text-lg lg:text-xl opacity-90 mb-8 leading-relaxed">{{ partner.description }}</p>
-              <a :href="partner.url" target="_blank" rel="noopener noreferrer"
-                class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 text-lg">
-                Visit the official website
-              </a>
+        <!-- 桌面端布局 - 两列布局，左右都是图片，文字浮空在左侧图片上 -->
+        <div class="hidden md:flex flex-row relative h-full">
+          <!-- 左侧图片区域 - 带浮空文字 -->
+          <div class="w-1/2 relative bg-gray-100">
+            <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="`${partner.name} - Left`"
+              class="w-full h-screen object-contain">
+            <!-- 浮空的文字内容 -->
+            <div class="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center p-12">
+              <div class="text-white max-w-lg">
+                <h3 class="text-4xl lg:text-5xl font-bold mb-6">{{ partner.name }}</h3>
+                <p class="text-lg lg:text-xl opacity-90 mb-8 leading-relaxed">{{ partner.description }}</p>
+                <a :href="partner.url" target="_blank" rel="noopener noreferrer"
+                  class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 text-lg">
+                  Visit the official website
+                </a>
+              </div>
             </div>
+          </div>
+
+          <!-- 右侧图片区域 -->
+          <div class="w-1/2 bg-gray-100">
+            <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="`${partner.name} - Right`"
+              class="w-full h-screen object-contain">
           </div>
         </div>
 
-        <!-- 手机端布局 - 文字覆盖在图片上 -->
+        <!-- 手机端布局 - 保持原有的覆盖式布局 -->
         <div class="md:hidden relative h-full bg-gray-100">
           <!-- 背景图片 -->
           <img :src="partner.imageRef.imageUrl ?? 'http://example.com'" :alt="partner.name"

@@ -40,7 +40,7 @@ export class ProductsService extends BaseService<
     try {
       // 从数据中提取image_ids，其余数据用于创建商品
 
-      const encode_date = productsModel.insertProductDto.encode(data)
+      const encode_date = productsModel.insertProductDto.decode(data)
       const { image_ids, ...productData } = encode_date;
 
       // 使用事务确保商品创建和图片关联的原子性
@@ -355,21 +355,9 @@ export class ProductsService extends BaseService<
     try {
       // 从数据中提取image_ids，其余数据用于更新商品
 
-      const encode_data = productsModel.updateProductDto.encode(data)
+      const encode_data = productsModel.updateProductDto.decode(data)
       const { image_ids, ...productData } = encode_data;
-      // 转换数字类型字段为字符串类型（如果存在）
-      if (productData.cost !== undefined) {
-        productData.cost = productData.cost.toString();
-      }
-      if (productData.price !== undefined) {
-        productData.price = productData.price.toString();
-      }
-      if (productData.comparePrice !== undefined) {
-        productData.comparePrice = productData.comparePrice.toString();
-      }
-      if (productData.weight !== undefined) {
-        productData.weight = productData.weight.toString();
-      }
+
 
       // 使用事务确保商品更新和图片关联的原子性
       const result = await db.transaction(async (tx) => {
