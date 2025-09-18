@@ -143,7 +143,7 @@ const loadOrders = async () => {
         const params = {
             page: page.value,
             limit: limit.value,
-            sortBy: sortField.value,
+            sort: sortField.value,
             sortOrder: sortOrder.value === 1 ? "asc" : "desc",
             search: searchKeyword.value || undefined,
             status: filterStatus.value !== "all" ? filterStatus.value : undefined,
@@ -589,7 +589,7 @@ onMounted(() => {
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs font-medium truncate">{{ item.productName }}</p>
                                     <p class="text-xs text-gray-600">{{ formatCurrency(item.price) }} × {{ item.quantity
-                                        }}</p>
+                                    }}</p>
                                 </div>
                             </div>
                             <p v-if="data.items.length > 2" class="text-xs text-gray-500">等{{ data.items.length }}件商品
@@ -718,8 +718,8 @@ onMounted(() => {
                             <div class="flex justify-between">
                                 <span class="text-gray-600">详细地址:</span>
                                 <span>{{ selectedOrder.shippingAddress.province }}{{ selectedOrder.shippingAddress.city
-                                    }}{{ selectedOrder.shippingAddress.district }}{{
-                                    selectedOrder.shippingAddress.address }}</span>
+                                }}{{ selectedOrder.shippingAddress.district }}{{
+                                        selectedOrder.shippingAddress.address }}</span>
                             </div>
                         </div>
                     </template>

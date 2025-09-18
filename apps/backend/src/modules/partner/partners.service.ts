@@ -54,7 +54,7 @@ export class PartnersService {
     const {
       page = 1,
       limit = 10,
-      sortBy = "sortOrder",
+      sort = "sortOrder",
       sortOrder = "asc",
       search,
       name,
@@ -97,7 +97,7 @@ export class PartnersService {
           updatedAt: partners.updatedAt,
         };
         // 确定排序字段和方向
-        const orderBy = sortFieldMap[sortBy] || partners.sortOrder;
+        const orderBy = sortFieldMap[sort] || partners.sortOrder;
         return sortOrder === "asc" ? asc(orderBy) : desc(orderBy);
       },
       limit: limit,

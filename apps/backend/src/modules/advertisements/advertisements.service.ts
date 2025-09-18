@@ -35,7 +35,7 @@ export class AdvertisementsService {
       const {
         page = 1,
         limit = 10,
-        sortBy = "sortOrder",
+        sort = "sortOrder",
         sortOrder = "asc",
         search,
         type,
@@ -90,7 +90,7 @@ export class AdvertisementsService {
 
       // 确定排序字段和方向
       const orderBy =
-        allowedSortFields[sortBy as keyof typeof allowedSortFields] ||
+        allowedSortFields[sort as keyof typeof allowedSortFields] ||
         advertisementsTable.sortOrder;
       const orderDirection = sortOrder as "asc" | "desc";
 

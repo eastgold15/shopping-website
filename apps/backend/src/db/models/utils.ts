@@ -22,7 +22,7 @@ export const UnoQueryZod = z.object({
   // HTTP查询参数传输时会变成字符串，需要转换为数字
   page: z.coerce.number().default(1),
   limit: z.coerce.number().default(10),
-  sortBy: z.optional(z.string()),
+  sort: z.optional(z.string()),
   sortOrder: z.optional(z.enum(["asc", "desc"])),
   fields: z.optional(z.string()),
 })

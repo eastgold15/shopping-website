@@ -109,7 +109,7 @@ const loadProducts = async () => {
 		const params = {
 			page: initMeta.value.page,
 			limit: initMeta.value.limit,
-			sortBy: sortField.value,
+			sort: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			categoryId: filterCategory.value || undefined,
 			isActive: filterStatus.value !== "all" ? filterStatus.value : undefined,
@@ -518,344 +518,339 @@ const goToAddProduct = () => {
 </script>
 
 <template>
-    <div class="products-management">
-        <!-- 页面标题和操作栏 -->
-        <div class="header-section">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">商品管理</h1>
-                    <p class="text-gray-600 mt-1">管理商品信息，包括价格、库存、分类等</p>
-                </div>
-                <div class="flex gap-3">
-                    <Button label="添加商品" icon="pi pi-plus" @click="goToAddProduct" class="p-button-success" />
-                    <Button label="批量导入" icon="pi pi-upload" class="p-button-outlined" />
-                </div>
-            </div>
+	<div class="products-management">
+		<!-- 页面标题和操作栏 -->
+		<div class="header-section">
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-3xl font-bold text-gray-900">商品管理</h1>
+					<p class="text-gray-600 mt-1">管理商品信息，包括价格、库存、分类等</p>
+				</div>
+				<div class="flex gap-3">
+					<Button label="添加商品" icon="pi pi-plus" @click="goToAddProduct" class="p-button-success" />
+					<Button label="批量导入" icon="pi pi-upload" class="p-button-outlined" />
+				</div>
+			</div>
 
-            <!-- 工具栏 -->
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadProducts" class="p-button-outlined"
-                        size="small" />
-                    <Button label="批量上架" icon="pi pi-check" class="p-button-outlined" size="small"
-                        :disabled="!selectedProducts.length" />
-                    <Button label="批量下架" icon="pi pi-times" class="p-button-outlined" size="small"
-                        :disabled="!selectedProducts.length" />
-                </div>
-                <div class="flex gap-3">
-                    <InputText v-model="searchKeyword" placeholder="搜索商品名称或SKU..." class="w-64"
-                        @update:modelValue="handleSearch" />
-                    <Select v-model="filterCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选分类" class="w-32" @change="handleFilter" showClear />
-                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                </div>
-            </div>
-        </div>
+			<!-- 工具栏 -->
+			<div class="flex justify-between items-center mb-4">
+				<div class="flex gap-3">
+					<Button label="刷新" icon="pi pi-refresh" @click="loadProducts" class="p-button-outlined" size="small" />
+					<Button label="批量上架" icon="pi pi-check" class="p-button-outlined" size="small"
+						:disabled="!selectedProducts.length" />
+					<Button label="批量下架" icon="pi pi-times" class="p-button-outlined" size="small"
+						:disabled="!selectedProducts.length" />
+				</div>
+				<div class="flex gap-3">
+					<InputText v-model="searchKeyword" placeholder="搜索商品名称或SKU..." class="w-64"
+						@update:modelValue="handleSearch" />
+					<Select v-model="filterCategory" :options="categoryOptions" optionLabel="label" optionValue="value"
+						placeholder="筛选分类" class="w-32" @change="handleFilter" showClear />
+					<Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+						placeholder="筛选状态" class="w-32" @change="handleFilter" />
+				</div>
+			</div>
+		</div>
 
-        <!-- 商品数据表格 -->
-        <div class="table-section">
-            <DataTable :value="products" :loading="loading" :paginator="true" :rows="initMeta.limit"
-                :totalRecords="initMeta.total" :lazy="true" @page="onPage" @sort="onSort" :sortField="sortField"
-                :sortOrder="sortOrder" v-model:selection="selectedProducts" selectionMode="multiple" dataKey="id"
-                tableStyle="min-width: 50rem" class="p-datatable-sm">
-                <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-                <Column field="id" header="ID" :sortable="true" style="width: 80px">
-                    <template #body="{ data }">
-                        <span class="font-mono text-sm">#{{ data.id }}</span>
-                    </template>
-                </Column>
+		<!-- 商品数据表格 -->
+		<div class="table-section">
+			<DataTable :value="products" :loading="loading" :paginator="true" :rows="initMeta.limit"
+				:totalRecords="initMeta.total" :lazy="true" @page="onPage" @sort="onSort" :sortField="sortField"
+				:sortOrder="sortOrder" v-model:selection="selectedProducts" selectionMode="multiple" dataKey="id"
+				tableStyle="min-width: 50rem" class="p-datatable-sm">
+				<Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+				<Column field="id" header="ID" :sortable="true" style="width: 80px">
+					<template #body="{ data }">
+						<span class="font-mono text-sm">#{{ data.id }}</span>
+					</template>
+				</Column>
 
-                <Column field="name" header="商品名称" :sortable="true" style="min-width: 200px">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-3">
-                            <Image v-if="data.images && data.images[0]" :src="data.images[0]" alt="商品图片" width="40"
-                                height="40" class="rounded border" />
-                            <div v-else class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                                <i class="pi pi-image text-gray-400"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium">{{ data.name }}</div>
-                                <div class="text-sm text-gray-500">{{ data.slug }}</div>
-                            </div>
-                        </div>
-                    </template>
-                </Column>
+				<Column field="name" header="商品名称" :sortable="true" style="min-width: 200px">
+					<template #body="{ data }">
+						<div class="flex items-center gap-3">
+							<Image v-if="data.images && data.images[0]" :src="data.images[0]" alt="商品图片" width="40" height="40"
+								class="rounded border" />
+							<div v-else class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+								<i class="pi pi-image text-gray-400"></i>
+							</div>
+							<div>
+								<div class="font-medium">{{ data.name }}</div>
+								<div class="text-sm text-gray-500">{{ data.slug }}</div>
+							</div>
+						</div>
+					</template>
+				</Column>
 
-                <Column field="sku" header="SKU" :sortable="true" style="width: 120px">
-                    <template #body="{ data }">
-                        <span class="font-mono text-sm">{{ data.sku }}</span>
-                    </template>
-                </Column>
+				<Column field="sku" header="SKU" :sortable="true" style="width: 120px">
+					<template #body="{ data }">
+						<span class="font-mono text-sm">{{ data.sku }}</span>
+					</template>
+				</Column>
 
-                <Column field="price" header="价格" :sortable="true" style="width: 100px">
-                    <template #body="{ data }">
-                        <div class="text-right">
-                            <div class="font-medium">{{ formatCurrency(data.price) }}</div>
-                            <div v-if="data.comparePrice && data.comparePrice > data.price"
-                                class="text-sm text-gray-400 line-through">
-                                {{ formatCurrency(data.comparePrice) }}
-                            </div>
-                        </div>
-                    </template>
-                </Column>
+				<Column field="price" header="价格" :sortable="true" style="width: 100px">
+					<template #body="{ data }">
+						<div class="text-right">
+							<div class="font-medium">{{ formatCurrency(data.price) }}</div>
+							<div v-if="data.comparePrice && data.comparePrice > data.price"
+								class="text-sm text-gray-400 line-through">
+								{{ formatCurrency(data.comparePrice) }}
+							</div>
+						</div>
+					</template>
+				</Column>
 
-                <Column field="stock" header="库存" :sortable="true" style="width: 80px">
-                    <template #body="{ data }">
-                        <div class="text-center">
-                            <span :class="{
-                                'text-red-600': data.stock <= data.minStock,
-                                'text-orange-600': data.stock <= data.minStock * 2,
-                                'text-green-600': data.stock > data.minStock * 2
-                            }">{{ data.stock }}</span>
-                        </div>
-                    </template>
-                </Column>
+				<Column field="stock" header="库存" :sortable="true" style="width: 80px">
+					<template #body="{ data }">
+						<div class="text-center">
+							<span :class="{
+								'text-red-600': data.stock <= data.minStock,
+								'text-orange-600': data.stock <= data.minStock * 2,
+								'text-green-600': data.stock > data.minStock * 2
+							}">{{ data.stock }}</span>
+						</div>
+					</template>
+				</Column>
 
-                <Column field="categoryName" header="分类" style="width: 120px">
-                    <template #body="{ data }">
-                        <Tag v-if="data.categoryName" :value="data.categoryName" class="p-tag-secondary" />
-                        <span v-else class="text-gray-400">未分类</span>
-                    </template>
-                </Column>
+				<Column field="categoryName" header="分类" style="width: 120px">
+					<template #body="{ data }">
+						<Tag v-if="data.categoryName" :value="data.categoryName" class="p-tag-secondary" />
+						<span v-else class="text-gray-400">未分类</span>
+					</template>
+				</Column>
 
-                <Column field="isActive" header="状态" style="width: 100px">
-                    <template #body="{ data }">
-                        <div class="flex flex-col gap-1">
-                            <Tag :value="data.isActive ? '上架' : '下架'"
-                                :severity="data.isActive ? 'success' : 'danger'" />
-                            <Tag v-if="data.isFeatured" value="推荐" severity="info" />
-                        </div>
-                    </template>
-                </Column>
+				<Column field="isActive" header="状态" style="width: 100px">
+					<template #body="{ data }">
+						<div class="flex flex-col gap-1">
+							<Tag :value="data.isActive ? '上架' : '下架'" :severity="data.isActive ? 'success' : 'danger'" />
+							<Tag v-if="data.isFeatured" value="推荐" severity="info" />
+						</div>
+					</template>
+				</Column>
 
-                <Column field="createdAt" header="创建时间" :sortable="true" style="width: 150px">
-                    <template #body="{ data }">
-                        <span class="text-sm">{{ formatDate(data.createdAt) }}</span>
-                    </template>
-                </Column>
+				<Column field="createdAt" header="创建时间" :sortable="true" style="width: 150px">
+					<template #body="{ data }">
+						<span class="text-sm">{{ formatDate(data.createdAt) }}</span>
+					</template>
+				</Column>
 
-                <Column header="操作" style="width: 150px">
-                    <template #body="{ data }">
-                        <div class="flex gap-2">
-                            <Button icon="pi pi-pencil" size="small" class="p-button-outlined p-button-primary"
-                                @click="showEditDialog(data)" v-tooltip.top="'编辑'" />
-                            <Button :icon="data.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'" size="small"
-                                :class="data.isActive ? 'p-button-outlined p-button-warning' : 'p-button-outlined p-button-success'"
-                                @click="toggleActive(data)" :v-tooltip.top="data.isActive ? '下架' : '上架'" />
-                            <Button :icon="data.isFeatured ? 'pi pi-star-fill' : 'pi pi-star'" size="small"
-                                :class="data.isFeatured ? 'p-button-outlined p-button-info' : 'p-button-outlined'"
-                                @click="toggleFeatured(data)" :v-tooltip.top="data.isFeatured ? '取消推荐' : '设为推荐'" />
-                            <Button icon="pi pi-trash" size="small" class="p-button-outlined p-button-danger"
-                                @click="confirmDelete(data)" v-tooltip.top="'删除'" />
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
-        </div>
+				<Column header="操作" style="width: 150px">
+					<template #body="{ data }">
+						<div class="flex gap-2">
+							<Button icon="pi pi-pencil" size="small" class="p-button-outlined p-button-primary"
+								@click="showEditDialog(data)" v-tooltip.top="'编辑'" />
+							<Button :icon="data.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'" size="small"
+								:class="data.isActive ? 'p-button-outlined p-button-warning' : 'p-button-outlined p-button-success'"
+								@click="toggleActive(data)" :v-tooltip.top="data.isActive ? '下架' : '上架'" />
+							<Button :icon="data.isFeatured ? 'pi pi-star-fill' : 'pi pi-star'" size="small"
+								:class="data.isFeatured ? 'p-button-outlined p-button-info' : 'p-button-outlined'"
+								@click="toggleFeatured(data)" :v-tooltip.top="data.isFeatured ? '取消推荐' : '设为推荐'" />
+							<Button icon="pi pi-trash" size="small" class="p-button-outlined p-button-danger"
+								@click="confirmDelete(data)" v-tooltip.top="'删除'" />
+						</div>
+					</template>
+				</Column>
+			</DataTable>
+		</div>
 
-        <!-- 创建/编辑商品对话框 -->
-        <Dialog v-model:visible="showCreateDialog" :header="editingProduct ? '编辑商品' : '新增商品'" :modal="true"
-            :closable="true" class="w-[1000px] max-h-[90vh]">
-            <div class="space-y-6">
-                <!-- 必填信息区域 -->
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
-                        <i class="pi pi-exclamation-circle mr-2"></i>
-                        必填信息
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 左列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品名称 *</label>
-                                <InputText v-model="productForm.name" placeholder="请输入商品名称" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.name }" />
-                            </div>
+		<!-- 创建/编辑商品对话框 -->
+		<Dialog v-model:visible="showCreateDialog" :header="editingProduct ? '编辑商品' : '新增商品'" :modal="true" :closable="true"
+			class="w-[1000px] max-h-[90vh]">
+			<div class="space-y-6">
+				<!-- 必填信息区域 -->
+				<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+					<h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
+						<i class="pi pi-exclamation-circle mr-2"></i>
+						必填信息
+					</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<!-- 左列 -->
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium mb-2 text-red-700">商品名称 *</label>
+								<InputText v-model="productForm.name" placeholder="请输入商品名称" class="w-full"
+									:class="{ 'p-invalid': !productForm.name }" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">URL别名 *</label>
-                                <InputText v-model="productForm.slug" placeholder="请输入URL别名" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.slug }" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-red-700">URL别名 *</label>
+								<InputText v-model="productForm.slug" placeholder="请输入URL别名" class="w-full"
+									:class="{ 'p-invalid': !productForm.slug }" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品SKU *</label>
-                                <InputText v-model="productForm.sku" placeholder="请输入商品SKU" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.sku }" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-red-700">商品SKU *</label>
+								<InputText v-model="productForm.sku" placeholder="请输入商品SKU" class="w-full"
+									:class="{ 'p-invalid': !productForm.sku }" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品分类 *</label>
-                                <Select v-model="productForm.categoryId" :options="categoryOptions" optionLabel="label"
-                                    optionValue="value" placeholder="请选择分类" class="w-full"
-                                    :class="{ 'p-invalid': !productForm.categoryId }" />
-                            </div>
-                        </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-red-700">商品分类 *</label>
+								<Select v-model="productForm.categoryId" :options="categoryOptions" optionLabel="label"
+									optionValue="value" placeholder="请选择分类" class="w-full"
+									:class="{ 'p-invalid': !productForm.categoryId }" />
+							</div>
+						</div>
 
-                        <!-- 右列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">商品描述 *</label>
-                                <Textarea v-model="productForm.description" placeholder="请输入商品描述" rows="3"
-                                    class="w-full" :class="{ 'p-invalid': !productForm.description }" />
-                            </div>
+						<!-- 右列 -->
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium mb-2 text-red-700">商品描述 *</label>
+								<Textarea v-model="productForm.description" placeholder="请输入商品描述" rows="3" class="w-full"
+									:class="{ 'p-invalid': !productForm.description }" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-red-700">简短描述 *</label>
-                                <Textarea v-model="productForm.shortDescription" placeholder="请输入简短描述" rows="2"
-                                    class="w-full" :class="{ 'p-invalid': !productForm.shortDescription }" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-red-700">简短描述 *</label>
+								<Textarea v-model="productForm.shortDescription" placeholder="请输入简短描述" rows="2" class="w-full"
+									:class="{ 'p-invalid': !productForm.shortDescription }" />
+							</div>
 
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2 text-red-700">销售价格 *</label>
-                                    <InputNumber v-model="productForm.price" :min="0" :maxFractionDigits="2"
-                                        placeholder="0.00" class="w-full"
-                                        :class="{ 'p-invalid': productForm.price <= 0 }" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium mb-2 text-red-700">库存数量 *</label>
-                                    <InputNumber v-model="productForm.stock" :min="0" placeholder="0" class="w-full"
-                                        :class="{ 'p-invalid': productForm.stock < 0 }" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label class="block text-sm font-medium mb-2 text-red-700">销售价格 *</label>
+									<InputNumber v-model="productForm.price" :min="0" :maxFractionDigits="2" placeholder="0.00"
+										class="w-full" :class="{ 'p-invalid': productForm.price <= 0 }" />
+								</div>
+								<div>
+									<label class="block text-sm font-medium mb-2 text-red-700">库存数量 *</label>
+									<InputNumber v-model="productForm.stock" :min="0" placeholder="0" class="w-full"
+										:class="{ 'p-invalid': productForm.stock < 0 }" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 
-                <!-- 选填信息区域 -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                        <i class="pi pi-info-circle mr-2"></i>
-                        选填信息
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 左列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">对比价格</label>
-                                <InputNumber v-model="productForm.comparePrice" :min="0" :maxFractionDigits="2"
-                                    placeholder="0.00" class="w-full" />
-                            </div>
+				<!-- 选填信息区域 -->
+				<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+					<h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+						<i class="pi pi-info-circle mr-2"></i>
+						选填信息
+					</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<!-- 左列 -->
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">对比价格</label>
+								<InputNumber v-model="productForm.comparePrice" :min="0" :maxFractionDigits="2" placeholder="0.00"
+									class="w-full" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">成本价</label>
-                                <InputNumber v-model="productForm.cost" :min="0" :maxFractionDigits="2"
-                                    placeholder="0.00" class="w-full" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">成本价</label>
+								<InputNumber v-model="productForm.cost" :min="0" :maxFractionDigits="2" placeholder="0.00"
+									class="w-full" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">最低库存</label>
-                                <InputNumber v-model="productForm.minStock" :min="0" placeholder="0" class="w-full" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">最低库存</label>
+								<InputNumber v-model="productForm.minStock" :min="0" placeholder="0" class="w-full" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">重量(kg)</label>
-                                <InputNumber v-model="productForm.weight" :min="0" :maxFractionDigits="3"
-                                    placeholder="0.000" class="w-full" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">重量(kg)</label>
+								<InputNumber v-model="productForm.weight" :min="0" :maxFractionDigits="3" placeholder="0.000"
+									class="w-full" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">尺寸</label>
-                                <InputText v-model="productForm.dimensions" placeholder="长x宽x高(cm)" class="w-full" />
-                            </div>
-                        </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">尺寸</label>
+								<InputText v-model="productForm.dimensions" placeholder="长x宽x高(cm)" class="w-full" />
+							</div>
+						</div>
 
-                        <!-- 右列 -->
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">条形码</label>
-                                <InputText v-model="productForm.barcode" placeholder="请输入条形码" class="w-full" />
-                            </div>
+						<!-- 右列 -->
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">条形码</label>
+								<InputText v-model="productForm.barcode" placeholder="请输入条形码" class="w-full" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">材质</label>
-                                <MultiSelect v-model="productForm.materials" :options="tagOptions" optionLabel="label"
-                                    optionValue="value" placeholder="选择材质" class="w-full" display="chip" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">材质</label>
+								<MultiSelect v-model="productForm.materials" :options="tagOptions" optionLabel="label"
+									optionValue="value" placeholder="选择材质" class="w-full" display="chip" />
+							</div>
 
-                            <div>
-                                <label class="block text-sm font-medium mb-2 text-blue-700">护理说明</label>
-                                <Textarea v-model="productForm.careInstructions" placeholder="请输入护理说明" rows="3"
-                                    class="w-full" />
-                            </div>
+							<div>
+								<label class="block text-sm font-medium mb-2 text-blue-700">护理说明</label>
+								<Textarea v-model="productForm.careInstructions" placeholder="请输入护理说明" rows="3" class="w-full" />
+							</div>
 
-                            <div class="space-y-3">
-                                <div class="flex items-center gap-2">
-                                    <ToggleSwitch v-model="productForm.isActive" />
-                                    <label class="text-sm text-blue-700">立即上架</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <Checkbox v-model="productForm.isFeatured" binary />
-                                    <label class="text-sm text-blue-700">设为推荐</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+							<div class="space-y-3">
+								<div class="flex items-center gap-2">
+									<ToggleSwitch v-model="productForm.isActive" />
+									<label class="text-sm text-blue-700">立即上架</label>
+								</div>
+								<div class="flex items-center gap-2">
+									<Checkbox v-model="productForm.isFeatured" binary />
+									<label class="text-sm text-blue-700">设为推荐</label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 
-                <!-- 商品图片区域 -->
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h3 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                        <i class="pi pi-image mr-2"></i>
-                        商品图片
-                    </h3>
-                    <div class="space-y-4">
-                        <!-- 添加图片按钮 -->
-                        <Button label="选择图片" icon="pi pi-plus" @click="openImageSelector"
-                            class="p-button-outlined w-full" v-tooltip="'从图片库中选择图片'" />
+				<!-- 商品图片区域 -->
+				<div class="bg-green-50 border border-green-200 rounded-lg p-4">
+					<h3 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
+						<i class="pi pi-image mr-2"></i>
+						商品图片
+					</h3>
+					<div class="space-y-4">
+						<!-- 添加图片按钮 -->
+						<Button label="选择图片" icon="pi pi-plus" @click="openImageSelector" class="p-button-outlined w-full"
+							v-tooltip="'从图片库中选择图片'" />
 
-                        <!-- 已选择的图片展示 -->
-                        <div v-if="productForm.images.length > 0" class="grid grid-cols-2 md:grid-cols-6 gap-4">
-                            <div v-for="(imageUrl, index) in productForm.images" :key="index" class="relative">
-                                <img :src="imageUrl" :alt="`商品图片 ${index + 1}`"
-                                    class="w-full h-24 object-cover rounded border" />
-                                <Button icon="pi pi-times"
-                                    class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2"
-                                    @click="removeImage(index)" v-tooltip="'移除图片'" />
-                            </div>
-                        </div>
+						<!-- 已选择的图片展示 -->
+						<div v-if="productForm.images.length > 0" class="grid grid-cols-2 md:grid-cols-6 gap-4">
+							<div v-for="(imageUrl, index) in productForm.images" :key="index" class="relative">
+								<img :src="imageUrl" :alt="`商品图片 ${index + 1}`" class="w-full h-24 object-cover rounded border" />
+								<Button icon="pi pi-times"
+									class="p-button-rounded p-button-danger p-button-text absolute -top-2 -right-2"
+									@click="removeImage(index)" v-tooltip="'移除图片'" />
+							</div>
+						</div>
 
-                        <!-- 空状态提示 -->
-                        <div v-else class="text-center py-8 text-gray-500">
-                            <i class="pi pi-image text-4xl mb-2"></i>
-                            <p>暂无图片，点击上方按钮选择图片</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+						<!-- 空状态提示 -->
+						<div v-else class="text-center py-8 text-gray-500">
+							<i class="pi pi-image text-4xl mb-2"></i>
+							<p>暂无图片，点击上方按钮选择图片</p>
+						</div>
+					</div>
+				</div>
+			</div>
 
-            <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Button label="取消" @click="closeDialog" class="p-button-text" />
-                    <Button :label="editingProduct ? '更新' : '创建'" @click="saveProduct" :loading="saving"
-                        :disabled="!isFormValid" />
-                </div>
-            </template>
-        </Dialog>
+			<template #footer>
+				<div class="flex justify-end gap-3">
+					<Button label="取消" @click="closeDialog" class="p-button-text" />
+					<Button :label="editingProduct ? '更新' : '创建'" @click="saveProduct" :loading="saving"
+						:disabled="!isFormValid" />
+				</div>
+			</template>
+		</Dialog>
 
-        <!-- 确认对话框 -->
-        <ConfirmDialog />
+		<!-- 确认对话框 -->
+		<ConfirmDialog />
 
-        <!-- 图片选择器 -->
-        <ImageSelector v-model:visible="showImageSelector" category="products" @select="onImageSelected" />
-    </div>
+		<!-- 图片选择器 -->
+		<ImageSelector v-model:visible="showImageSelector" category="products" @select="onImageSelected" />
+	</div>
 </template>
 
 <style scoped>
 .products-management {
-    @apply p-0;
+	@apply p-0;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .header-section {
-        @apply mb-4;
-    }
+	.header-section {
+		@apply mb-4;
+	}
 
-    .table-section {
-        @apply overflow-x-auto;
-    }
+	.table-section {
+		@apply overflow-x-auto;
+	}
 }
 </style>

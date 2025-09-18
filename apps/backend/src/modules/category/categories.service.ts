@@ -90,7 +90,7 @@ export class CategoriesService {
       const {
         page = 1,
         limit = 10,
-        sortBy = "createdAt",
+        sort = "createdAt",
         sortOrder = "desc",
         search,
         name,
@@ -144,7 +144,7 @@ export class CategoriesService {
       };
 
       // 确定排序字段和方向
-      const orderBy = sortFieldMap[sortBy] || categoriesTable.sortOrder;
+      const orderBy = sortFieldMap[sort] || categoriesTable.sortOrder;
       const orderDirection = sortOrder as "asc" | "desc";
 
       // 使用统一的分页函数

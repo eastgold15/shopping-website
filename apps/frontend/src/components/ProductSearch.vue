@@ -193,10 +193,10 @@ const handleSearch = async () => {
 
   loading.value = true;
   try {
-    const [sortBy, sortOrder] = sortOption.value.split("-");
+    const [sort, sortOrder] = sortOption.value.split("-");
     const params = {
       q: searchQuery.value,
-      sortBy,
+      sort,
       sortOrder,
       page: 1,
       limit: 20,
@@ -246,10 +246,10 @@ const handlePageChange = (event: any) => {
 const searchWithPage = async (page: number) => {
   loading.value = true;
   try {
-    const [sortBy, sortOrder] = sortOption.value.split("-");
+    const [sort, sortOrder] = sortOption.value.split("-");
     const params = {
       q: searchQuery.value,
-      sortBy,
+      sort,
       sortOrder,
       page,
       limit: 20,

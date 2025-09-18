@@ -79,7 +79,7 @@ export class ProductsService extends BaseService<
       const {
         page = 1,
         limit = 10,
-        sortBy = "createdAt",
+        sort = "createdAt",
         sortOrder = "desc",
         search,
         categoryId,
@@ -123,7 +123,7 @@ export class ProductsService extends BaseService<
       };
 
       // 确定排序字段和方向
-      const sortField = sortFieldMap[sortBy] || productsTable.id;
+      const sortField = sortFieldMap[sort] || productsTable.id;
       // 排序
       const _orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
 

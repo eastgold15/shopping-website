@@ -110,10 +110,10 @@ export function buildQueryOptions(query: any) {
 	}
 
 	// 排序参数
-	if (query.sortBy !== undefined) {
+	if (query.sort !== undefined) {
 		options.sort = [
 			{
-				field: query.sortBy,
+				field: query.sort,
 				direction: query.sortOrder || "asc",
 			},
 		];
@@ -126,7 +126,7 @@ export function buildQueryOptions(query: any) {
 
 	// 其他过滤器
 	Object.keys(query).forEach((key) => {
-		if (!["page", "limit", "sortBy", "sortOrder", "search"].includes(key)) {
+		if (!["page", "limit", "sort", "sortOrder", "search"].includes(key)) {
 			options[key] = query[key];
 		}
 	});

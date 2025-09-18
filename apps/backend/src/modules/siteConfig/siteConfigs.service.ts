@@ -36,7 +36,7 @@ export class SiteConfigsService extends BaseService<
     const {
       page = 1,
       limit = 10,
-      sortBy = "createdAt",
+      sort = "createdAt",
       sortOrder = "desc",
       search,
       category,
@@ -83,7 +83,7 @@ export class SiteConfigsService extends BaseService<
 
     // 处理排序
     queryOptions.sort?.push({
-      field: sortBy,
+      field: sort,
       direction: sortOrder
     });
 

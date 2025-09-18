@@ -163,7 +163,7 @@ const loadAdmins = async () => {
 		const params = {
 			page: page.value,
 			limit: limit.value,
-			sortBy: sortField.value,
+			sort: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			search: searchKeyword.value || undefined,
 			status: filterStatus.value !== "all" ? filterStatus.value : undefined,

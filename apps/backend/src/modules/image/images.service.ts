@@ -61,7 +61,7 @@ export class ImageService extends BaseService<
       const {
         page = 1,
         limit = 12,
-        sortBy = "createdAt",
+        sort = "createdAt",
         sortOrder = "desc",
         search,
         category,
@@ -122,7 +122,7 @@ export class ImageService extends BaseService<
         updatedAt: 'updatedAt',
       };
 
-      const sortField = sortFieldMap[sortBy] || 'createdAt';
+      const sortField = sortFieldMap[sort] || 'createdAt';
 
       queryOptions.sort?.push({
         field: sortField,
