@@ -94,7 +94,7 @@ import { z } from "zod";
 // 基础查询参数
 export const BaseQueryZod = z.object({
   page: z.number().min(1).default(1),
-  pageSize: z.number().min(1).max(100).default(10),
+  limit: z.number().min(1).max(100).default(10),
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
@@ -105,7 +105,7 @@ export const PaginationResponseZod = <T extends z.ZodTypeAny>(itemSchema: T) =>
     items: z.array(itemSchema),
     meta: z.object({
       page: z.number(),
-      pageSize: z.number(),
+      limit: z.number(),
       total: z.number(),
       totalPages: z.number(),
     }),
@@ -130,8 +130,8 @@ export class UsersService {
 
   // 获取用户列表
   async getUsers(query: QueryUserDto) {
-    const { page, pageSize, isActive, email } = query;
-    const offset = (page - 1) * pageSize;
+    const { page, limit, isActive, email } = query;
+    const offset = (page - 1) * limit;
 
     // 构建查询条件
     const conditions = [];
@@ -142,7 +142,7 @@ export class UsersService {
     const [users, [{ total }]] = await Promise.all([
       db.select().from(usersTable)
         .where(and(...conditions))
-        .limit(pageSize)
+        .limit(limit)
         .offset(offset),
       db.select({ total: count() }).from(usersTable)
         .where(and(...conditions))
@@ -152,9 +152,9 @@ export class UsersService {
       items: users,
       meta: {
         page,
-        pageSize,
+        limit,
         total,
-        totalPages: Math.ceil(total / pageSize)
+        totalPages: Math.ceil(total / limit)
       }
     };
   }

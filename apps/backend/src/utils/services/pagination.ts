@@ -2,7 +2,7 @@
  * 基于 Drizzle ORM 的 .$dynamic() 函数实现的自定义分页功能
  *
  * 特性：
- * - 支持标准的 page/pageSize 分页
+ * - 支持标准的 page/limit 分页
  * - 基于 Drizzle ORM .$dynamic() 动态查询构建
  * - 类型安全的 TypeScript 实现
  * - 统一的分页响应格式
@@ -18,14 +18,14 @@
  * const result = await paginate<User>(
  *   db.select().from(users).$dynamic(),
  *   db.select({ count: count() }).from(users).$dynamic(),
- *   { page: 1, pageSize: 10, orderBy: users.id }
+ *   { page: 1, limit: 10, orderBy: users.id }
  * );
  *
  * // 推荐用法（使用 $count 方法）
  * const result = await paginateWithCount<User>(
  *   db,
  *   db.select().from(users).$dynamic(),
- *   { page: 1, pageSize: 10, orderBy: users.id, table: users }
+ *   { page: 1, limit: 10, orderBy: users.id, table: users }
  * );
  *
  * // 创建可复用分页器
@@ -35,7 +35,7 @@
  *   users.id, // 默认排序字段
  *   users     // 支持软删除
  * );
- * const result = await userPaginator({ page: 1, pageSize: 10 });
+ * const result = await userPaginator({ page: 1, limit: 10 });
  * ```
  */
 import { and, asc, desc, type SQL } from "drizzle-orm";
@@ -63,7 +63,7 @@ export async function paginate<T>(
 ): Promise<PageData<T>> {
   const {
     page,
-    pageSize,
+    limit,
     orderBy,
     orderDirection = "asc",
     scope = QueryScopeEnum.ACTIVE,
@@ -71,10 +71,10 @@ export async function paginate<T>(
   } = options;
 
   // 验证分页参数
-  validatePaginationParams(page, pageSize);
+  validatePaginationParams(page, limit);
 
   // 计算偏移量
-  const offset = calculateOffset(page, pageSize);
+  const offset = calculateOffset(page, limit);
 
   // 构建查询条件数组
   const conditions: (SQL | undefined)[] = [];
@@ -97,7 +97,7 @@ export async function paginate<T>(
   }
 
   // 构建最终数据查询
-  let finalDataQuery = filteredDataQuery.limit(pageSize).offset(offset);
+  let finalDataQuery = filteredDataQuery.limit(limit).offset(offset);
 
   // 添加排序（建议使用唯一键如主键确保分页稳定性）
   if (orderBy) {
@@ -118,7 +118,7 @@ export async function paginate<T>(
 
   return {
     items: data as T[],
-    meta: buildPageMeta(total, page, pageSize),
+    meta: buildPageMeta(total, page, limit),
   };
 }
 
@@ -141,7 +141,7 @@ export function createPaginator<T>(
   return async (options: Partial<PaginationOptionsType>): Promise<PageData<T>> => {
     const finalOptions: PaginationOptionsType = {
       page: options.page || 1,
-      pageSize: options.pageSize || 10,
+      limit: options.limit || 10,
       orderBy: options.orderBy || defaultOrderBy,
       orderDirection: options.orderDirection || "asc",
       scope: options.scope,
@@ -155,14 +155,14 @@ export function createPaginator<T>(
 /**
  * 验证分页参数
  * @param page 页码
- * @param pageSize 每页大小
+ * @param limit 每页大小
  * @throws Error 当参数无效时抛出错误
  */
-export function validatePaginationParams(page: number, pageSize: number): void {
+export function validatePaginationParams(page: number, limit: number): void {
   if (!Number.isInteger(page) || page < 1) {
     throw new Error("页码必须是大于等于1的整数");
   }
-  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
     throw new Error("每页大小必须是1-100之间的整数");
   }
 }
@@ -170,35 +170,35 @@ export function validatePaginationParams(page: number, pageSize: number): void {
 /**
  * 计算分页偏移量
  * @param page 页码
- * @param pageSize 每页大小
+ * @param limit 每页大小
  * @returns 偏移量
  */
-export function calculateOffset(page: number, pageSize: number): number {
-  return (page - 1) * pageSize;
+export function calculateOffset(page: number, limit: number): number {
+  return (page - 1) * limit;
 }
 
 /**
  * 计算总页数
  * @param total 总记录数
- * @param pageSize 每页大小
+ * @param limit 每页大小
  * @returns 总页数
  */
-export function calculateTotalPages(total: number, pageSize: number): number {
-  return Math.ceil(total / pageSize);
+export function calculateTotalPages(total: number, limit: number): number {
+  return Math.ceil(total / limit);
 }
 
 /**
  * 构建分页元数据
  * @param total 总记录数
  * @param page 当前页码
- * @param pageSize 每页大小
+ * @param limit 每页大小
  * @returns 分页元数据
  */
-export function buildPageMeta(total: number, page: number, pageSize: number) {
+export function buildPageMeta(total: number, page: number, limit: number) {
   return {
     total,
     page,
-    pageSize,
-    totalPages: calculateTotalPages(total, pageSize),
+    limit,
+    totalPages: calculateTotalPages(total, limit),
   };
 }
