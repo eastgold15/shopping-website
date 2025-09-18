@@ -1,13 +1,16 @@
 <script lang="ts" setup>
-import type { SelectColorType, ColorListQueryDto } from "@backend/db/models/attribute.model";
+import type {
+	ColorListQueryDto,
+	SelectColorType,
+} from "@backend/db/models/attribute.model";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { formatDate } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import RadioButton from "primevue/radiobutton";
 import Select from "primevue/select";
@@ -19,17 +22,23 @@ const $crud = useCmsApi().colors;
 
 // 使用zod定义表单验证schema
 const colorSchema = z.object({
-  name: z.string().min(1, "颜色名称不能为空").max(50, "颜色名称不能超过50个字符"),
-  value: z.string().min(1, "颜色值不能为空").max(50, "颜色值不能超过50个字符"),
-  displayName: z.string().max(100, "显示名称不能超过100个字符").optional(),
-  sortOrder: z.number().min(0, "排序权重不能小于0").max(9999, "排序权重不能超过9999"),
-  isActive: z.boolean(),
+	name: z
+		.string()
+		.min(1, "颜色名称不能为空")
+		.max(50, "颜色名称不能超过50个字符"),
+	value: z.string().min(1, "颜色值不能为空").max(50, "颜色值不能超过50个字符"),
+	displayName: z.string().max(100, "显示名称不能超过100个字符").optional(),
+	sortOrder: z
+		.number()
+		.min(0, "排序权重不能小于0")
+		.max(9999, "排序权重不能超过9999"),
+	isActive: z.boolean(),
 });
 
 // 查询表单验证schema
 const querySchema = z.object({
-  name: z.string().max(50, "搜索名称不能超过50个字符").optional(),
-  isActive: z.boolean().optional(),
+	name: z.string().max(50, "搜索名称不能超过50个字符").optional(),
+	isActive: z.boolean().optional(),
 });
 
 // 创建resolver
@@ -38,69 +47,69 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-  SelectColorType,
-  ColorListQueryDto
+	SelectColorType,
+	ColorListQueryDto
 >(
-  {
-    // 1. 定义查询表单
-    // @ts-ignore
-    getList: $crud.list,
-    create: $crud.create,
-    update: $crud.update,
-    delete: $crud.delete,
+	{
+		// 1. 定义查询表单
+		// @ts-ignore
+		getList: $crud.list,
+		create: $crud.create,
+		update: $crud.update,
+		delete: $crud.delete,
 
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      id: 0,
-      name: "",
-      value: "",
-      displayName: "",
-      sortOrder: 0,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }),
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			name: "",
+			value: "",
+			displayName: "",
+			sortOrder: 0,
+			isActive: true,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		}),
 
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除颜色${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` 颜色#${ids.join(",")} `;
-    },
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除颜色${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` 颜色#${ids.join(",")} `;
+		},
 
-    // 5. 数据转换
-    transformSubmitData: (data, type) => {
-      // 确保数字类型正确
-      if (typeof data.sortOrder === "string") {
-        data.sortOrder = parseInt(data.sortOrder) || 0;
-      }
-      // @ts-ignore
-      delete data.createdAt
-      // @ts-ignore
-      delete data.updatedAt
-    },
-  },
-  // 6. 定义查询表单
-  {
-    name: "",
-    isActive: undefined,
-    page: 1,
-    pageSize: 20,
-  },
+		// 5. 数据转换
+		transformSubmitData: (data, type) => {
+			// 确保数字类型正确
+			if (typeof data.sortOrder === "string") {
+				data.sortOrder = parseInt(data.sortOrder) || 0;
+			}
+			// @ts-ignore
+			delete data.createdAt;
+			// @ts-ignore
+			delete data.updatedAt;
+		},
+	},
+	// 6. 定义查询表单
+	{
+		name: "",
+		isActive: undefined,
+		page: 1,
+		pageSize: 20,
+	},
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-  await fetchList();
+	await fetchList();
 });
 
 // 状态选项
 const statusOptions = [
-  { label: "全部", value: undefined },
-  { label: "启用", value: true },
-  { label: "禁用", value: false },
+	{ label: "全部", value: undefined },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
 ];
 </script>
 

@@ -12,6 +12,7 @@ declare module 'vue' {
     Avatar: typeof import('primevue/avatar')['default']
     Badge: typeof import('primevue/badge')['default']
     BannerAds: typeof import('./src/components/BannerAds.vue')['default']
+    BatchCreateSKUs: typeof import('./src/components/BatchCreateSKUs.vue')['default']
     Button: typeof import('primevue/button')['default']
     CarouselAds: typeof import('./src/components/CarouselAds.vue')['default']
     CategoryNav: typeof import('./src/components/CategoryNav.vue')['default']
@@ -50,6 +51,7 @@ declare module 'vue' {
     Textarea: typeof import('primevue/textarea')['default']
     Toast: typeof import('primevue/toast')['default']
     Tooltip: typeof import('./src/components/Tooltip.vue')['default']
+    TreeSelect: typeof import("primevue/treeselect")["default"]
   }
   export interface GlobalDirectives {
     Tooltip: typeof import('primevue/tooltip')['default']

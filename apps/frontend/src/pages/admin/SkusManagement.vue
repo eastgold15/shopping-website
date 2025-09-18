@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import type { SelectSkuType, SkuListQueryDto } from "@backend/db/models/sku.model";
+import type {
+	SelectSkuType,
+	SkuListQueryDto,
+} from "@backend/db/models/sku.model";
 import ImageSelector from "@frontend/components/ImageSelector.vue";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { formatDate, getImageUrl } from "@frontend/utils/formatUtils";
@@ -7,8 +10,8 @@ import { useCmsApi } from "@frontend/utils/handleApi";
 import { FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import RadioButton from "primevue/radiobutton";
 import Select from "primevue/select";
@@ -21,30 +24,39 @@ const $crud = useCmsApi().skus;
 
 // 使用zod定义表单验证schema
 const skuSchema = z.object({
-  productId: z.number().min(1, "商品ID不能为空"),
-  name: z.string().min(1, "SKU名称不能为空").max(255, "SKU名称不能超过255个字符"),
-  skuCode: z.string().min(1, "SKU编码不能为空").max(100, "SKU编码不能超过100个字符"),
-  colorId: z.number().optional(),
-  sizeId: z.number().optional(),
-  colorValue: z.string().max(50, "颜色值不能超过50个字符").optional(),
-  colorName: z.string().max(50, "颜色名称不能超过50个字符").optional(),
-  sizeValue: z.string().max(50, "尺寸值不能超过50个字符").optional(),
-  sizeName: z.string().max(50, "尺寸名称不能超过50个字符").optional(),
-  price: z.string().min(1, "价格不能为空"),
-  comparePrice: z.string().optional(),
-  stock: z.number().min(0, "库存不能小于0"),
-  minStock: z.number().min(0, "最低库存不能小于0").optional(),
-  weight: z.string().optional(),
-  isActive: z.boolean(),
-  sortOrder: z.number().min(0, "排序权重不能小于0").max(9999, "排序权重不能超过9999"),
+	productId: z.number().min(1, "商品ID不能为空"),
+	name: z
+		.string()
+		.min(1, "SKU名称不能为空")
+		.max(255, "SKU名称不能超过255个字符"),
+	skuCode: z
+		.string()
+		.min(1, "SKU编码不能为空")
+		.max(100, "SKU编码不能超过100个字符"),
+	colorId: z.number().optional(),
+	sizeId: z.number().optional(),
+	colorValue: z.string().max(50, "颜色值不能超过50个字符").optional(),
+	colorName: z.string().max(50, "颜色名称不能超过50个字符").optional(),
+	sizeValue: z.string().max(50, "尺寸值不能超过50个字符").optional(),
+	sizeName: z.string().max(50, "尺寸名称不能超过50个字符").optional(),
+	price: z.string().min(1, "价格不能为空"),
+	comparePrice: z.string().optional(),
+	stock: z.number().min(0, "库存不能小于0"),
+	minStock: z.number().min(0, "最低库存不能小于0").optional(),
+	weight: z.string().optional(),
+	isActive: z.boolean(),
+	sortOrder: z
+		.number()
+		.min(0, "排序权重不能小于0")
+		.max(9999, "排序权重不能超过9999"),
 });
 
 // 查询表单验证schema
 const querySchema = z.object({
-  productId: z.string().optional(),
-  colorId: z.string().optional(),
-  sizeId: z.string().optional(),
-  isActive: z.boolean().optional(),
+	productId: z.string().optional(),
+	colorId: z.string().optional(),
+	sizeId: z.string().optional(),
+	isActive: z.boolean().optional(),
 });
 
 // 创建resolver
@@ -53,101 +65,101 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-  SelectSkuType,
-  SkuListQueryDto
+	SelectSkuType,
+	SkuListQueryDto
 >(
-  {
-    // 1. 定义查询表单
-    // @ts-ignore
-    getList: $crud.list,
-    create: $crud.create,
-    update: $crud.update,
-    delete: $crud.delete,
+	{
+		// 1. 定义查询表单
+		// @ts-ignore
+		getList: $crud.list,
+		create: $crud.create,
+		update: $crud.update,
+		delete: $crud.delete,
 
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      id: 0,
-      productId: 0,
-      name: "",
-      skuCode: "",
-      colorId: undefined,
-      sizeId: undefined,
-      colorValue: "",
-      colorName: "",
-      sizeValue: "",
-      sizeName: "",
-      price: "0.00",
-      comparePrice: "0.00",
-      stock: 0,
-      minStock: 0,
-      weight: "0.00",
-      dimensions: {},
-      isActive: true,
-      sortOrder: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      images: [],
-    }),
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			productId: 0,
+			name: "",
+			skuCode: "",
+			colorId: undefined,
+			sizeId: undefined,
+			colorValue: "",
+			colorName: "",
+			sizeValue: "",
+			sizeName: "",
+			price: "0.00",
+			comparePrice: "0.00",
+			stock: 0,
+			minStock: 0,
+			weight: "0.00",
+			dimensions: {},
+			isActive: true,
+			sortOrder: 0,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			images: [],
+		}),
 
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除SKU${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` SKU#${ids.join(",")} `;
-    },
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除SKU${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` SKU#${ids.join(",")} `;
+		},
 
-    // 5. 数据转换
-    transformSubmitData: (data, type) => {
-      // 确保数字类型正确
-      if (typeof data.sortOrder === "string") {
-        data.sortOrder = parseInt(data.sortOrder) || 0;
-      }
-      if (typeof data.productId === "string") {
-        data.productId = parseInt(data.productId) || 0;
-      }
-      if (typeof data.colorId === "string") {
-        data.colorId = parseInt(data.colorId) || undefined;
-      }
-      if (typeof data.sizeId === "string") {
-        data.sizeId = parseInt(data.sizeId) || undefined;
-      }
-      if (typeof data.stock === "string") {
-        data.stock = parseInt(data.stock) || 0;
-      }
-      if (typeof data.minStock === "string") {
-        data.minStock = parseInt(data.minStock) || 0;
-      }
-      // @ts-ignore
-      delete data.createdAt
-      // @ts-ignore
-      delete data.updatedAt
-      // @ts-ignore
-      delete data.images
-    },
-  },
-  // 6. 定义查询表单
-  {
-    productId: "",
-    colorId: "",
-    sizeId: "",
-    isActive: undefined,
-    page: 1,
-    pageSize: 20,
-  },
+		// 5. 数据转换
+		transformSubmitData: (data, type) => {
+			// 确保数字类型正确
+			if (typeof data.sortOrder === "string") {
+				data.sortOrder = parseInt(data.sortOrder) || 0;
+			}
+			if (typeof data.productId === "string") {
+				data.productId = parseInt(data.productId) || 0;
+			}
+			if (typeof data.colorId === "string") {
+				data.colorId = parseInt(data.colorId) || undefined;
+			}
+			if (typeof data.sizeId === "string") {
+				data.sizeId = parseInt(data.sizeId) || undefined;
+			}
+			if (typeof data.stock === "string") {
+				data.stock = parseInt(data.stock) || 0;
+			}
+			if (typeof data.minStock === "string") {
+				data.minStock = parseInt(data.minStock) || 0;
+			}
+			// @ts-ignore
+			delete data.createdAt;
+			// @ts-ignore
+			delete data.updatedAt;
+			// @ts-ignore
+			delete data.images;
+		},
+	},
+	// 6. 定义查询表单
+	{
+		productId: "",
+		colorId: "",
+		sizeId: "",
+		isActive: undefined,
+		page: 1,
+		pageSize: 20,
+	},
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-  await fetchList();
+	await fetchList();
 });
 
 // 状态选项
 const statusOptions = [
-  { label: "全部", value: undefined },
-  { label: "启用", value: true },
-  { label: "禁用", value: false },
+	{ label: "全部", value: undefined },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
 ];
 
 // 图片选择相关
@@ -155,16 +167,16 @@ const showImageSelector = ref(false);
 const currentFormData = ref<SelectSkuType>();
 
 const onImageSelected = (imageUrl: string, imageData: any) => {
-  console.log("imageData:", imageData);
-  console.log("imageUrl:", imageUrl);
+	console.log("imageData:", imageData);
+	console.log("imageUrl:", imageUrl);
 
-  if (currentFormData.value) {
-    // 设置图片ID（数字类型）
-    currentFormData.value.image_id = imageData.id;
-    // 设置显示用的图片URL
-    currentFormData.value.image = imageUrl;
-  }
-  showImageSelector.value = false;
+	if (currentFormData.value) {
+		// 设置图片ID（数字类型）
+		currentFormData.value.image_id = imageData.id;
+		// 设置显示用的图片URL
+		currentFormData.value.image = imageUrl;
+	}
+	showImageSelector.value = false;
 };
 </script>
 

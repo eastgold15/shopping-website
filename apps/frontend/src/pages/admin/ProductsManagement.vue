@@ -1,231 +1,409 @@
 <script setup lang="ts">
-import { zodResolver } from "@primevue/forms/resolvers/zod";
-
-import ImageSelector from "@frontend/components/ImageSelector.vue";
-
 import type { ProductModel } from "@backend/types";
+import BatchCreateSKUs from "@frontend/components/BatchCreateSKUs.vue";
+import ImageSelector from "@frontend/components/ImageSelector.vue";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { useCmsApi } from "@frontend/utils/handleApi";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+import TreeSelect from "primevue/treeselect";
 import z from "zod";
-
 
 // 表单验证schema
 const productSchema = z.object({
-  id: z.number().optional(),
-  name: z.string().min(1, "商品名称不能为空"),
-  slug: z.string().min(1, "URL别名不能为空"),
-  description: z.string().optional(),
-  shortDescription: z.string().optional(),
-  price: z.number().min(0, "价格不能小于0"),
-  comparePrice: z.number().min(0, "对比价格不能小于0").optional(),
-  cost: z.number().min(0, "成本价不能小于0").optional(),
-  sku: z.string().optional(),
-  barcode: z.string().optional(),
-  weight: z.number().min(0, "重量不能小于0").optional(),
-  dimensions: z.object({
-    length: z.number().optional(),
-    width: z.number().optional(),
-    height: z.number().optional(),
-  }).optional(),
-  images: z.array(z.string()).optional(),
-  videos: z.array(z.string()).optional(),
-  colors: z.array(z.string()).optional(),
-  sizes: z.array(z.string()).optional(),
-  materials: z.array(z.string()).optional(),
-  careInstructions: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  specifications: z.record(z.any()).optional(),
-  categoryId: z.number().optional(),
-  stock: z.number().min(0, "库存不能小于0"),
-  minStock: z.number().min(0, "最低库存不能小于0").optional(),
-  isActive: z.boolean().default(true),
-  isFeatured: z.boolean().default(false),
-  metaTitle: z.string().optional(),
-  metaDescription: z.string().optional(),
-  metaKeywords: z.string().optional(),
+	id: z.number().optional(),
+	name: z.string().min(1, "商品名称不能为空"),
+	slug: z.string().min(1, "URL别名不能为空"),
+	description: z.string().optional(),
+	shortDescription: z.string().optional(),
+	price: z.number().min(0, "价格不能小于0"),
+	comparePrice: z.number().min(0, "对比价格不能小于0").optional(),
+	cost: z.number().min(0, "成本价不能小于0").optional(),
+	sku: z.string().optional(),
+	barcode: z.string().optional(),
+	weight: z.number().min(0, "重量不能小于0").optional(),
+	dimensions: z
+		.object({
+			length: z.number().optional(),
+			width: z.number().optional(),
+			height: z.number().optional(),
+		})
+		.optional(),
+	images: z.array(z.string()).optional(),
+	videos: z.array(z.string()).optional(),
+	colors: z.array(z.string()).optional(),
+	sizes: z.array(z.string()).optional(),
+	materials: z.array(z.string()).optional(),
+	careInstructions: z.string().optional(),
+	features: z.array(z.string()).optional(),
+	specifications: z.record(z.any()).optional(),
+	categoryId: z.number().optional(),
+	stock: z.number().min(0, "库存不能小于0"),
+	minStock: z.number().min(0, "最低库存不能小于0").optional(),
+	isActive: z.boolean().default(true),
+	isFeatured: z.boolean().default(false),
+	metaTitle: z.string().optional(),
+	metaDescription: z.string().optional(),
+	metaKeywords: z.string().optional(),
 });
 
 const querySchema = z.object({
-  name: z.string().optional(),
-  categoryId: z.number().optional(),
-  isActive: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
+	name: z.string().optional(),
+	categoryId: z.number().optional(),
+	isActive: z.boolean().optional(),
+	isFeatured: z.boolean().optional(),
 });
 const $crud = useCmsApi().products;
 const resolver = zodResolver(productSchema);
 const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
-const templateData = await genPrimeCmsTemplateData<
-  ProductModel,
-  any
->(
-  {
-    // 1. 定义查询表单
-    getList: $crud.list,
-    create: $crud.create,
-    update: $crud.update,
-    delete: $crud.delete,
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      id: 0,
-      name: "",
-      slug: "",
-      description: "",
-      shortDescription: "",
-      price: 0,
-      comparePrice: 0,
-      cost: 0,
-      sku: "",
-      barcode: "",
-      weight: 0,
-      dimensions: { length: 0, width: 0, height: 0 },
-      images: [],
-      videos: [],
-      colors: [],
-      sizes: [],
-      materials: [],
-      careInstructions: "",
-      features: [],
-      specifications: {},
-      categoryId: null,
-      stock: 0,
-      minStock: 0,
-      isActive: true,
-      isFeatured: false,
-      metaTitle: "",
-      metaDescription: "",
-      metaKeywords: "",
-      createdAt: "",
-      updatedAt: "",
-    }),
+const templateData = await genPrimeCmsTemplateData<ProductModel, any>(
+	{
+		// 1. 定义查询表单
+		getList: $crud.list,
+		create: $crud.create,
+		update: $crud.update,
+		delete: $crud.delete,
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			name: "",
+			slug: "",
+			description: "",
+			shortDescription: "",
+			price: 0,
+			comparePrice: 0,
+			cost: 0,
+			sku: "",
+			barcode: "",
+			weight: 0,
+			dimensions: { length: 0, width: 0, height: 0 },
+			images: [],
+			videos: [],
+			colors: [],
+			sizes: [],
+			materials: [],
+			careInstructions: "",
+			features: [],
+			specifications: {},
+			categoryId: null,
+			stock: 0,
+			minStock: 0,
+			isActive: true,
+			isFeatured: false,
+			metaTitle: "",
+			metaDescription: "",
+			metaKeywords: "",
+			createdAt: "",
+			updatedAt: "",
+		}),
 
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除商品${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` 商品#${ids.join(",")} `;
-    },
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除商品${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` 商品#${ids.join(",")} `;
+		},
 
-    // 5. 数据转换
-    transformSubmitData: (data, type) => {
-      // 确保数组字段不为null
-      return {
-        ...data,
-        images: data.images || [],
-        videos: data.videos || [],
-        colors: data.colors || [],
-        sizes: data.sizes || [],
-        materials: data.materials || [],
-      };
-    },
-  },
-  // 6. 定义查询表单
-  {
-    name: "",
-    categoryId: undefined,
-    isActive: undefined,
-    isFeatured: undefined,
-    page: 1,
-    pageSize: 20,
-  },
+		// 5. 数据转换
+		transformSubmitData: (data, type) => {
+			// 确保数组字段不为null
+			return {
+				...data,
+				images: data.images || [],
+				videos: data.videos || [],
+				colors: data.colors || [],
+				sizes: data.sizes || [],
+				materials: data.materials || [],
+			};
+		},
+	},
+	// 6. 定义查询表单
+	{
+		name: "",
+		categoryId: undefined,
+		isActive: undefined,
+		isFeatured: undefined,
+		page: 1,
+		pageSize: 20,
+	},
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-  await fetchList();
+	await fetchList();
+	await loadImages();
+	await loadCategories();
 });
 
 // 状态选项
 const statusOptions = [
-  { label: "全部", value: undefined },
-  { label: "启用", value: true },
-  { label: "禁用", value: false },
+	{ label: "全部", value: undefined },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
 ];
 
 // 图片选择相关
 const showImageSelector = ref(false);
 const currentFormData = ref<ProductModel>();
 
-const onImageSelected = (imageUrl: string, imageData: any) => {
-  console.log("imageData:", imageData);
-  console.log("imageUrl:", imageUrl);
+// 可用图片列表
+const images = ref([]);
+const loadingImages = ref(false);
 
-  if (currentFormData.value) {
-    // 确保images数组存在
-    if (!currentFormData.value.images) {
-      currentFormData.value.images = [];
-    }
-    // 添加图片URL到数组中
-    if (!currentFormData.value.images.includes(imageUrl)) {
-      currentFormData.value.images.push(imageUrl);
-    }
-  }
-  showImageSelector.value = false;
+// 分类树相关
+const categoryTree = ref([]);
+const selectedCategory = ref(null);
+const loadingCategories = ref(false);
+
+// 加载图片列表
+const loadImages = async () => {
+	try {
+		loadingImages.value = true;
+		const response = await fetch("/api/images");
+		const result = await response.json();
+		if (result.code === 200) {
+			images.value = result.data.items || [];
+		}
+	} catch (error) {
+		console.error("加载图片失败:", error);
+	} finally {
+		loadingImages.value = false;
+	}
+};
+
+// 获取图片URL
+const getImageUrl = (imageUrl: string) => {
+	if (!imageUrl) return "";
+	if (imageUrl.startsWith("http")) return imageUrl;
+	return `/api/uploads/${imageUrl}`;
+};
+
+// 获取图片显示名称
+const getImageDisplayName = (image: any) => {
+	return image.alt || image.fileName || image.id?.toString() || "未命名图片";
+};
+
+// 加载分类树
+const loadCategories = async () => {
+	try {
+		loadingCategories.value = true;
+		const response = await fetch("/api/categories");
+		const result = await response.json();
+		if (result.code === 200) {
+			// 将扁平的分类列表转换为树形结构
+			categoryTree.value = buildCategoryTree(result.data.items || []);
+		}
+	} catch (error) {
+		console.error("加载分类失败:", error);
+		// 使用模拟数据作为备选
+		categoryTree.value = getMockCategoryTree();
+	} finally {
+		loadingCategories.value = false;
+	}
+};
+
+// 构建分类树结构
+const buildCategoryTree = (categories: any[]) => {
+	const categoryMap = new Map();
+	const rootCategories = [];
+
+	// 第一遍：创建所有节点的映射
+	categories.forEach((category) => {
+		categoryMap.set(category.id, {
+			key: category.id,
+			label: category.name,
+			data: category,
+			icon: "pi pi-folder",
+			children: [],
+		});
+	});
+
+	// 第二遍：建立父子关系
+	categories.forEach((category) => {
+		const node = categoryMap.get(category.id);
+		if (category.parentId && categoryMap.has(category.parentId)) {
+			const parentNode = categoryMap.get(category.parentId);
+			parentNode.children.push(node);
+		} else {
+			rootCategories.push(node);
+		}
+	});
+
+	return rootCategories;
+};
+
+// 模拟分类数据（当API不可用时使用）
+const getMockCategoryTree = () => {
+	return [
+		{
+			key: 1,
+			label: "服装鞋帽",
+			icon: "pi pi-tag",
+			children: [
+				{
+					key: 11,
+					label: "男鞋",
+					icon: "pi pi-male",
+					children: [
+						{ key: 111, label: "运动鞋", icon: "pi pi-running" },
+						{ key: 112, label: "休闲鞋", icon: "pi pi-walking" },
+						{ key: 113, label: "正装鞋", icon: "pi pi-briefcase" },
+					],
+				},
+				{
+					key: 12,
+					label: "女鞋",
+					icon: "pi pi-female",
+					children: [
+						{ key: 121, label: "高跟鞋", icon: "pi pi-heel" },
+						{ key: 122, label: "平底鞋", icon: "pi pi-shoe" },
+						{ key: 123, label: "运动鞋", icon: "pi pi-running" },
+					],
+				},
+			],
+		},
+		{
+			key: 2,
+			label: "运动户外",
+			icon: "pi pi-mountain",
+			children: [
+				{ key: 21, label: "跑步鞋", icon: "pi pi-running" },
+				{ key: 22, label: "篮球鞋", icon: "pi pi-basketball" },
+				{ key: 23, label: "足球鞋", icon: "pi pi-soccer-ball" },
+			],
+		},
+	];
+};
+
+// 分类选择变化处理
+const onCategoryChange = (event: any) => {
+	const data = templateData.crudFormData.value;
+	if (data && event.value) {
+		// TreeSelect可能返回的是节点对象，我们需要提取key
+		if (typeof event.value === "object") {
+			data.categoryId = event.value.key || event.value;
+		} else {
+			data.categoryId = event.value;
+		}
+	}
+};
+
+const onImageSelected = (imageUrl: string, imageData: any) => {
+	console.log("imageData:", imageData);
+	console.log("imageUrl:", imageUrl);
+
+	if (currentFormData.value) {
+		// 确保images数组存在
+		if (!currentFormData.value.images) {
+			currentFormData.value.images = [];
+		}
+		// 添加图片URL到数组中
+		if (!currentFormData.value.images.includes(imageUrl)) {
+			currentFormData.value.images.push(imageUrl);
+		}
+	}
+	showImageSelector.value = false;
+};
+
+// SKU批量创建相关
+const showBatchCreateSKUs = ref(false);
+const selectedProductId = ref(0);
+const selectedProductName = ref("");
+
+const openBatchCreateSKUs = (product: ProductModel) => {
+	selectedProductId.value = product.id;
+	selectedProductName.value = product.name;
+	showBatchCreateSKUs.value = true;
+};
+
+const onBatchCreateSuccess = (result: any) => {
+	console.log("批量创建SKU成功:", result);
+	// 可以在这里刷新SKU列表或执行其他操作
+};
+
+// 图片操作方法
+const removeImage = (index: number) => {
+	const data = templateData.crudFormData.value;
+	if (data && data.images) {
+		data.images.splice(index, 1);
+	}
+};
+
+const moveImage = (index: number, direction: number) => {
+	const data = templateData.crudFormData.value;
+	if (!data || !data.images) return;
+
+	const newIndex = index + direction;
+	if (newIndex >= 0 && newIndex < data.images.length) {
+		const temp = data.images[index];
+		data.images[index] = data.images[newIndex];
+		data.images[newIndex] = temp;
+	}
 };
 
 // 规格管理相关
-const newColor = ref('');
-const newSize = ref('');
-const newMaterial = ref('');
-const newFeature = ref('');
+const newColor = ref("");
+const newSize = ref("");
+const newMaterial = ref("");
+const newFeature = ref("");
 
 // 添加颜色
 const addColor = () => {
-  if (newColor.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.colors) {
-      data.colors = [];
-    }
-    if (!data.colors.includes(newColor.value.trim())) {
-      data.colors.push(newColor.value.trim());
-    }
-    newColor.value = '';
-  }
+	if (newColor.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.colors) {
+			data.colors = [];
+		}
+		if (!data.colors.includes(newColor.value.trim())) {
+			data.colors.push(newColor.value.trim());
+		}
+		newColor.value = "";
+	}
 };
 
 // 添加尺寸
 const addSize = () => {
-  if (newSize.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.sizes) {
-      data.sizes = [];
-    }
-    if (!data.sizes.includes(newSize.value.trim())) {
-      data.sizes.push(newSize.value.trim());
-    }
-    newSize.value = '';
-  }
+	if (newSize.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.sizes) {
+			data.sizes = [];
+		}
+		if (!data.sizes.includes(newSize.value.trim())) {
+			data.sizes.push(newSize.value.trim());
+		}
+		newSize.value = "";
+	}
 };
 
 // 添加材质
 const addMaterial = () => {
-  if (newMaterial.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.materials) {
-      data.materials = [];
-    }
-    if (!data.materials.includes(newMaterial.value.trim())) {
-      data.materials.push(newMaterial.value.trim());
-    }
-    newMaterial.value = '';
-  }
+	if (newMaterial.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.materials) {
+			data.materials = [];
+		}
+		if (!data.materials.includes(newMaterial.value.trim())) {
+			data.materials.push(newMaterial.value.trim());
+		}
+		newMaterial.value = "";
+	}
 };
 
 // 添加特性
 const addFeature = () => {
-  if (newFeature.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.features) {
-      data.features = [];
-    }
-    if (!data.features.includes(newFeature.value.trim())) {
-      data.features.push(newFeature.value.trim());
-    }
-    newFeature.value = '';
-  }
+	if (newFeature.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.features) {
+			data.features = [];
+		}
+		if (!data.features.includes(newFeature.value.trim())) {
+			data.features.push(newFeature.value.trim());
+		}
+		newFeature.value = "";
+	}
 };
 </script>
 
@@ -345,6 +523,15 @@ const addFeature = () => {
           </span>
         </template>
       </Column>
+
+      <Column field="actions" header="操作" style="width: 120px">
+        <template #body="{ data }">
+          <div class="flex items-center gap-2">
+            <Button icon="pi pi-plus" size="small" severity="success" @click="openBatchCreateSKUs(data)"
+              v-tooltip="'批量创建SKU'" />
+          </div>
+        </template>
+      </Column>
     </template>
 
     <!-- 表单 -->
@@ -394,7 +581,21 @@ const addFeature = () => {
           <!-- 商品分类 -->
           <FormField v-slot="$field" name="categoryId" class="flex flex-col gap-2 mb-4">
             <label class="text-sm font-medium">商品分类 *</label>
-            <InputNumber v-model="data.categoryId" placeholder="请输入分类ID" :disabled="disabled" :min="1" class="w-full" />
+            <div class="card flex justify-center">
+              <TreeSelect v-model="selectedCategory" :options="categoryTree" selectionMode="single" 
+                placeholder="选择商品分类" class="w-full" :disabled="disabled"
+                @change="onCategoryChange">
+                <template #dropdownicon>
+                  <i class="pi pi-sitemap" />
+                </template>
+                <template #option="slotProps">
+                  <div class="flex items-center gap-2">
+                    <i :class="slotProps.option.icon || 'pi pi-folder'" />
+                    <span>{{ slotProps.option.label }}</span>
+                  </div>
+                </template>
+              </TreeSelect>
+            </div>
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
           </FormField>
@@ -426,28 +627,77 @@ const addFeature = () => {
 
           <FormField v-slot="$field" name="images" class="flex flex-col gap-2 mb-4">
             <label class="text-sm font-medium">商品图片 *</label>
-            <div class="flex flex-col gap-2">
-              <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined :disabled="disabled"
-                @click="() => { currentFormData = templateData.crudFormData.value; showImageSelector = true; }"
-                v-tooltip="'从图片库选择'" />
+            
+            <!-- 图片多选下拉框 -->
+            <div class="card flex justify-center mb-4">
+              <Select v-model="data.images" :options="images" optionLabel="fileName" placeholder="选择商品图片" 
+                class="w-full" :loading="loadingImages" multiple :maxSelectionLimit="10" filter>
+                <template #value="slotProps">
+                  <div v-if="slotProps.value && slotProps.value.length > 0" class="flex flex-wrap gap-1">
+                    <div v-for="(image, index) in slotProps.value" :key="index" 
+                      class="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
+                      <img :alt="getImageDisplayName(image)" :src="getImageUrl(image.imageUrl || image)" 
+                        style="width: 20px; height: 20px; object-fit: cover; border-radius: 2px" />
+                      <span class="text-sm">{{ getImageDisplayName(image) }}</span>
+                      <Button icon="pi pi-times" text rounded size="small" @click.stop="removeImage(index)" 
+                        :disabled="disabled" class="ml-1" />
+                    </div>
+                  </div>
+                  <span v-else>{{ slotProps.placeholder }}</span>
+                </template>
+                <template #option="slotProps">
+                  <div class="flex items-center">
+                    <img :alt="slotProps.option.fileName" :src="getImageUrl(slotProps.option.imageUrl)" 
+                      style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px" />
+                    <div class="flex flex-col ml-2">
+                      <span>{{ getImageDisplayName(slotProps.option) }}</span>
+                      <small class="text-gray-500">{{ slotProps.option.category || 'general' }}</small>
+                    </div>
+                  </div>
+                </template>
+                <template #dropdownicon>
+                  <i class="pi pi-images" />
+                </template>
+                <template #header>
+                  <div class="font-medium p-3">可用图片 (最多选择10张)</div>
+                </template>
+                <template #footer>
+                  <div class="p-3">
+                    <Button label="刷新图片" fluid severity="secondary" variant="text" size="small" 
+                      icon="pi pi-refresh" @click="loadImages" :loading="loadingImages" />
+                  </div>
+                </template>
+              </Select>
+            </div>
 
-              <!-- 已选择的图片展示 -->
-              <div v-if="data.images && data.images.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div v-for="(image, index) in data.images" :key="index" class="relative group">
-                  <img :src="image" :alt="`商品图片 ${index + 1}`" class="w-full h-32 object-cover rounded-lg border" />
-                  <Button @click="data.images.splice(index, 1)" icon="pi pi-times" size="small" severity="danger"
-                    rounded class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    :disabled="disabled" />
+            <!-- 已选择的图片网格展示 -->
+            <div v-if="data.images && data.images.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div v-for="(image, index) in data.images" :key="index" class="relative group">
+                <img :src="getImageUrl(image.imageUrl || image)" :alt="`商品图片 ${index + 1}`" 
+                  class="w-full h-32 object-cover rounded-lg border border-gray-200" />
+                <div class="absolute top-1 right-1 flex gap-1">
+                  <Button @click="moveImage(index, -1)" icon="pi pi-arrow-up" size="small" 
+                    severity="secondary" rounded :disabled="index === 0 || disabled"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Button @click="moveImage(index, 1)" icon="pi pi-arrow-down" size="small" 
+                    severity="secondary" rounded :disabled="index === data.images.length - 1 || disabled"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Button @click="removeImage(index)" icon="pi pi-times" size="small" severity="danger"
+                    rounded class="opacity-0 group-hover:opacity-100 transition-opacity" :disabled="disabled" />
+                </div>
+                <div class="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                  {{ index + 1 }}
                 </div>
               </div>
-
-              <!-- 无图片时的提示 -->
-              <div v-else class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <i class="pi pi-image text-4xl text-gray-400 mb-4"></i>
-                <p class="text-gray-500">暂无图片，点击上方按钮选择图片</p>
-              </div>
             </div>
-            <small class="text-gray-500">支持 JPG、PNG 格式，建议尺寸 800x800px，最大5MB，最多10张</small>
+
+            <!-- 无图片时的提示 -->
+            <div v-else class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
+              <i class="pi pi-image text-4xl text-gray-400 mb-4"></i>
+              <p class="text-gray-500">暂未选择图片，请从上方下拉框中选择商品图片</p>
+            </div>
+
+            <small class="text-gray-500">支持 JPG、PNG 格式，建议尺寸 800x800px，最多10张图片，第一张将作为主图</small>
             <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
             </Message>
           </FormField>
@@ -694,6 +944,14 @@ const addFeature = () => {
 
   <!-- 图片选择器 -->
   <ImageSelector v-model:visible="showImageSelector" category="product" @select="onImageSelected" />
+
+  <!-- SKU批量创建对话框 -->
+  <BatchCreateSKUs
+    v-model:visible="showBatchCreateSKUs"
+    :product-id="selectedProductId"
+    :product-name="selectedProductName"
+    @success="onBatchCreateSuccess"
+  />
 </template>
 
 <style scoped>

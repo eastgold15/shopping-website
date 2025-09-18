@@ -1,330 +1,340 @@
 // 基础Service类，提供通用的CRUD操作
 
 import type {
-  DeleteOptions,
-  PaginationParams,
-  QueryFilter,
-  QueryOptions,
-  SortOption,
-  UpdateOptions
+	DeleteOptions,
+	PaginationParams,
+	QueryFilter,
+	QueryOptions,
+	SortOption,
+	UpdateOptions,
 } from "@backend/types";
-import { and, asc, desc, eq, gt, gte, inArray, like, lt, lte, ne, SQL } from "drizzle-orm";
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	gt,
+	gte,
+	inArray,
+	like,
+	lt,
+	lte,
+	ne,
+	type SQL,
+} from "drizzle-orm";
 import { db } from "../../db/connection";
 import {
-  DatabaseError,
-  handleDatabaseError,
-  NotFoundError,
-  ValidationError
+	DatabaseError,
+	handleDatabaseError,
+	NotFoundError,
+	ValidationError,
 } from "../error/customError";
-import { type PageData } from "../Res";
+import type { PageData } from "../Res";
 import { paginate } from "./pagination";
 /**
  * 基础Service类，提供通用的CRUD操作
  * 移除了验证逻辑（由Controller层处理）
  */
 export abstract class BaseService<
-  T extends Record<string, any>,
-  CreateInput extends Record<string, any>,
-  UpdateInput extends Partial<CreateInput>,
+	T extends Record<string, any>,
+	CreateInput extends Record<string, any>,
+	UpdateInput extends Partial<CreateInput>,
 > {
-  protected abstract readonly table: any;
-  protected abstract readonly tableName: string;
+	protected abstract readonly table: any;
+	protected abstract readonly tableName: string;
 
+	/**
+	 * 创建记录
+	 */
+	/**
+	 * 创建单条记录 - 修复版本
+	 */
+	async create(data: CreateInput): Promise<T> {
+		try {
+			// 明确指定返回类型
+			const result = await db
+				.insert(this.table)
+				.values(data as any)
+				.returning();
 
+			// 检查返回的是数组
+			if (!Array.isArray(result) || result.length === 0) {
+				throw new DatabaseError("Failed to create record");
+			}
 
-  /**
-   * 创建记录
-   */
-  /**
-  * 创建单条记录 - 修复版本
-  */
-  async create(data: CreateInput): Promise<T> {
-    try {
-      // 明确指定返回类型
-      const result = await db
-        .insert(this.table)
-        .values(data as any)
-        .returning();
+			return result[0] as T;
+		} catch (error) {
+			throw handleDatabaseError(error);
+		}
+	}
 
-      // 检查返回的是数组
-      if (!Array.isArray(result) || result.length === 0) {
-        throw new DatabaseError("Failed to create record");
-      }
+	/**
+	 * 批量创建记录 - 修复版本
+	 */
+	async createMany(data: CreateInput[]): Promise<T[]> {
+		if (!data || data.length === 0) {
+			throw new ValidationError("No data provided for batch creation");
+		}
 
-      return result[0] as T;
-    } catch (error) {
-      throw handleDatabaseError(error);
-    }
-  }
+		try {
+			const result = await db
+				.insert(this.table)
+				.values(data as any)
+				.returning();
 
+			if (!Array.isArray(result)) {
+				throw new DatabaseError("Failed to create records");
+			}
 
-  /**
-    * 批量创建记录 - 修复版本
-    */
-  async createMany(data: CreateInput[]): Promise<T[]> {
-    if (!data || data.length === 0) {
-      throw new ValidationError('No data provided for batch creation');
-    }
+			return result as T[];
+		} catch (error) {
+			throw handleDatabaseError(error);
+		}
+	}
 
-    try {
-      const result = await db
-        .insert(this.table)
-        .values(data as any)
-        .returning();
+	/**
+	 * 根据ID查找记录
+	 */
+	async findById(id: number): Promise<T | null> {
+		const [result] = await db
+			.select()
+			.from(this.table)
+			.where(eq(this.table.id, id))
+			.limit(1);
 
-      if (!Array.isArray(result)) {
-        throw new DatabaseError("Failed to create records");
-      }
+		return (result as T) || null;
+	}
 
-      return result as T[];
-    } catch (error) {
-      throw handleDatabaseError(error);
-    }
-  }
+	/**
+	 * 根据ID查找记录或抛出错误
+	 */
+	async findByIdOrThrow(id: number): Promise<T> {
+		const result = await this.findById(id);
 
-  /**
-   * 根据ID查找记录
-   */
-  async findById(id: number): Promise<T | null> {
-    const [result] = await db
-      .select()
-      .from(this.table)
-      .where(eq(this.table.id, id))
-      .limit(1);
+		if (!result) {
+			throw new NotFoundError(`Record with id ${id} not found`);
+		}
 
-    return result as T || null;
-  }
+		return result;
+	}
 
-  /**
-   * 根据ID查找记录或抛出错误
-   */
-  async findByIdOrThrow(id: number): Promise<T> {
-    const result = await this.findById(id);
+	/**
+	 * 根据条件查找单条记录
+	 */
+	async findOne(filters: QueryFilter[]): Promise<T | null> {
+		const whereClause = this.buildWhereClause(filters);
 
-    if (!result) {
-      throw new NotFoundError(`Record with id ${id} not found`);
-    }
+		const [result] = await db
+			.select()
+			.from(this.table)
+			.where(whereClause)
+			.limit(1);
 
-    return result;
-  }
+		return (result as T) || null;
+	}
 
-  /**
-   * 根据条件查找单条记录
-   */
-  async findOne(filters: QueryFilter[]): Promise<T | null> {
-    const whereClause = this.buildWhereClause(filters);
+	/**
+	 * 查询多条记录
+	 */
+	async findMany(queryOptions: QueryOptions = {}): Promise<T[]> {
+		const whereClause = this.buildWhereClause(queryOptions.filters || []);
+		const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
 
-    const [result] = await db
-      .select()
-      .from(this.table)
-      .where(whereClause)
-      .limit(1);
+		const query = db.select().from(this.table);
 
-    return result as T || null;
-  }
+		if (whereClause) {
+			query.where(whereClause);
+		}
 
-  /**
-   * 查询多条记录
-   */
-  async findMany(queryOptions: QueryOptions = {}): Promise<T[]> {
-    const whereClause = this.buildWhereClause(queryOptions.filters || []);
-    const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
+		if (orderByClause.length > 0) {
+			query.orderBy(...orderByClause);
+		}
 
-    let query = db.select().from(this.table);
+		return (await query) as T[];
+	}
 
-    if (whereClause) {
-      query.where(whereClause);
-    }
+	/**
+	 * 分页查询 - 使用统一的分页函数
+	 */
+	async findPaginated(
+		pagination: PaginationParams,
+		queryOptions: QueryOptions = {},
+	): Promise<PageData<T>> {
+		const { page = 1, pageSize = 10 } = pagination;
 
-    if (orderByClause.length > 0) {
-      query.orderBy(...orderByClause);
-    }
+		const whereClause = this.buildWhereClause(queryOptions.filters || []);
+		const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
 
+		// 构建基础查询
+		let baseQuery = db.select().from(this.table).$dynamic();
 
-    return await query as T[];
-  }
+		// 应用查询条件
+		if (whereClause) {
+			baseQuery = baseQuery.where(whereClause);
+		}
 
-  /**
-   * 分页查询 - 使用统一的分页函数
-   */
-  async findPaginated(
-    pagination: PaginationParams,
-    queryOptions: QueryOptions = {},
-  ): Promise<PageData<T>> {
-    const { page = 1, pageSize = 10 } = pagination;
+		// 确定排序字段
+		let orderBy = this.table.id; // 默认使用id排序
+		let orderDirection: "asc" | "desc" = "asc";
 
-    const whereClause = this.buildWhereClause(queryOptions.filters || []);
-    const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
+		if (queryOptions.sort && queryOptions.sort.length > 0) {
+			const firstSort = queryOptions.sort[0];
+			orderBy = this.table[firstSort.field];
+			orderDirection = firstSort.direction;
+		}
 
-    // 构建基础查询
-    let baseQuery = db.select().from(this.table).$dynamic();
+		// 使用统一的分页函数
+		return await paginate<T>(db, baseQuery, {
+			page,
+			pageSize,
+			orderBy,
+			orderDirection,
+		});
+	}
 
-    // 应用查询条件
-    if (whereClause) {
-      baseQuery = baseQuery.where(whereClause);
-    }
+	/**
+	 * 更新记录
+	 */
+	async update(
+		id: number,
+		data: UpdateInput,
+		options: UpdateOptions = {},
+	): Promise<T> {
+		// 检查记录是否存在
+		const existing = await this.findById(id);
+		if (!existing) {
+			throw new NotFoundError(`Record with id ${id} not found`);
+		}
 
-    // 确定排序字段
-    let orderBy = this.table.id; // 默认使用id排序
-    let orderDirection: 'asc' | 'desc' = 'asc';
+		const [result] = await db
+			.update(this.table)
+			.set(data)
+			.where(eq(this.table.id, id))
+			.returning();
 
-    if (queryOptions.sort && queryOptions.sort.length > 0) {
-      const firstSort = queryOptions.sort[0];
-      orderBy = this.table[firstSort.field];
-      orderDirection = firstSort.direction;
-    }
+		if (!result) {
+			throw new DatabaseError("Failed to update record");
+		}
 
-    // 使用统一的分页函数
-    return await paginate<T>(db, baseQuery, {
-      page,
-      pageSize,
-      orderBy,
-      orderDirection,
-    });
-  }
+		return result as T;
+	}
 
-  /**
-   * 更新记录
-   */
-  async update(id: number, data: UpdateInput, options: UpdateOptions = {}): Promise<T> {
-    // 检查记录是否存在
-    const existing = await this.findById(id);
-    if (!existing) {
-      throw new NotFoundError(`Record with id ${id} not found`);
-    }
+	/**
+	 * 删除记录
+	 */
+	async delete(id: number, options: DeleteOptions = {}): Promise<boolean> {
+		// 检查记录是否存在
+		const existing = await this.findById(id);
+		if (!existing) {
+			throw new NotFoundError(`Record with id ${id} not found`);
+		}
 
-    const [result] = await db
-      .update(this.table)
-      .set(data)
-      .where(eq(this.table.id, id))
-      .returning();
+		const result = await db
+			.delete(this.table)
+			.where(eq(this.table.id, id))
+			.returning({ id: this.table.id });
 
-    if (!result) {
-      throw new DatabaseError('Failed to update record');
-    }
+		return result.length > 0;
+	}
 
-    return result as T;
-  }
+	/**
+	 * 批量删除记录
+	 */
+	async deleteBatch(ids: number[]): Promise<number> {
+		if (!ids || ids.length === 0) {
+			throw new ValidationError("No IDs provided for batch deletion");
+		}
 
-  /**
-   * 删除记录
-   */
-  async delete(id: number, options: DeleteOptions = {}): Promise<boolean> {
-    // 检查记录是否存在
-    const existing = await this.findById(id);
-    if (!existing) {
-      throw new NotFoundError(`Record with id ${id} not found`);
-    }
+		const result = await db
+			.delete(this.table)
+			.where(inArray(this.table.id, ids))
+			.returning({ id: this.table.id });
 
-    const result = await db
-      .delete(this.table)
-      .where(eq(this.table.id, id))
-      .returning({ id: this.table.id });
+		return result.length;
+	}
 
-    return result.length > 0;
-  }
+	/**
+	 * 统计记录数量
+	 */
+	async count(filters: QueryFilter[] = []): Promise<number> {
+		const whereClause = this.buildWhereClause(filters);
 
-  /**
-   * 批量删除记录
-   */
-  async deleteBatch(ids: number[]): Promise<number> {
-    if (!ids || ids.length === 0) {
-      throw new ValidationError('No IDs provided for batch deletion');
-    }
+		const query = db.select({ count: this.table.id }).from(this.table);
 
-    const result = await db
-      .delete(this.table)
-      .where(inArray(this.table.id, ids))
-      .returning({ id: this.table.id });
+		if (whereClause) {
+			query.where(whereClause);
+		}
 
-    return result.length;
-  }
+		const result = await query;
+		return Number(result[0]?.count || 0);
+	}
 
-  /**
-   * 统计记录数量
-   */
-  async count(filters: QueryFilter[] = []): Promise<number> {
-    const whereClause = this.buildWhereClause(filters);
+	/**
+	 * 检查记录是否存在
+	 */
+	async exists(id: number): Promise<boolean> {
+		const result = await this.findById(id);
+		return !!result;
+	}
 
-    let query = db
-      .select({ count: this.table.id })
-      .from(this.table);
+	/**
+	 * 构建查询条件
+	 */
+	protected buildWhereClause(filters: QueryFilter[]): SQL | undefined {
+		if (!filters || filters.length === 0) {
+			return undefined;
+		}
 
-    if (whereClause) {
-      query.where(whereClause);
-    }
+		const conditions = filters.map((filter) => {
+			const { field, operator, value } = filter;
+			const column = this.table[field];
 
-    const result = await query;
-    return Number(result[0]?.count || 0);
-  }
+			if (!column) {
+				throw new ValidationError(`Invalid field: ${field}`);
+			}
 
-  /**
-   * 检查记录是否存在
-   */
-  async exists(id: number): Promise<boolean> {
-    const result = await this.findById(id);
-    return !!result;
-  }
+			switch (operator) {
+				case "eq":
+					return eq(column, value);
+				case "ne":
+					return ne(column, value);
+				case "gt":
+					return gt(column, value);
+				case "gte":
+					return gte(column, value);
+				case "lt":
+					return lt(column, value);
+				case "lte":
+					return lte(column, value);
+				case "like":
+					return like(column, `%${value}%`);
+				case "in":
+					return inArray(column, value);
+				default:
+					throw new ValidationError(`Unsupported operator: ${operator}`);
+			}
+		});
 
-  /**
-   * 构建查询条件
-   */
-  protected buildWhereClause(filters: QueryFilter[]): SQL | undefined {
-    if (!filters || filters.length === 0) {
-      return undefined;
-    }
+		return conditions.length > 1 ? and(...conditions) : conditions[0];
+	}
 
-    const conditions = filters.map((filter) => {
-      const { field, operator, value } = filter;
-      const column = this.table[field];
+	/**
+	 * 构建排序条件
+	 */
+	protected buildOrderByClause(sortOptions: SortOption[]): any[] {
+		if (!sortOptions || sortOptions.length === 0) {
+			return [];
+		}
 
-      if (!column) {
-        throw new ValidationError(`Invalid field: ${field}`);
-      }
+		return sortOptions.map((option) => {
+			const { field, direction } = option;
+			const column = this.table[field];
 
-      switch (operator) {
-        case 'eq':
-          return eq(column, value);
-        case 'ne':
-          return ne(column, value);
-        case 'gt':
-          return gt(column, value);
-        case 'gte':
-          return gte(column, value);
-        case 'lt':
-          return lt(column, value);
-        case 'lte':
-          return lte(column, value);
-        case 'like':
-          return like(column, `%${value}%`);
-        case 'in':
-          return inArray(column, value);
-        default:
-          throw new ValidationError(`Unsupported operator: ${operator}`);
-      }
-    });
+			if (!column) {
+				throw new ValidationError(`Invalid sort field: ${field}`);
+			}
 
-    return conditions.length > 1 ? and(...conditions) : conditions[0];
-  }
-
-  /**
-   * 构建排序条件
-   */
-  protected buildOrderByClause(sortOptions: SortOption[]): any[] {
-    if (!sortOptions || sortOptions.length === 0) {
-      return [];
-    }
-
-    return sortOptions.map((option) => {
-      const { field, direction } = option;
-      const column = this.table[field];
-
-      if (!column) {
-        throw new ValidationError(`Invalid sort field: ${field}`);
-      }
-
-      return direction === 'asc' ? asc(column) : desc(column);
-    });
-  }
-
+			return direction === "asc" ? asc(column) : desc(column);
+		});
+	}
 }

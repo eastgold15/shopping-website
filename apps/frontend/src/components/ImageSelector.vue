@@ -1,10 +1,9 @@
 <script setup lang="ts">
-
 import type { ListImagesQueryDto, SelectImagesVo } from "@backend/types";
 import {
-  formatDate,
-  formatSize,
-  getImageUrl,
+	formatDate,
+	formatSize,
+	getImageUrl,
 } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { useToast } from "primevue/usetoast";
@@ -13,19 +12,15 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 const toast = useToast();
 // Props
 interface Props {
-  category?: string; // 可选的分类过滤
+	category?: string; // 可选的分类过滤
 }
 const visible = defineModel("visible", { default: false });
 
 // Emits
-type Emits = (
-  e: "select",
-  imageUrl: string,
-  imageData: SelectImagesVo
-) => void;
+type Emits = (e: "select", imageUrl: string, imageData: SelectImagesVo) => void;
 
 const props = withDefaults(defineProps<Props>(), {
-  category: "all",
+	category: "all",
 });
 
 const emit = defineEmits<Emits>();
@@ -38,20 +33,20 @@ const selectedCategory = ref(props.category);
 const hoveredImage = ref<number | undefined>(undefined);
 
 const meta = reactive({
-  page: 1,
-  pageSize: 12,
-  total: 0,
-  totalPages: 0,
+	page: 1,
+	pageSize: 12,
+	total: 0,
+	totalPages: 0,
 });
 // 分类选项
 const categoryOptions = [
-  { label: "全部", value: "all" },
-  { label: "常规图", value: "general" },
-  { label: "轮播图", value: "banner" },
-  { label: "商品图片", value: "product" },
-  { label: "logo图片", value: "logo" },
-  { label: "头像图片", value: "avatar" },
-  { label: "其他图片", value: "other" },
+	{ label: "全部", value: "all" },
+	{ label: "常规图", value: "general" },
+	{ label: "轮播图", value: "banner" },
+	{ label: "商品图片", value: "product" },
+	{ label: "logo图片", value: "logo" },
+	{ label: "头像图片", value: "avatar" },
+	{ label: "其他图片", value: "other" },
 ];
 
 // 计算属性
@@ -62,145 +57,145 @@ const categoryOptions = [
  * 加载图片列表
  */
 const loadImages = async () => {
-  loading.value = true;
-  try {
-    const params: ListImagesQueryDto = {
-      page: meta.page,
-      pageSize: meta.pageSize,
-    };
+	loading.value = true;
+	try {
+		const params: ListImagesQueryDto = {
+			page: meta.page,
+			pageSize: meta.pageSize,
+		};
 
-    // 添加分类过滤
-    if (selectedCategory.value !== "all") {
-      params.category = selectedCategory.value;
-    }
+		// 添加分类过滤
+		if (selectedCategory.value !== "all") {
+			params.category = selectedCategory.value;
+		}
 
-    // 添加搜索过滤
-    if (searchQuery.value.trim()) {
-      params.search = searchQuery.value.trim();
-    }
+		// 添加搜索过滤
+		if (searchQuery.value.trim()) {
+			params.search = searchQuery.value.trim();
+		}
 
-    const { code, data, message } = await useCmsApi().images.list(params);
-    if (code !== 200) {
-      toast.add({
-        severity: "error",
-        summary: "加载失败",
-        detail: message,
-        life: 3000,
-      });
-      return;
-    }
+		const { code, data, message } = await useCmsApi().images.list(params);
+		if (code !== 200) {
+			toast.add({
+				severity: "error",
+				summary: "加载失败",
+				detail: message,
+				life: 3000,
+			});
+			return;
+		}
 
-    images.value = data.items;
-    // 更新分页信息
-    if (data.meta) {
-      meta.page = data.meta.page;
-      meta.pageSize = data.meta.pageSize;
-      // 可以存储总页数等信息
-      if (data.meta.totalPages !== undefined) {
-        meta.totalPages = data.meta.totalPages;
-      }
-      if (data.meta.total !== undefined) {
-        meta.total = data.meta.total;
-      }
-    }
-  } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "加载失败",
-      detail: (error as Error).message,
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
-  }
+		images.value = data.items;
+		// 更新分页信息
+		if (data.meta) {
+			meta.page = data.meta.page;
+			meta.pageSize = data.meta.pageSize;
+			// 可以存储总页数等信息
+			if (data.meta.totalPages !== undefined) {
+				meta.totalPages = data.meta.totalPages;
+			}
+			if (data.meta.total !== undefined) {
+				meta.total = data.meta.total;
+			}
+		}
+	} catch (error) {
+		toast.add({
+			severity: "error",
+			summary: "加载失败",
+			detail: (error as Error).message,
+			life: 3000,
+		});
+	} finally {
+		loading.value = false;
+	}
 };
 
 /**
  * 按分类过滤
  */
 const filterByCategory = () => {
-  meta.page = 1; // 重置到第一页
-  loadImages(); // 重新加载数据
+	meta.page = 1; // 重置到第一页
+	loadImages(); // 重新加载数据
 };
 
 /**
  * 搜索图片
  */
 const searchImages = () => {
-  meta.page = 1; // 重置到第一页
-  loadImages(); // 重新加载数据
+	meta.page = 1; // 重置到第一页
+	loadImages(); // 重新加载数据
 };
 
 /**
  * 选择图片
  */
 const selectImage = (image: SelectImagesVo) => {
-  // 设置 v-model 值
-  // modelValue.value = image.id
-  const imageUrl = getImageUrl(image.imageUrl);
-  emit("select", imageUrl, image);
-  // 关闭对话框
-  visible.value = false;
+	// 设置 v-model 值
+	// modelValue.value = image.id
+	const imageUrl = getImageUrl(image.imageUrl);
+	emit("select", imageUrl, image);
+	// 关闭对话框
+	visible.value = false;
 };
 
 /**
  * 获取分类标签
  */
 const getCategoryLabel = (category: string): string => {
-  const option = categoryOptions.find((opt) => opt.value === category);
-  return option?.label || category;
+	const option = categoryOptions.find((opt) => opt.value === category);
+	return option?.label || category;
 };
 
 /**
  * 获取分类图标
  */
 const getCategoryIcon = (category: string): string => {
-  const iconMap: Record<string, string> = {
-    all: 'pi pi-images',
-    general: 'pi pi-image',
-    banner: 'pi pi-desktop',
-    product: 'pi pi-shopping-bag',
-    logo: 'pi pi-star',
-    avatar: 'pi pi-user',
-    other: 'pi pi-folder'
-  };
-  return iconMap[category] || 'pi pi-image';
+	const iconMap: Record<string, string> = {
+		all: "pi pi-images",
+		general: "pi pi-image",
+		banner: "pi pi-desktop",
+		product: "pi pi-shopping-bag",
+		logo: "pi pi-star",
+		avatar: "pi pi-user",
+		other: "pi pi-folder",
+	};
+	return iconMap[category] || "pi pi-image";
 };
 
 /**
  * 分页事件处理
  */
 const onPageChange = (event: any) => {
-  meta.page = event.page + 1; // PrimeVue分页器页码从0开始，我们的API从1开始
-  meta.pageSize = event.rows;
-  loadImages();
+	meta.page = event.page + 1; // PrimeVue分页器页码从0开始，我们的API从1开始
+	meta.pageSize = event.rows;
+	loadImages();
 };
 
 /**
  * 计算分页信息
  */
 const paginationOptions = computed(() => ({
-  first: (meta.page - 1) * meta.pageSize,
-  rows: meta.pageSize,
-  totalRecords: meta.total,
-  rowsPerPageOptions: [12, 24, 36, 48],
+	first: (meta.page - 1) * meta.pageSize,
+	rows: meta.pageSize,
+	totalRecords: meta.total,
+	rowsPerPageOptions: [12, 24, 36, 48],
 }));
 
 // 监听visible变化，当对话框打开时加载图片
 watch(
-  () => visible.value,
-  (newVisible) => {
-    if (newVisible) {
-      loadImages();
-    }
-  },
+	() => visible.value,
+	(newVisible) => {
+		if (newVisible) {
+			loadImages();
+		}
+	},
 );
 
 // 生命周期
 onMounted(() => {
-  if (visible.value) {
-    loadImages();
-  }
+	if (visible.value) {
+		loadImages();
+	}
 });
 </script>
 

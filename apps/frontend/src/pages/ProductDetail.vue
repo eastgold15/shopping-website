@@ -169,361 +169,370 @@
 </template>
 
 <script setup lang="ts">
-import { useFrontApi } from '@frontend/utils/handleApi'
+import { useFrontApi } from "@frontend/utils/handleApi";
 
 // 路由相关
-const route = useRoute()
+const route = useRoute();
 
-
-const frontApi = useFrontApi()
+const frontApi = useFrontApi();
 
 // 响应式数据
-const product = ref<any>(null)
-const loading = ref(true)
+const product = ref<any>(null);
+const loading = ref(true);
 
 // 商品选择状态
-const selectedColor = ref<any>(null)
-const selectedSize = ref<any>(null)
-const selectedSku = ref<any>(null)
-const currentImage = ref<string>("")
-const currentSizeType = ref<"uk" | "eu" | "us">("uk")
-const sizeTypes = ["uk", "eu", "us"] as const
+const selectedColor = ref<any>(null);
+const selectedSize = ref<any>(null);
+const selectedSku = ref<any>(null);
+const currentImage = ref<string>("");
+const currentSizeType = ref<"uk" | "eu" | "us">("uk");
+const sizeTypes = ["uk", "eu", "us"] as const;
 
 // UI状态
-const showFullDescription = ref(false)
-const showImageModal = ref(false)
-const isFavorited = ref(false)
+const showFullDescription = ref(false);
+const showImageModal = ref(false);
+const isFavorited = ref(false);
 
 // 计算属性
 const availableColors = computed(() => {
-  if (!product.value) return []
+	if (!product.value) return [];
 
-  // 如果商品有多规格，从SKU中获取颜色
-  if (product.value.hasVariants && product.value.skus) {
-    const colors = product.value.skus
-      .filter((sku: any) => sku.colorValue && sku.colorName)
-      .map((sku: any) => ({
-        id: sku.colorId,
-        name: sku.colorName,
-        value: sku.colorValue,
-        imageUrl: sku.images?.find((img: any) => img.isMain)?.url ||
-          (sku.images && sku.images.length > 0 ? sku.images[0].url : null)
-      }))
+	// 如果商品有多规格，从SKU中获取颜色
+	if (product.value.hasVariants && product.value.skus) {
+		const colors = product.value.skus
+			.filter((sku: any) => sku.colorValue && sku.colorName)
+			.map((sku: any) => ({
+				id: sku.colorId,
+				name: sku.colorName,
+				value: sku.colorValue,
+				imageUrl:
+					sku.images?.find((img: any) => img.isMain)?.url ||
+					(sku.images && sku.images.length > 0 ? sku.images[0].url : null),
+			}));
 
-    // 去重
-    const uniqueColors = Array.from(
-      new Map(colors.map(color => [color.value, color])).values()
-    )
+		// 去重
+		const uniqueColors = Array.from(
+			new Map(colors.map((color) => [color.value, color])).values(),
+		);
 
-    return uniqueColors
-  }
+		return uniqueColors;
+	}
 
-  // 否则从商品的colors字段获取
-  if (product.value.colors && Array.isArray(product.value.colors)) {
-    return product.value.colors.map((color: any) => ({
-      id: color.id,
-      name: color.name,
-      value: color.hexCode || color.value,
-      imageUrl: color.imageUrl
-    }))
-  }
+	// 否则从商品的colors字段获取
+	if (product.value.colors && Array.isArray(product.value.colors)) {
+		return product.value.colors.map((color: any) => ({
+			id: color.id,
+			name: color.name,
+			value: color.hexCode || color.value,
+			imageUrl: color.imageUrl,
+		}));
+	}
 
-  return []
-})
+	return [];
+});
 
 const availableSizes = computed(() => {
-  if (!product.value) return []
+	if (!product.value) return [];
 
-  // 如果商品有多规格，从SKU中获取尺寸
-  if (product.value.hasVariants && product.value.skus) {
-    // 如果已选择颜色，只显示该颜色的可用尺寸
-    let skus = product.value.skus
-    if (selectedColor.value) {
-      skus = skus.filter((sku: any) => sku.colorValue === selectedColor.value.value)
-    }
+	// 如果商品有多规格，从SKU中获取尺寸
+	if (product.value.hasVariants && product.value.skus) {
+		// 如果已选择颜色，只显示该颜色的可用尺寸
+		let skus = product.value.skus;
+		if (selectedColor.value) {
+			skus = skus.filter(
+				(sku: any) => sku.colorValue === selectedColor.value.value,
+			);
+		}
 
-    const sizes = skus
-      .filter((sku: any) => sku.sizeValue && sku.sizeName)
-      .map((sku: any) => ({
-        id: sku.sizeId,
-        name: sku.sizeName,
-        value: sku.sizeValue,
-        isAvailable: sku.stock > 0,
-        ukSize: sku.ukSize,
-        euSize: sku.euSize,
-        usSize: sku.usSize
-      }))
+		const sizes = skus
+			.filter((sku: any) => sku.sizeValue && sku.sizeName)
+			.map((sku: any) => ({
+				id: sku.sizeId,
+				name: sku.sizeName,
+				value: sku.sizeValue,
+				isAvailable: sku.stock > 0,
+				ukSize: sku.ukSize,
+				euSize: sku.euSize,
+				usSize: sku.usSize,
+			}));
 
-    // 去重
-    const uniqueSizes = Array.from(
-      new Map(sizes.map(size => [size.value, size])).values()
-    )
+		// 去重
+		const uniqueSizes = Array.from(
+			new Map(sizes.map((size) => [size.value, size])).values(),
+		);
 
-    return uniqueSizes
-  }
+		return uniqueSizes;
+	}
 
-  // 否则从商品的sizes字段获取
-  if (product.value.sizes && Array.isArray(product.value.sizes)) {
-    return product.value.sizes.map((size: any) => ({
-      id: size.id,
-      name: size.name,
-      value: size.name,
-      isAvailable: size.isAvailable !== undefined ? size.isAvailable : true,
-      ukSize: size.ukSize,
-      euSize: size.euSize,
-      usSize: size.usSize
-    }))
-  }
+	// 否则从商品的sizes字段获取
+	if (product.value.sizes && Array.isArray(product.value.sizes)) {
+		return product.value.sizes.map((size: any) => ({
+			id: size.id,
+			name: size.name,
+			value: size.name,
+			isAvailable: size.isAvailable !== undefined ? size.isAvailable : true,
+			ukSize: size.ukSize,
+			euSize: size.euSize,
+			usSize: size.usSize,
+		}));
+	}
 
-  return []
-})
+	return [];
+});
 
 const currentPrice = computed(() => {
-  if (selectedSku.value) {
-    return selectedSku.value.price
-  }
-  return product.value?.price || "0"
-})
+	if (selectedSku.value) {
+		return selectedSku.value.price;
+	}
+	return product.value?.price || "0";
+});
 
 const currentComparePrice = computed(() => {
-  if (selectedSku.value && selectedSku.value.comparePrice) {
-    return selectedSku.value.comparePrice
-  }
-  return product.value?.comparePrice
-})
+	if (selectedSku.value && selectedSku.value.comparePrice) {
+		return selectedSku.value.comparePrice;
+	}
+	return product.value?.comparePrice;
+});
 
 const currentStock = computed(() => {
-  if (selectedSku.value) {
-    return selectedSku.value.stock
-  }
-  return product.value?.stock || 0
-})
+	if (selectedSku.value) {
+		return selectedSku.value.stock;
+	}
+	return product.value?.stock || 0;
+});
 
 const canAddToCart = computed(() => {
-  if (!product.value) return false
+	if (!product.value) return false;
 
-  // 检查库存
-  if (currentStock.value <= 0) {
-    return false
-  }
+	// 检查库存
+	if (currentStock.value <= 0) {
+		return false;
+	}
 
-  // 如果商品有多规格，必须选择颜色和尺寸
-  if (product.value.hasVariants) {
-    if (availableColors.value.length > 0 && !selectedColor.value) return false
-    if (availableSizes.value.length > 0 && !selectedSize.value) return false
-  }
+	// 如果商品有多规格，必须选择颜色和尺寸
+	if (product.value.hasVariants) {
+		if (availableColors.value.length > 0 && !selectedColor.value) return false;
+		if (availableSizes.value.length > 0 && !selectedSize.value) return false;
+	}
 
-  return true
-})
+	return true;
+});
 
 // 方法
 const setCurrentImage = (imageUrl: string) => {
-  currentImage.value = imageUrl
-}
+	currentImage.value = imageUrl;
+};
 
 // 获取图片URL的辅助方法
 const getImageUrl = (image: any) => {
-  if (typeof image === 'string') {
-    return image.replace(/`/g, '') // 移除反引号
-  }
-  if (image && image.url) {
-    return image.url.replace(/`/g, '') // 移除反引号
-  }
-  return 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800' // 默认占位图
-}
+	if (typeof image === "string") {
+		return image.replace(/`/g, ""); // 移除反引号
+	}
+	if (image && image.url) {
+		return image.url.replace(/`/g, ""); // 移除反引号
+	}
+	return "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800"; // 默认占位图
+};
 
 const selectColor = (color: any) => {
-  selectedColor.value = color
-  // 重置尺寸选择
-  selectedSize.value = null
+	selectedColor.value = color;
+	// 重置尺寸选择
+	selectedSize.value = null;
 
-  // 如果该颜色有对应的图片，切换到该图片
-  if (color.imageUrl) {
-    setCurrentImage(color.imageUrl)
-  } else if (product.value.hasVariants && product.value.skus) {
-    // 查找该颜色的SKU并设置主图
-    const colorSku = product.value.skus.find((sku: any) =>
-      sku.colorValue === color.value && sku.images && sku.images.length > 0
-    )
-    if (colorSku) {
-      const mainImage = colorSku.images.find((img: any) => img.isMain) || colorSku.images[0]
-      if (mainImage) {
-        setCurrentImage(mainImage.url)
-      }
-    }
-  }
+	// 如果该颜色有对应的图片，切换到该图片
+	if (color.imageUrl) {
+		setCurrentImage(color.imageUrl);
+	} else if (product.value.hasVariants && product.value.skus) {
+		// 查找该颜色的SKU并设置主图
+		const colorSku = product.value.skus.find(
+			(sku: any) =>
+				sku.colorValue === color.value && sku.images && sku.images.length > 0,
+		);
+		if (colorSku) {
+			const mainImage =
+				colorSku.images.find((img: any) => img.isMain) || colorSku.images[0];
+			if (mainImage) {
+				setCurrentImage(mainImage.url);
+			}
+		}
+	}
 
-  // 更新选中的SKU
-  updateSelectedSku()
-}
+	// 更新选中的SKU
+	updateSelectedSku();
+};
 
 const selectSize = (size: any) => {
-  selectedSize.value = size
-  // 更新选中的SKU
-  updateSelectedSku()
-}
+	selectedSize.value = size;
+	// 更新选中的SKU
+	updateSelectedSku();
+};
 
 const updateSelectedSku = () => {
-  if (!product.value || !product.value.hasVariants || !product.value.skus) {
-    selectedSku.value = null
-    return
-  }
+	if (!product.value || !product.value.hasVariants || !product.value.skus) {
+		selectedSku.value = null;
+		return;
+	}
 
-  // 根据选中的颜色和尺寸查找SKU
-  const matchedSku = product.value.skus.find((sku: any) => {
-    const colorMatch = !selectedColor.value || sku.colorValue === selectedColor.value.value
-    const sizeMatch = !selectedSize.value || sku.sizeValue === selectedSize.value.value
-    return colorMatch && sizeMatch
-  })
+	// 根据选中的颜色和尺寸查找SKU
+	const matchedSku = product.value.skus.find((sku: any) => {
+		const colorMatch =
+			!selectedColor.value || sku.colorValue === selectedColor.value.value;
+		const sizeMatch =
+			!selectedSize.value || sku.sizeValue === selectedSize.value.value;
+		return colorMatch && sizeMatch;
+	});
 
-  selectedSku.value = matchedSku || null
+	selectedSku.value = matchedSku || null;
 
-  // 如果找到SKU且有图片，更新当前图片
-  if (matchedSku && matchedSku.images && matchedSku.images.length > 0) {
-    const mainImage = matchedSku.images.find((img: any) => img.isMain) || matchedSku.images[0]
-    if (mainImage) {
-      setCurrentImage(mainImage.url)
-    }
-  }
-}
+	// 如果找到SKU且有图片，更新当前图片
+	if (matchedSku && matchedSku.images && matchedSku.images.length > 0) {
+		const mainImage =
+			matchedSku.images.find((img: any) => img.isMain) || matchedSku.images[0];
+		if (mainImage) {
+			setCurrentImage(mainImage.url);
+		}
+	}
+};
 
 const getSizeByType = (size: any, type: string) => {
-  switch (type) {
-    case 'uk':
-      return size.ukSize || size.name
-    case 'eu':
-      return size.euSize || size.name
-    case 'us':
-      return size.usSize || size.name
-    default:
-      return size.name
-  }
-}
+	switch (type) {
+		case "uk":
+			return size.ukSize || size.name;
+		case "eu":
+			return size.euSize || size.name;
+		case "us":
+			return size.usSize || size.name;
+		default:
+			return size.name;
+	}
+};
 
 const addToCart = () => {
-  if (!canAddToCart.value) {
-    return
-  }
+	if (!canAddToCart.value) {
+		return;
+	}
 
-  // 构建购物车项目
-  const cartItem = {
-    productId: product.value?.id,
-    name: product.value?.name,
-    price: currentPrice.value,
-    image: currentImage.value,
-    color: selectedColor.value?.name,
-    size: selectedSize.value?.name,
-    skuId: selectedSku.value?.id,
-    quantity: 1
-  }
+	// 构建购物车项目
+	const cartItem = {
+		productId: product.value?.id,
+		name: product.value?.name,
+		price: currentPrice.value,
+		image: currentImage.value,
+		color: selectedColor.value?.name,
+		size: selectedSize.value?.name,
+		skuId: selectedSku.value?.id,
+		quantity: 1,
+	};
 
-  // 这里应该调用购物车API或状态管理
-  console.log('添加到购物车:', cartItem)
+	// 这里应该调用购物车API或状态管理
+	console.log("添加到购物车:", cartItem);
 
-  // 显示成功提示
-  alert('商品已添加到购物车！')
-}
+	// 显示成功提示
+	alert("商品已添加到购物车！");
+};
 
 const buyNow = () => {
-  if (!canAddToCart.value) {
-    return
-  }
+	if (!canAddToCart.value) {
+		return;
+	}
 
-  // 构建订单项目
-  const orderItem = {
-    productId: product.value?.id,
-    name: product.value?.name,
-    price: currentPrice.value,
-    image: currentImage.value,
-    color: selectedColor.value?.name,
-    size: selectedSize.value?.name,
-    skuId: selectedSku.value?.id,
-    quantity: 1
-  }
+	// 构建订单项目
+	const orderItem = {
+		productId: product.value?.id,
+		name: product.value?.name,
+		price: currentPrice.value,
+		image: currentImage.value,
+		color: selectedColor.value?.name,
+		size: selectedSize.value?.name,
+		skuId: selectedSku.value?.id,
+		quantity: 1,
+	};
 
-  // 这里应该跳转到结算页面
-  console.log('立即购买:', orderItem)
-  alert('跳转到结算页面...')
-}
+	// 这里应该跳转到结算页面
+	console.log("立即购买:", orderItem);
+	alert("跳转到结算页面...");
+};
 
 const toggleFavorite = () => {
-  isFavorited.value = !isFavorited.value
+	isFavorited.value = !isFavorited.value;
 
-  // 这里应该调用收藏API
-  console.log(isFavorited.value ? '添加到收藏' : '取消收藏', product.value?.id)
-  alert(isFavorited.value ? '已添加到收藏！' : '已取消收藏！')
-}
+	// 这里应该调用收藏API
+	console.log(isFavorited.value ? "添加到收藏" : "取消收藏", product.value?.id);
+	alert(isFavorited.value ? "已添加到收藏！" : "已取消收藏！");
+};
 
 const shareProduct = () => {
-  // 分享功能
-  if (navigator.share) {
-    navigator.share({
-      title: product.value?.name,
-      text: product.value?.shortDescription,
-      url: window.location.href
-    })
-  } else {
-    // 复制链接到剪贴板
-    navigator.clipboard.writeText(window.location.href)
-    alert('商品链接已复制到剪贴板！')
-  }
-}
+	// 分享功能
+	if (navigator.share) {
+		navigator.share({
+			title: product.value?.name,
+			text: product.value?.shortDescription,
+			url: window.location.href,
+		});
+	} else {
+		// 复制链接到剪贴板
+		navigator.clipboard.writeText(window.location.href);
+		alert("商品链接已复制到剪贴板！");
+	}
+};
 
 const openImageModal = () => {
-  showImageModal.value = true
-}
+	showImageModal.value = true;
+};
 
 const closeImageModal = () => {
-  showImageModal.value = false
-}
+	showImageModal.value = false;
+};
 
 // 获取商品数据
 const fetchProduct = async (productId: string) => {
-  try {
-    loading.value = true
+	try {
+		loading.value = true;
 
-    // 获取商品详情
-    const result = await frontApi.products.getById(Number(productId))
+		// 获取商品详情
+		const result = await frontApi.products.getById(Number(productId));
 
-    if (result && result.data) {
-      product.value = result.data
+		if (result && result.data) {
+			product.value = result.data;
 
-      // 如果商品有多规格，获取SKU信息
-      if (product.value.hasVariants) {
-        const skuResult = await frontApi.skus.getByProductId(Number(productId))
-        if (skuResult && skuResult.data) {
-          // 处理SKU图片数据，确保格式正确
-          product.value.skus = skuResult.data.map((sku: any) => ({
-            ...sku,
-            // 确保images字段格式正确
-            images: Array.isArray(sku.images) ? sku.images : []
-          }))
-        }
-      }
+			// 如果商品有多规格，获取SKU信息
+			if (product.value.hasVariants) {
+				const skuResult = await frontApi.skus.getByProductId(Number(productId));
+				if (skuResult && skuResult.data) {
+					// 处理SKU图片数据，确保格式正确
+					product.value.skus = skuResult.data.map((sku: any) => ({
+						...sku,
+						// 确保images字段格式正确
+						images: Array.isArray(sku.images) ? sku.images : [],
+					}));
+				}
+			}
 
-      // 设置默认图片
-      if (product.value.images && product.value.images.length > 0) {
-        const mainImage = product.value.images.find((img: any) => img.isMain)
-        currentImage.value = mainImage ? mainImage.url : product.value.images[0].url
-      }
-    } else {
-      product.value = null
-    }
-  } catch (err) {
-    console.error("Error fetching product:", err)
-    product.value = null
-  } finally {
-    loading.value = false
-  }
-}
+			// 设置默认图片
+			if (product.value.images && product.value.images.length > 0) {
+				const mainImage = product.value.images.find((img: any) => img.isMain);
+				currentImage.value = mainImage
+					? mainImage.url
+					: product.value.images[0].url;
+			}
+		} else {
+			product.value = null;
+		}
+	} catch (err) {
+		console.error("Error fetching product:", err);
+		product.value = null;
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 组件挂载时获取商品数据
 onMounted(() => {
-  const productId = route.params.id as string
-  if (productId) {
-    fetchProduct(productId)
-  }
-})
+	const productId = route.params.id as string;
+	if (productId) {
+		fetchProduct(productId);
+	}
+});
 </script>
 
 <style scoped>

@@ -142,7 +142,7 @@ const visibleCategories = computed(() => {
 const loadCategories = async () => {
 	loading.value = true;
 	try {
-		const data = await (client.api.categories.tree.get());
+		const data = await client.api.categories.tree.get();
 		if (data && Array.isArray(data)) {
 			categories.value = data.filter((cat: Category) => cat.isVisible);
 		} else {

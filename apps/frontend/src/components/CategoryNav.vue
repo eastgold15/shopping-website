@@ -80,23 +80,21 @@
 </template>
 
 <script setup lang="ts">
-
 import { useFrontApi } from "@frontend/utils/handleApi";
 import type { CategoryTree } from "../types/layout";
 
-
 // Props
 interface Props {
-  isMobile?: boolean;
+	isMobile?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isMobile: false,
+	isMobile: false,
 });
 
 // Emits
 const emit = defineEmits<{
-  categorySelected: [category: CategoryTree];
+	categorySelected: [category: CategoryTree];
 }>();
 
 // 响应式数据
@@ -110,39 +108,39 @@ let hideTimeout: NodeJS.Timeout | null = null;
 
 // 显示下拉菜单
 const showDropdown = (categoryId: string) => {
-  if (hideTimeout) {
-    clearTimeout(hideTimeout);
-    hideTimeout = null;
-  }
-  activeDropdown.value = categoryId;
+	if (hideTimeout) {
+		clearTimeout(hideTimeout);
+		hideTimeout = null;
+	}
+	activeDropdown.value = categoryId;
 };
 
 // 隐藏下拉菜单
 const hideDropdown = () => {
-  hideTimeout = setTimeout(() => {
-    activeDropdown.value = null;
-  }, 200); // 200ms延迟，避免鼠标移动时闪烁
+	hideTimeout = setTimeout(() => {
+		activeDropdown.value = null;
+	}, 200); // 200ms延迟，避免鼠标移动时闪烁
 };
 
 // 保持下拉菜单打开
 const keepDropdownOpen = () => {
-  if (hideTimeout) {
-    clearTimeout(hideTimeout);
-    hideTimeout = null;
-  }
+	if (hideTimeout) {
+		clearTimeout(hideTimeout);
+		hideTimeout = null;
+	}
 };
 
 // 导航到分类页面
 const navigateToCategory = (category: CategoryTree) => {
-  // TODO: 实现分类页面导航
-  console.log("导航到分类:", category.name, category.id);
-  // 这里可以使用 Vue Router 进行页面跳转
-  // router.push(`/category/${category.id}`);
+	// TODO: 实现分类页面导航
+	console.log("导航到分类:", category.name, category.id);
+	// 这里可以使用 Vue Router 进行页面跳转
+	// router.push(`/category/${category.id}`);
 
-  // 在移动端模式下，触发分类选择事件
-  if (props.isMobile) {
-    emit("categorySelected", category);
-  }
+	// 在移动端模式下，触发分类选择事件
+	if (props.isMobile) {
+		emit("categorySelected", category);
+	}
 };
 
 // 移动端子分类展开状态
@@ -150,47 +148,47 @@ const expandedCategories = ref<Set<string>>(new Set());
 
 // 切换移动端分类展开状态
 const toggleMobileCategory = (categoryId: string) => {
-  if (expandedCategories.value.has(categoryId)) {
-    expandedCategories.value.delete(categoryId);
-  } else {
-    expandedCategories.value.add(categoryId);
-  }
+	if (expandedCategories.value.has(categoryId)) {
+		expandedCategories.value.delete(categoryId);
+	} else {
+		expandedCategories.value.add(categoryId);
+	}
 };
 
 // 检查分类是否展开
 const isCategoryExpanded = (categoryId: string) => {
-  return expandedCategories.value.has(categoryId);
+	return expandedCategories.value.has(categoryId);
 };
 
-const api = useFrontApi()
+const api = useFrontApi();
 
 // 获取分类数据
 const fetchCategories = async () => {
-  try {
-    loading.value = true;
-    error.value = null;
+	try {
+		loading.value = true;
+		error.value = null;
 
-    const res = await api.categories.tree()
+		const res = await api.categories.tree();
 
-    if (res.code === 200 && res.data) {
-      categories.value = res.data
-    } else {
-      // 使用模拟数据作为后备
-      categories.value = [];
-    }
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : "网络请求失败";
-    console.error("获取分类数据失败:", err);
-    // 使用模拟数据作为后备
-    categories.value = [];
-  } finally {
-    loading.value = false;
-  }
+		if (res.code === 200 && res.data) {
+			categories.value = res.data;
+		} else {
+			// 使用模拟数据作为后备
+			categories.value = [];
+		}
+	} catch (err) {
+		error.value = err instanceof Error ? err.message : "网络请求失败";
+		console.error("获取分类数据失败:", err);
+		// 使用模拟数据作为后备
+		categories.value = [];
+	} finally {
+		loading.value = false;
+	}
 };
 
 // 组件挂载时获取数据（只在客户端执行）
 onMounted(async () => {
-  await fetchCategories();
+	await fetchCategories();
 });
 </script>
 

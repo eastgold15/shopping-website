@@ -1,4 +1,3 @@
-
 import { createRouter, createWebHistory } from "vue-router";
 import adminRoutes from "./admin.routes";
 import clientRoutes from "./client.routes";

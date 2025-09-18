@@ -1,20 +1,20 @@
 <script lang="ts" setup>
 // 导航栏数据
 const navigationItems = [
-  { label: '首页', path: '/' },
-  { label: '女鞋', path: '/category/women' },
-  { label: '男鞋', path: '/category/men' },
-  { label: '手袋', path: '/category/bags' },
-  { label: '配饰', path: '/category/accessories' },
-  { label: '新品', path: '/new-arrivals' },
-  { label: '特价', path: '/sale' }
-]
+	{ label: "首页", path: "/" },
+	{ label: "女鞋", path: "/category/women" },
+	{ label: "男鞋", path: "/category/men" },
+	{ label: "手袋", path: "/category/bags" },
+	{ label: "配饰", path: "/category/accessories" },
+	{ label: "新品", path: "/new-arrivals" },
+	{ label: "特价", path: "/sale" },
+];
 
 // 联系信息
 const contactInfo = {
-  phone: '+44(0)20 8885 7500',
-  email: 'info@gina.com'
-}
+	phone: "+44(0)20 8885 7500",
+	email: "info@gina.com",
+};
 </script>
 
 <template>

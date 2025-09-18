@@ -19,8 +19,6 @@
 
 <script setup lang="ts">
 import ProductSearch from "../components/ProductSearch.vue";
-
-
 </script>
 
 <style scoped>

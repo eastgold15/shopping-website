@@ -155,8 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ProductModel } from '@backend/types';
-
+import type { ProductModel } from "@backend/types";
 
 interface Props {
 	product: ProductModel;
@@ -168,7 +167,7 @@ const emit = defineEmits<{
 	addToCart: [product: ProductModel];
 	toggleFavorite: [product: ProductModel];
 	quickView: [product: ProductModel];
-}>(); 
+}>();
 
 // 响应式数据
 const isFavorited = ref(false);

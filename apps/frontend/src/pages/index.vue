@@ -1,53 +1,50 @@
 <script lang="ts" setup>
-import { useFrontApi } from '@frontend/utils/handleApi'
+import { useFrontApi } from "@frontend/utils/handleApi";
 
-
-const frontApi = useFrontApi()
+const frontApi = useFrontApi();
 
 // 商品数据
-const products = ref<any[]>([])
-const loading = ref(true)
+const products = ref<any[]>([]);
+const loading = ref(true);
 
 // 获取商品列表
 const fetchProducts = async () => {
-  try {
-    loading.value = true
-    const result = await frontApi.products.list({
-      page: 1,
-      pageSize: 8,
-      isActive: 'true',
-      isFeatured: 'true'
-    })
+	try {
+		loading.value = true;
+		const result = await frontApi.products.list({
+			page: 1,
+			pageSize: 8,
+			isActive: "true",
+			isFeatured: "true",
+		});
 
-    if (result && result.data && result.data.items) {
-      // 转换数据格式以匹配前端展示需求
-      products.value = result.data.items.map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        subtitle: product.shortDescription || '',
-        price: `¥${product.price}`,
-        // 使用第一张图片作为主图，如果没有图片则使用默认图片
-        image: product.images && product.images.length > 0
-          ? product.images.find((img: any) => img.isMain)?.url || product.images[0].url
-          : 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800',
-        category: product.categoryName || '未分类'
-      }))
-    }
-  } catch (error) {
-    console.error('获取商品列表失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-
-
-
+		if (result && result.data && result.data.items) {
+			// 转换数据格式以匹配前端展示需求
+			products.value = result.data.items.map((product: any) => ({
+				id: product.id,
+				name: product.name,
+				subtitle: product.shortDescription || "",
+				price: `¥${product.price}`,
+				// 使用第一张图片作为主图，如果没有图片则使用默认图片
+				image:
+					product.images && product.images.length > 0
+						? product.images.find((img: any) => img.isMain)?.url ||
+							product.images[0].url
+						: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800",
+				category: product.categoryName || "未分类",
+			}));
+		}
+	} catch (error) {
+		console.error("获取商品列表失败:", error);
+	} finally {
+		loading.value = false;
+	}
+};
 
 // 组件挂载时获取数据
 onMounted(() => {
-  fetchProducts()
-})
+	fetchProducts();
+});
 </script>
 
 <template>
@@ -71,7 +68,7 @@ onMounted(() => {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         <div v-for="product in products" :key="product.id"
           class="group cursor-pointer transition-all duration-300 hover:scale-105"
-          @click="$router.push({ path: '/product/' + product.id })">
+          @click="$router.push({ name: 'product-detail', params: { id: product.id } })">
           <!-- 商品图片容器 -->
           <div class="relative overflow-hidden bg-gray-50 rounded-lg aspect-square mb-4">
             <img :src="product.image" :alt="product.name"

@@ -45,30 +45,29 @@ import { client } from "@frontend/utils/useTreaty";
 import { useToast } from "primevue/usetoast";
 import type { Advertisement } from "../types/advertisement";
 
-
 // Props
 interface Props {
-  /** 自动播放间隔时间（毫秒） */
-  autoplayInterval?: number;
-  /** 是否显示导航按钮 */
-  showNavigators?: boolean;
-  /** 是否显示指示器 */
-  showIndicators?: boolean;
-  /** 是否显示标题 */
-  showTitle?: boolean;
-  /** 轮播图高度 */
-  height?: string;
-  /** 是否圆角 */
-  rounded?: boolean;
+	/** 自动播放间隔时间（毫秒） */
+	autoplayInterval?: number;
+	/** 是否显示导航按钮 */
+	showNavigators?: boolean;
+	/** 是否显示指示器 */
+	showIndicators?: boolean;
+	/** 是否显示标题 */
+	showTitle?: boolean;
+	/** 轮播图高度 */
+	height?: string;
+	/** 是否圆角 */
+	rounded?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  autoplayInterval: 5000,
-  showNavigators: true,
-  showIndicators: true,
-  showTitle: false,
-  height: "400px",
-  rounded: true,
+	autoplayInterval: 5000,
+	showNavigators: true,
+	showIndicators: true,
+	showTitle: false,
+	height: "400px",
+	rounded: true,
 });
 
 // 响应式数据
@@ -78,8 +77,8 @@ const imageLoadErrors = ref<Set<string>>(new Set());
 const toast = useToast();
 // 计算属性
 const carouselStyle = computed(() => ({
-  height: props.height,
-  borderRadius: props.rounded ? "8px" : "0",
+	height: props.height,
+	borderRadius: props.rounded ? "8px" : "0",
 }));
 
 // 方法
@@ -87,83 +86,85 @@ const carouselStyle = computed(() => ({
  * 加载轮播图广告
  */
 const loadCarouselAds = async () => {
-  loading.value = true;
-  try {
-    const res = await client.api.advertisements.get({ query: { type: 'carousel' } })
+	loading.value = true;
+	try {
+		const res = await client.api.advertisements.get({
+			query: { type: "carousel" },
+		});
 
-    console.log("aaaa", res);
+		console.log("aaaa", res);
 
-    if (!res) {
-      throw new Error("加载轮播图广告失敗");
-    }
+		if (!res) {
+			throw new Error("加载轮播图广告失敗");
+		}
 
-    if (res.code == 200) {
-      advertisements.value = res.data as any;
-    }
-  } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "加载失败",
-      detail: (error as Error).message,
-      life: 3000,
-    });
-    console.error("加载轮播图广告失败:", error);
-    advertisements.value = [];
-  } finally {
-    loading.value = false;
-  }
+		if (res.code == 200) {
+			advertisements.value = res.data as any;
+		}
+	} catch (error) {
+		toast.add({
+			severity: "error",
+			summary: "加载失败",
+			detail: (error as Error).message,
+			life: 3000,
+		});
+		console.error("加载轮播图广告失败:", error);
+		advertisements.value = [];
+	} finally {
+		loading.value = false;
+	}
 };
 
 /**
  * 判断是否为外部链接
  */
 const isExternalLink = (url: string): boolean => {
-  if (!url) return false;
-  return (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("//")
-  );
+	if (!url) return false;
+	return (
+		url.startsWith("http://") ||
+		url.startsWith("https://") ||
+		url.startsWith("//")
+	);
 };
 
 /**
  * 图片加载错误处理
  */
 const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement;
-  const src = img.src;
+	const img = event.target as HTMLImageElement;
+	const src = img.src;
 
-  // 避免无限循环
-  if (!imageLoadErrors.value.has(src)) {
-    imageLoadErrors.value.add(src);
-    // 设置默认图片
-    img.src = "/placeholder-carousel.png";
-  }
+	// 避免无限循环
+	if (!imageLoadErrors.value.has(src)) {
+		imageLoadErrors.value.add(src);
+		// 设置默认图片
+		img.src = "/placeholder-carousel.png";
+	}
 };
 
 /**
  * 图片加载成功处理
  */
 const handleImageLoad = (event: Event) => {
-  const img = event.target as HTMLImageElement;
-  img.classList.add("loaded");
+	const img = event.target as HTMLImageElement;
+	img.classList.add("loaded");
 };
 
 /**
  * 刷新轮播图数据
  */
 const refresh = () => {
-  loadCarouselAds();
+	loadCarouselAds();
 };
 
 // 暴露方法给父组件
 defineExpose({
-  refresh,
+	refresh,
 });
 
 // 生命周期
 onMounted(() => {
-  loadCarouselAds();
+	loadCarouselAds();
 });
 </script>
 
