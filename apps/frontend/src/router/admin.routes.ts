@@ -4,7 +4,7 @@ import AdminLayout from "@frontend/layouts/AdminLayout.vue";
 import ImageManager from "@frontend/pages/admin/ImageManager.vue";
 import PrimePartnersManagement from "@frontend/pages/admin/PrimePartnersManagement.vue";
 
-import AddProduct from "@frontend/pages/admin/AddProduct.vue";
+
 import AdvertisementManagement from "@frontend/pages/admin/AdvertisementManagement.vue";
 import CategoryManagement from "@frontend/pages/admin/CategoryManagement.vue";
 import ProductsManagement from "@frontend/pages/admin/ProductsManagement.vue";
@@ -31,11 +31,6 @@ const adminRoutes = [{
       path: "products",
       name: "products-management",
       component: ProductsManagement,
-    },
-    {
-      path: "products/add",
-      name: "add-product",
-      component: AddProduct,
     },
     {
       path: "site-config",

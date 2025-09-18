@@ -6,7 +6,7 @@ const IndexRoutes = [
 		component: HomeLayout,
 		children: [
 			{
-				path: "",
+				path: "/",
 				name: "index",
 				component: () => import("@frontend/pages/index.vue"),
 			},

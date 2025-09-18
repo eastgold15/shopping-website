@@ -1,5 +1,4 @@
-import { InsertProductDto, productImagesTable, ProductListQueryDto, productsModel, productsTable, SelectProductType, SelectProductDetailVo, UpdateProductDto } from "@backend/db/models/product.model";
-import { categoriesTable, imagesTable } from "@backend/db/models";
+import { InsertProductDto, ListProductQueryDto, productImagesTable, productsModel, productsTable, SelectProductDetailVo, SelectProductType, UpdateProductDto } from "@backend/db/models/product.model";
 import {
   handleDatabaseError,
   NotFoundError,
@@ -7,13 +6,10 @@ import {
 import BaseService from "@backend/utils/services";
 import {
   and,
-  asc,
   count,
-  desc,
   eq,
-  getTableColumns,
   like,
-  or,
+  or
 } from "drizzle-orm";
 import { db } from "../../db/connection";
 import { SkusService } from "./skus.service";
@@ -39,8 +35,8 @@ export class ProductsService extends BaseService<
   static async create(data: InsertProductDto) {
     try {
       // 从数据中提取image_ids，其余数据用于创建商品
-
-      const encode_date = productsModel.insertProductDto.encode(data)
+      // 精髓，将前端类型转为后端需要的类型
+      const encode_date = productsModel.insertProductDto.decode(data)
       const { image_ids, ...productData } = encode_date;
 
       // 使用事务确保商品创建和图片关联的原子性
@@ -87,10 +83,68 @@ export class ProductsService extends BaseService<
         isFeatured,
       } = query;
 
-      // 搜索条件：支持商品名称、SKU和描述搜索
-      const conditions = [];
+      // 使用Drizzle ORM的关联查询功能
+      const products = await db.query.productsTable.findMany({
+        with: {
+          category: true, // 关联查询分类信息
+          productImages: {
+            with: {
+              image: true, // 关联查询图片信息
+            },
+          },
+        },
+        where: (products, { and, like, eq, or }) => {
+          const conditions = [];
+
+          // 搜索条件：支持商品名称、SKU和描述搜索
+          if (search) {
+            conditions.push(
+              or(
+                like(products.name, `%${search}%`),
+                like(products.sku, `%${search}%`),
+                like(products.description, `%${search}%`),
+              ),
+            );
+          }
+
+          if (categoryId) {
+            conditions.push(eq(products.categoryId, categoryId));
+          }
+
+          if (isActive !== undefined) {
+            conditions.push(eq(products.isActive, isActive === true));
+          }
+
+          if (isFeatured !== undefined) {
+            conditions.push(eq(products.isFeatured, isFeatured === true));
+          }
+
+          return conditions.length > 0 ? and(...conditions) : undefined;
+        },
+        orderBy: (products, { asc, desc }) => {
+          // 定义允许排序的字段（白名单）
+          const sortFieldMap: Record<string, any> = {
+            id: products.id,
+            name: products.name,
+            price: products.price,
+            createdAt: products.createdAt,
+            updatedAt: products.updatedAt,
+          };
+
+          const sortField = sortFieldMap[sortBy] || products.id;
+          return sortOrder === "desc" ? desc(sortField) : asc(sortField);
+        },
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+      });
+
+      // 构建计算总数的查询，考虑搜索条件
+      let countQuery = db.select({ count: count() }).from(productsTable);
+
+      // 搜索条件构建（用于总数查询）
+      const whereConditions = [];
       if (search) {
-        conditions.push(
+        whereConditions.push(
           or(
             like(productsTable.name, `%${search}%`),
             like(productsTable.sku, `%${search}%`),
@@ -100,129 +154,60 @@ export class ProductsService extends BaseService<
       }
 
       if (categoryId) {
-        conditions.push(
-          eq(productsTable.categoryId, categoryId),
-        );
+        whereConditions.push(eq(productsTable.categoryId, categoryId));
       }
 
       if (isActive !== undefined) {
-        conditions.push(eq(productsTable.isActive, isActive === true));
+        whereConditions.push(eq(productsTable.isActive, isActive === true));
       }
+
       if (isFeatured !== undefined) {
-        conditions.push(eq(productsTable.isFeatured, isFeatured === true));
+        whereConditions.push(eq(productsTable.isFeatured, isFeatured === true));
       }
 
-      // 定义允许排序的字段（白名单）
-      const sortFieldMap: Record<string, any> = {
-        id: productsTable.id,
-        name: productsTable.name,
-        price: productsTable.price,
-        createdAt: productsTable.createdAt,
-        updatedAt: productsTable.updatedAt,
-        // 可根据需要添加更多字段
-      };
-
-      // 确定排序字段和方向
-      const sortField = sortFieldMap[sortBy] || productsTable.id;
-      // 排序
-      const _orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
-
-      // 构建查询 - 关联商品图片表获取图片信息
-      const queryBuilder = db
-        .select({
-          ...getTableColumns(productsTable),
-          categoryName: categoriesTable.name,
-          images: {
-            id: imagesTable.id,
-            url: imagesTable.imageUrl,
-            alt: imagesTable.alt,
-            isMain: productImagesTable.isMain,
-          },
-        })
-        .from(productsTable)
-        .leftJoin(
-          categoriesTable,
-          eq(productsTable.categoryId, categoriesTable.id),
-        )
-        .leftJoin(
-          productImagesTable,
-          eq(productsTable.id, productImagesTable.productId),
-        )
-        .leftJoin(
-          imagesTable,
-          eq(productImagesTable.imageId, imagesTable.id),
-        );
-
-      // 获取总数
-      const totalBuilder = db
-        .select({ count: count() })
-        .from(productsTable)
-        .leftJoin(
-          categoriesTable,
-          eq(productsTable.categoryId, categoriesTable.id),
-        );
-
-      if (conditions.length > 0) {
-        queryBuilder.where(and(...conditions));
-        totalBuilder.where(and(...conditions));
+      // 应用查询条件
+      if (whereConditions.length > 0) {
+        countQuery.where(and(...whereConditions));
       }
 
-      // 添加排序
-      queryBuilder.orderBy(_orderBy);
+      // @ts-ignore
+      const totalResult = await countQuery;
+      const total = Number(totalResult[0].count);
 
-      // 分页
-      const offset = (page - 1) * pageSize;
-      queryBuilder.limit(pageSize).offset(offset);
-
-      // 查询数据和总数
-      const [rawProducts, totalResult] = await Promise.all([
-        queryBuilder,
-        totalBuilder,
-      ]);
-
-      // 聚合商品图片数据
-      const productsMap = new Map();
-
-      for (const row of rawProducts) {
-        const productId = row.id;
-
-        if (!productsMap.has(productId)) {
-          // 创建商品基础信息，安全处理images字段
-          const { images, ...productData } = row || {};
-          productsMap.set(productId, {
-            ...productData,
-            images: [],
+      // 转换数据格式，处理图片信息
+      const formattedProducts = products.map((product) => {
+        // 提取图片信息并排序（主图在前）
+        const images = product.productImages
+          .map((pi) => ({
+            id: pi.image.id,
+            url: pi.image.imageUrl,
+            alt: pi.image.alt,
+            isMain: pi.isMain,
+          }))
+          .sort((a, b) => {
+            if (a.isMain && !b.isMain) return -1;
+            if (!a.isMain && b.isMain) return 1;
+            return 0;
           });
-        }
 
-        // 添加图片信息（如果存在且有效）
-        if (row.images && row.images.id) {
-          const product = productsMap.get(productId);
-          if (product) {
-            product.images.push({
-              id: row.images.id,
-              url: row.images.url || "",
-              alt: row.images.alt || "",
-              isMain: row.images.isMain || false,
-            });
-          }
-        }
-      }
+        const productData = {
+          ...product,
+          categoryRef: {
+            id: product.category?.id || 0,
+            name: product.category?.name || "",
+          },
+          imageRef: images,
+          // 移除嵌套的关联对象
+          category: undefined,
+          productImages: undefined,
+        };
 
-      // 转换为数组并排序图片（主图在前）
-      const products = Array.from(productsMap.values()).map((product) => ({
-        ...product,
-        images: product.images.sort((a: any, b: any) => {
-          if (a.isMain && !b.isMain) return -1;
-          if (!a.isMain && b.isMain) return 1;
-          return 0;
-        }),
-      }));
-
-      const total = totalResult[0]?.count || 0;
+        // 使用 Zod 转换数据，将价格字段从字符串转换为数字
+        return productsModel.listProductRes.parse(productData);
+      });
 
       return {
-        items: products,
+        items: formattedProducts,
         meta: {
           total,
           page,
@@ -241,68 +226,51 @@ export class ProductsService extends BaseService<
    */
   static async getById(id: number): Promise<SelectProductDetailVo> {
     try {
-      // 使用与列表查询相同的关联方式
-      const rawProduct = await db
-        .select({
-          ...getTableColumns(productsTable),
-          categoryName: categoriesTable.name,
-          images: {
-            id: imagesTable.id,
-            url: imagesTable.imageUrl,
-            alt: imagesTable.alt,
-            isMain: productImagesTable.isMain,
+      // 使用Drizzle ORM的关联查询功能
+      const product = await db.query.productsTable.findFirst({
+        with: {
+          category: true, // 关联查询分类信息
+          productImages: {
+            with: {
+              image: true, // 关联查询图片信息
+            },
           },
-        })
-        .from(productsTable)
-        .leftJoin(
-          categoriesTable,
-          eq(productsTable.categoryId, categoriesTable.id),
-        )
-        .leftJoin(
-          productImagesTable,
-          eq(productsTable.id, productImagesTable.productId),
-        )
-        .leftJoin(
-          imagesTable,
-          eq(productImagesTable.imageId, imagesTable.id),
-        )
-        .where(eq(productsTable.id, id));
+        },
+        where: (products, { eq }) => eq(products.id, id),
+      });
 
-      if (!rawProduct.length) {
+      if (!product) {
         throw new NotFoundError("商品不存在");
       }
 
-      // 聚合图片数据
-      const productData = rawProduct[0];
-      const { images: _, ...baseProduct } = productData;
-
-      const images = rawProduct
-        .filter((row) => row.images.id) // 过滤掉没有图片的记录
-        .map((row) => ({
-          id: row.images.id,
-          url: row.images.url,
-          alt: row.images.alt,
-          isMain: row.images.isMain,
+      // 转换数据格式，处理图片信息
+      const images = product.productImages
+        .map((pi) => ({
+          id: pi.image.id,
+          url: pi.image.imageUrl,
+          alt: pi.image.alt,
+          isMain: pi.isMain,
         }))
         .sort((a, b) => {
-          // 主图排在前面
           if (a.isMain && !b.isMain) return -1;
           if (!a.isMain && b.isMain) return 1;
           return 0;
         });
 
-      // 如果商品有多规格，获取SKU信息
-      let skus = [];
-      if (baseProduct.hasVariants) {
-        skus = await SkusService.getByProductId(id);
-      }
+      // 获取商品的SKU信息
+      const skus = await SkusService.getByProductId(id);
 
       return {
-        ...baseProduct,
+        ...product,
+        categoryName: product.category?.name || "",
         images,
         skus, // 添加SKU信息
+        // 移除嵌套的关联对象
+        category: undefined,
+        productImages: undefined,
       };
     } catch (error) {
+      console.error("获取商品详情失败:", error);
       throw handleDatabaseError(error);
     }
   }
@@ -312,45 +280,8 @@ export class ProductsService extends BaseService<
    */
   static async getBySlug(slug: string) {
     try {
-      const product = await db
-        .select({
-          ...getTableColumns(productsTable),
-          categoryName: categoriesTable.name,
-        })
-        .from(productsTable)
-        .leftJoin(
-          categoriesTable,
-          eq(productsTable.categoryId, categoriesTable.id),
-        )
-        .where(eq(productsTable.slug, slug))
-        .limit(1);
-
-      if (!product.length) {
-        throw new NotFoundError("商品不存在");
-      }
-
-      // 获取商品关联的图片
-      const productImages = await db
-        .select({
-          id: imagesTable.id,
-          url: imagesTable.imageUrl,
-          fileName: imagesTable.fileName,
-          isMain: productImagesTable.isMain,
-        })
-        .from(productImagesTable)
-        .leftJoin(
-          imagesTable,
-          eq(productImagesTable.imageId, imagesTable.id),
-        )
-        .where(eq(productImagesTable.productId, product[0].id));
-
-      const productData = {
-        ...product[0],
-        imageUrls: productImages.map((img) => img.url),
-        mainImageUrl: productImages.find((img) => img.isMain)?.url,
-      };
-
-      return productData;
+      // 由于商品表中没有slug字段，这个方法暂时不可用
+      throw new NotFoundError("商品slug功能暂未实现");
     } catch (error) {
       throw handleDatabaseError(error);
     }
@@ -363,21 +294,9 @@ export class ProductsService extends BaseService<
     try {
       // 从数据中提取image_ids，其余数据用于更新商品
 
-      const encode_data = productsModel.updateProductDto.encode(data)
+      // 精髓，将前端类型转为后端需要的类型
+      const encode_data = productsModel.updateProductDto.decode(data)
       const { image_ids, ...productData } = encode_data;
-      // 转换数字类型字段为字符串类型（如果存在）
-      if (productData.cost !== undefined) {
-        productData.cost = productData.cost.toString();
-      }
-      if (productData.price !== undefined) {
-        productData.price = productData.price.toString();
-      }
-      if (productData.comparePrice !== undefined) {
-        productData.comparePrice = productData.comparePrice.toString();
-      }
-      if (productData.weight !== undefined) {
-        productData.weight = productData.weight.toString();
-      }
 
       // 使用事务确保商品更新和图片关联的原子性
       const result = await db.transaction(async (tx) => {

@@ -83,24 +83,24 @@ export const productsController = new Elysia({
     },
   )
 
-  // 根据slug获取商品详情
-  .get(
-    "/slug/:slug",
-    async ({ params: { slug }, productsService }) => {
-      const result = await productsService.getBySlug(slug);
-      return commonRes(result);
-    },
-    {
-      params: z.object({
-        slug: z.string()
-      }),
-      detail: {
-        tags: ["Products"],
-        summary: "根据slug获取商品详情",
-        description: "根据商品slug获取商品的详细信息",
-      },
-    },
-  )
+  // 根据slug获取商品详情 - 暂时注释，因为商品表中没有slug字段
+  // .get(
+  //   "/slug/:slug",
+  //   async ({ params: { slug }, productsService }) => {
+  //     const result = await productsService.getBySlug(slug);
+  //     return commonRes(result);
+  //   },
+  //   {
+  //     params: z.object({
+  //       slug: z.string()
+  //     }),
+  //     detail: {
+  //       tags: ["Products"],
+  //       summary: "根据slug获取商品详情",
+  //       description: "根据商品slug获取商品的详细信息",
+  //     },
+  //   },
+  // )
 
   // 更新商品
   .put(

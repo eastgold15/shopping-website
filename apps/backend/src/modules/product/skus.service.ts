@@ -96,7 +96,7 @@ export class SkusService extends BaseService<
           ...getTableColumns(skusTable),
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: skuImagesTable.isMain,
           },
@@ -199,7 +199,7 @@ export class SkusService extends BaseService<
           ...getTableColumns(skusTable),
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: skuImagesTable.isMain,
           },
@@ -256,7 +256,7 @@ export class SkusService extends BaseService<
           ...getTableColumns(skusTable),
           images: {
             id: imagesTable.id,
-            url: imagesTable.url,
+            url: imagesTable.imageUrl,
             alt: imagesTable.alt,
             isMain: skuImagesTable.isMain,
           },

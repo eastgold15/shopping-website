@@ -2,13 +2,16 @@ import { relations } from "drizzle-orm";
 
 
 import { boolean, decimal, integer, json, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
-import { z } from "zod/v4";
+import { createSchemaFactory, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
+import { date, z } from "zod/v4";
 
-import { categoriesTable, imagesTable, orderItemsTable, reviewsTable } from ".";
-import { stringToNumber, UnoQueryZod } from "./utils";
+
+
 import { skusTable } from "./sku.model"; // 添加SKU导入
+import { categoriesTable, SelectCategoryType } from "./category.model";
+import { imagesTable, SelectImagesType } from "./images.model";
 
+import { numberToString, UnoQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -18,7 +21,6 @@ import { skusTable } from "./sku.model"; // 添加SKU导入
 export const productsTable = pgTable("products", {
   id: serial("id").primaryKey(), // 商品唯一标识
   name: varchar("name", { length: 255 }).notNull(), // 商品名称
-  slug: varchar("slug", { length: 255 }).notNull().unique(), // 商品别名，用于URL优化
   description: text("description").default(""), // 商品详细描述
   shortDescription: text("short_description").default(""), // 商品简短描述
   price: decimal("price", { precision: 10, scale: 2 }).notNull(), // 商品售价
@@ -29,7 +31,6 @@ export const productsTable = pgTable("products", {
   weight: decimal("weight", { precision: 8, scale: 2 }).notNull(), // 商品重量(kg)
   dimensions: json("dimensions").default({}), // 商品尺寸(长宽高)
   // 商品图片通过 productImagesTable 中间表关联
-  videos: json("videos").default([]), // 商品视频列表
   colors: json("colors").default([]), // 商品可选颜色
   sizes: json("sizes").default([]), // 商品可选尺寸
   materials: json("materials").default([]), // 商品材料信息
@@ -43,37 +44,51 @@ export const productsTable = pgTable("products", {
   minStock: integer("min_stock").default(0), // 最低库存预警值
   isActive: boolean("is_active").default(true), // 是否上架销售
   isFeatured: boolean("is_featured").default(false), // 是否为推荐商品
-  metaTitle: varchar("meta_title", { length: 255 }).default(""), // SEO标题
-  metaDescription: text("meta_description").default(""), // SEO描述
-  metaKeywords: varchar("meta_keywords", { length: 500 }).default(""), // SEO关键词
   createdAt: timestamp("created_at").defaultNow(), // 创建时间
   updatedAt: timestamp("updated_at").defaultNow(), // 更新时间
 });
 
 // 2. Zod Schema（基于 Drizzle 表生成，并可扩展校验）
+const { createInsertSchema } = createSchemaFactory({
+  // This configuration will only coerce dates. Set `coerce` to `true` to coerce all data types or specify others
+  coerce: {
+    date: true
+  }
+});
 
 // 2. Zod 校验规则（运行时校验）
+// 创建
 export const insertProductSchema = createInsertSchema(productsTable,);
+// 更新
 export const updateProductSchema = createUpdateSchema(productsTable,);
-export const selectProductSchema = createSelectSchema(productsTable);
+// 查询 关联表查询 
+export const selectProductSchema = createSelectSchema(productsTable, {
+
+});
 
 // 商品模型定义
 export const productsModel = {
-  selectProductcTable: selectProductSchema,
+  selectProductcTable: selectProductSchema.extend({
+    // 将价格相关字段从字符串转换为数字
+    price: z.string().transform((val) => parseFloat(val)),
+    comparePrice: z.string().transform((val) => parseFloat(val)),
+    cost: z.string().transform((val) => parseFloat(val)),
+    weight: z.string().transform((val) => parseFloat(val)),
+  }),
   // 创建商品请求参数 - 前端传入 number，后端转换为 string 存储
   insertProductDto: insertProductSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
-    cost: stringToNumber,
-    price: stringToNumber,
-    comparePrice: stringToNumber,
-    weight: stringToNumber,
+    cost: numberToString,
+    price: numberToString,
+    comparePrice: numberToString,
+    weight: numberToString,
     image_ids: z.array(z.number()),
   }),
 
   updateProductDto: updateProductSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
-    cost: stringToNumber,
-    price: stringToNumber,
-    comparePrice: stringToNumber,
-    weight: stringToNumber,
+    cost: numberToString,
+    price: numberToString,
+    comparePrice: numberToString,
+    weight: numberToString,
     image_ids: z.array(z.number()),
   }),
   UpdateSortDto: z.object({ sortOrder: z.number() }),
@@ -102,18 +117,50 @@ export const productsModel = {
   // 筛选选项查询参数
   queryFilterOptionsDto: z.object({
     categoryId: z.string().optional(),
+  }),
+
+
+  listProductRes: selectProductSchema.extend({
+    // 将价格相关字段从字符串转换为数字
+    price: z.string().transform((val) => parseFloat(val)),
+    comparePrice: z.string().transform((val) => parseFloat(val)),
+    cost: z.string().transform((val) => parseFloat(val)),
+    weight: z.string().transform((val) => parseFloat(val)),
+    imageRef: z.array(z.object({
+      id: z.number(),
+      url: z.string(),
+      alt: z.string(),
+      isMain: z.boolean(),
+    })),
+    categoryRef: z.object({
+      id: z.number(),
+      name: z.string(),
+    }),
   })
 };
 // 3. 类型定义（可选，但推荐） 导出 TypeScript 类型（方便路由、service 等使用）
 // 类型来源于 Zod 推断，但用更语义化的名字导出
-export type InsertProductDto = z.infer<typeof productsModel.insertProductDto>;  // 请求用
-export type UpdateProductDto = z.infer<typeof productsModel.updateProductDto>;  // 请求用
+export type InsertProductDto = z.input<typeof productsModel.insertProductDto>;  // 请求用
+export type UpdateProductDto = z.input<typeof productsModel.updateProductDto>;  // 请求用
 export type SelectProductType = z.infer<typeof productsModel.selectProductcTable>; // 查询返回原始类型
 export type SearchProductQueryDto = z.infer<typeof productsModel.querySearchProductDto>// 搜索用
 export type ListProductQueryDto = z.infer<typeof productsModel.queryProductListDto>;
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
-export type SelectProductVo = SelectProductType; // 可直接复用，或扩展字段（比如格式化日期等）
+export type SelectProductVo = SelectProductType & {
+  imageRef: {
+    id: number,
+    url: string,
+    alt: string,
+    isMain: boolean
+  }[]
+} & {
+  categoryRef: {
+    id: number,
+    name: string
+  }
+}
+
 export type SelectProductDetailVo = SelectProductType & {
   images: {
     id: number
@@ -130,33 +177,9 @@ export const productsRelations = relations(productsTable, ({ one, many }) => ({
     fields: [productsTable.categoryId],
     references: [categoriesTable.id],
   }),
-  reviews: many(reviewsTable),
-  orderItems: many(orderItemsTable),
   productImages: many(productImagesTable),
   skus: many(skusTable), // 添加SKU关联
 }));
-
-
-
-
-
-
-
-
-
-
-// // 导出类型
-// export type CreateProductDto = typeof productsModel.CreateProductDto.static;
-// export type UpdateProductDto = typeof productsModel.UpdateProductDto.static;
-
-// export type FilterOptionsQueryDto =
-//   typeof productsModel.FilterOptionsQueryDto.static;
-// export type UpdateSortDto = typeof productsModel.UpdateSortDto.static;
-// export type ProductListQueryDto =
-//   typeof productsModel.ProductListQueryDto.static;
-
-// export type ProductModel = typeof productsModel.CreateProductDto.static;
-// export type ProductSchema = typeof productsModel.productcSchema.static;
 
 
 

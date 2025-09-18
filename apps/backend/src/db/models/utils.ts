@@ -9,6 +9,14 @@ export const stringToNumber = z.codec(
   }
 );
 
+export const numberToString = z.codec(
+  z.number(),      //输入
+  z.string(),      //输出
+  {
+    decode: (val) => String(val),
+    encode: (val) => Number(val)
+  })
+
 // 公共查询列表类型
 export const UnoQueryZod = z.object({
   search: z.optional(z.string()),

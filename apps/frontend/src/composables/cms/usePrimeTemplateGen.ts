@@ -34,6 +34,10 @@ export async function submitForm(formEl: FormInstance | null) {
 
 /**
  * PrimeVue版本的CMS模板数据生成器
+ * 泛型：
+ * - T：数据模型类型，必须包含 id 字段
+ * - PageQuery：分页查询参数类型，必须继承 BaseQueryParams
+ * - TForm：表单数据类型，默认与 T 相同
  * @param dataCrudHandler CRUD处理器
  * @param queryData 查询参数
  * @returns 模板数据

@@ -7,7 +7,7 @@ import Search from "@frontend/pages/Search.vue";
 
 const clientRoutes = [
   {
-    path: "/home",
+    path: "/",
     component: ClientLayout,
     children: [
       {

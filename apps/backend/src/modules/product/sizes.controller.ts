@@ -1,7 +1,7 @@
-import { commonRes } from "@backend/utils/Res";
-import { Elysia, t } from "elysia";
 import { attributesModel } from "@backend/db/models/attribute.model";
 import { paramIdZod } from "@backend/types";
+import { commonRes } from "@backend/utils/Res";
+import { Elysia, t } from "elysia";
 import { SizesService } from "./sizes.service";
 
 

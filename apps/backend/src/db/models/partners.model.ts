@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from "zod/v4";
-import { imagesTable, SelectImageType } from "./images.model";
+import { imagesTable, SelectImagesType } from "./images.model";
 import { UnoQueryZod } from "./utils";
 
 /**
@@ -97,7 +97,7 @@ export type BatchUpdateOrderDto = z.infer<typeof partnersModel.batchUpdateOrderD
 
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰） 左连接一般都有null
 export type SelectPartnersVo = Omit<SelectPartnersDto, 'image_id'> & {
-  imageRef: SelectImageType
+  imageRef: SelectImagesType
 }
 
 

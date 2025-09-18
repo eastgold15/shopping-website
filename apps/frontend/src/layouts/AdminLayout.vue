@@ -18,7 +18,7 @@ const currentPageTitle = computed(() => {
 	if (path.includes("/dashboard")) return "仪表盘";
 	if (path.includes("/partners")) return "合作伙伴管理";
 	if (path.includes("/categories")) return "商品分类管理";
-	if (path.includes("/products/add")) return "添加商品";
+
 	if (path.includes("/products")) return "商品管理";
 	if (path.includes("/orders")) return "订单管理";
 	if (path.includes("/refunds")) return "退款管理";
@@ -51,11 +51,6 @@ const menuItems = ref([
 				label: "商品列表",
 				icon: "pi pi-list",
 				command: () => router.push("/admin/products"),
-			},
-			{
-				label: "添加商品",
-				icon: "pi pi-plus",
-				command: () => router.push("/admin/products/add"),
 			},
 			{
 				label: "商品分类",
