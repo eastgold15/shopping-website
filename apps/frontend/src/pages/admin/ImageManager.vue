@@ -110,7 +110,7 @@ const templateData = await genPrimeCmsTemplateData<
     filename: "",
     category: undefined,
     page: 1,
-    pageSize: 12,
+    limit: 12,
   },
 );
 

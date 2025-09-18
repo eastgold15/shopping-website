@@ -113,86 +113,86 @@ import type { PageModel } from "@frontend/types/prime-cms";
 
 // 定义组件属性
 interface Props {
-	// 数据相关
-	data?: PageModel<any>;
-	loading?: boolean;
+  // 数据相关
+  data?: PageModel<any>;
+  loading?: boolean;
 
-	// 工具栏配置
-	showToolbar?: boolean;
-	showAdd?: boolean;
-	showBatchDelete?: boolean;
-	showRefresh?: boolean;
-	addText?: string;
+  // 工具栏配置
+  showToolbar?: boolean;
+  showAdd?: boolean;
+  showBatchDelete?: boolean;
+  showRefresh?: boolean;
+  addText?: string;
 
-	// 搜索配置
-	showSearch?: boolean;
-	searchForm?: Record<string, any>;
+  // 搜索配置
+  showSearch?: boolean;
+  searchForm?: Record<string, any>;
 
-	// 表格配置
-	showPagination?: boolean;
-	showSelection?: boolean;
-	showIndex?: boolean;
-	showActions?: boolean;
-	selectionMode?: "single" | "multiple";
-	scrollable?: boolean;
-	scrollHeight?: string;
-	resizable?: boolean;
+  // 表格配置
+  showPagination?: boolean;
+  showSelection?: boolean;
+  showIndex?: boolean;
+  showActions?: boolean;
+  selectionMode?: "single" | "multiple";
+  scrollable?: boolean;
+  scrollHeight?: string;
+  resizable?: boolean;
 
-	// 操作按钮配置
-	showView?: boolean;
-	showEdit?: boolean;
-	showDelete?: boolean;
-	actionsFrozen?: boolean;
-	actionsWidth?: string;
+  // 操作按钮配置
+  showView?: boolean;
+  showEdit?: boolean;
+  showDelete?: boolean;
+  actionsFrozen?: boolean;
+  actionsWidth?: string;
 
-	// 对话框配置
-	dialogWidth?: string;
-	dialogMaximizable?: boolean;
+  // 对话框配置
+  dialogWidth?: string;
+  dialogMaximizable?: boolean;
 
-	// 表单配置
-	formRules?: Record<string, any>;
+  // 表单配置
+  formRules?: Record<string, any>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-	loading: false,
-	showToolbar: true,
-	showAdd: true,
-	showBatchDelete: true,
-	showRefresh: true,
-	addText: "新增",
-	showSearch: true,
-	showPagination: true,
-	showSelection: true,
-	showIndex: true,
-	showActions: true,
-	selectionMode: "multiple",
-	scrollable: false,
-	scrollHeight: "400px",
-	resizable: true,
-	showView: true,
-	showEdit: true,
-	showDelete: true,
-	actionsFrozen: true,
-	actionsWidth: "150px",
-	dialogWidth: "600px",
-	dialogMaximizable: true,
-	searchForm: () => ({ keyword: "" }),
+  loading: false,
+  showToolbar: true,
+  showAdd: true,
+  showBatchDelete: true,
+  showRefresh: true,
+  addText: "新增",
+  showSearch: true,
+  showPagination: true,
+  showSelection: true,
+  showIndex: true,
+  showActions: true,
+  selectionMode: "multiple",
+  scrollable: false,
+  scrollHeight: "400px",
+  resizable: true,
+  showView: true,
+  showEdit: true,
+  showDelete: true,
+  actionsFrozen: true,
+  actionsWidth: "150px",
+  dialogWidth: "600px",
+  dialogMaximizable: true,
+  searchForm: () => ({ keyword: "" }),
 });
 
 // 定义事件
 interface Emits {
-	add: [];
-	edit: [data: any];
-	view: [data: any];
-	delete: [data: any];
-	"batch-delete": [items: any[]];
-	refresh: [];
-	search: [form: any];
-	reset: [];
-	"page-change": [event: any];
-	sort: [event: any];
-	"selection-change": [items: any[]];
-	submit: [data: any, mode: string];
+  add: [];
+  edit: [data: any];
+  view: [data: any];
+  delete: [data: any];
+  "batch-delete": [items: any[]];
+  refresh: [];
+  search: [form: any];
+  reset: [];
+  "page-change": [event: any];
+  sort: [event: any];
+  "selection-change": [items: any[]];
+  submit: [data: any, mode: string];
 }
 
 const emit = defineEmits<Emits>();
@@ -208,110 +208,110 @@ const formRef = ref();
 
 // 计算属性
 const tableData = computed(
-	() =>
-		props.data || {
-			items: [],
-			meta: {
-				page: 1,
-				pageSize: 0,
-				total: 0,
-				totalPages: 0,
-			},
-		},
+  () =>
+    props.data || {
+      items: [],
+      meta: {
+        page: 1,
+        limit: 0,
+        total: 0,
+        totalPages: 0,
+      },
+    },
 );
 
 const dialogTitle = computed(() => {
-	const titles = {
-		add: "新增",
-		edit: "编辑",
-		view: "查看",
-	};
-	return titles[formMode.value];
+  const titles = {
+    add: "新增",
+    edit: "编辑",
+    view: "查看",
+  };
+  return titles[formMode.value];
 });
 
 // 事件处理方法
 function handleAdd() {
-	formMode.value = "add";
-	formData.value = {};
-	dialogVisible.value = true;
-	emit("add");
+  formMode.value = "add";
+  formData.value = {};
+  dialogVisible.value = true;
+  emit("add");
 }
 
 function handleEdit(data: any) {
-	formMode.value = "edit";
-	formData.value = { ...data };
-	dialogVisible.value = true;
-	emit("edit", data);
+  formMode.value = "edit";
+  formData.value = { ...data };
+  dialogVisible.value = true;
+  emit("edit", data);
 }
 
 function handleView(data: any) {
-	formMode.value = "view";
-	formData.value = { ...data };
-	dialogVisible.value = true;
-	emit("view", data);
+  formMode.value = "view";
+  formData.value = { ...data };
+  dialogVisible.value = true;
+  emit("view", data);
 }
 
 function handleDelete(data: any) {
-	emit("delete", data);
+  emit("delete", data);
 }
 
 function handleBatchDelete() {
-	emit("batch-delete", selectedItems.value);
+  emit("batch-delete", selectedItems.value);
 }
 
 function handleRefresh() {
-	emit("refresh");
+  emit("refresh");
 }
 
 function handleSearch() {
-	emit("search", searchForm);
+  emit("search", searchForm);
 }
 
 function handleReset() {
-	Object.keys(searchForm).forEach((key) => {
-		if (props.searchForm && props.searchForm[key] !== undefined) {
-			searchForm[key] = props.searchForm[key];
-		} else {
-			searchForm[key] = "";
-		}
-	});
-	emit("reset");
+  Object.keys(searchForm).forEach((key) => {
+    if (props.searchForm && props.searchForm[key] !== undefined) {
+      searchForm[key] = props.searchForm[key];
+    } else {
+      searchForm[key] = "";
+    }
+  });
+  emit("reset");
 }
 
 function handleSubmit() {
-	emit("submit", formData.value, formMode.value);
+  emit("submit", formData.value, formMode.value);
 }
 
 function onPageChange(event: any) {
-	emit("page-change", event);
+  emit("page-change", event);
 }
 
 function onSort(event: any) {
-	emit("sort", event);
+  emit("sort", event);
 }
 
 function onSelectionChange(event: any) {
-	selectedItems.value = event.value;
-	emit("selection-change", event.value);
+  selectedItems.value = event.value;
+  emit("selection-change", event.value);
 }
 
 // 暴露方法给父组件
 defineExpose({
-	selectedItems,
-	searchForm,
-	dialogVisible,
-	dialogLoading,
-	formMode,
-	formData,
-	handleAdd,
-	handleEdit,
-	handleView,
-	handleDelete,
-	handleBatchDelete,
-	handleRefresh,
-	handleSearch,
-	handleReset,
-	handleSubmit,
+  selectedItems,
+  searchForm,
+  dialogVisible,
+  dialogLoading,
+  formMode,
+  formData,
+  handleAdd,
+  handleEdit,
+  handleView,
+  handleDelete,
+  handleBatchDelete,
+  handleRefresh,
+  handleSearch,
+  handleReset,
+  handleSubmit,
 });
 </script>
 

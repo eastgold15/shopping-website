@@ -34,7 +34,7 @@ export class AdvertisementsService {
     try {
       const {
         page = 1,
-        pageSize = 10,
+        limit = 10,
         sortBy = "sortOrder",
         sortOrder = "asc",
         search,
@@ -99,7 +99,7 @@ export class AdvertisementsService {
       // 使用统一的分页函数
       return await paginate(db, baseQuery, {
         page,
-        pageSize,
+        limit,
         orderBy,
         orderDirection,
       });

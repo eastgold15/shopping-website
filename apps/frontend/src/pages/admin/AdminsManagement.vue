@@ -47,7 +47,7 @@ const admins = ref<Admin[]>([]);
 const selectedAdmins = ref<Admin[]>([]);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("createdAt");
 const sortOrder = ref(-1);
 const searchKeyword = ref("");
@@ -162,7 +162,7 @@ const loadAdmins = async () => {
 		loading.value = true;
 		const params = {
 			page: page.value,
-			pageSize: pageSize.value,
+			limit: limit.value,
 			sortBy: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			search: searchKeyword.value || undefined,
@@ -289,7 +289,7 @@ const loadAdmins = async () => {
 // 分页处理
 const onPage = (event: any) => {
 	page.value = event.page + 1;
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadAdmins();
 };
 
@@ -531,290 +531,283 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="admins-management">
-        <!-- 页面标题和统计 -->
-        <div class="header-section">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">管理员管理</h1>
-                    <p class="text-gray-600 mt-1">管理系统管理员账户，包括权限分配、角色管理等</p>
-                </div>
-                <div class="flex gap-3">
-                    <Button label="新增管理员" icon="pi pi-plus" @click="showCreateDialog = true" class="p-button-success" />
-                    <Button label="导出管理员" icon="pi pi-download" @click="exportAdmins" class="p-button-outlined" />
-                </div>
-            </div>
+	<div class="admins-management">
+		<!-- 页面标题和统计 -->
+		<div class="header-section">
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-3xl font-bold text-gray-900">管理员管理</h1>
+					<p class="text-gray-600 mt-1">管理系统管理员账户，包括权限分配、角色管理等</p>
+				</div>
+				<div class="flex gap-3">
+					<Button label="新增管理员" icon="pi pi-plus" @click="showCreateDialog = true" class="p-button-success" />
+					<Button label="导出管理员" icon="pi pi-download" @click="exportAdmins" class="p-button-outlined" />
+				</div>
+			</div>
 
-            <!-- 统计卡片 -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-blue-600">{{ adminStatistics.total }}</div>
-                        <div class="text-sm text-gray-600">总管理员</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-green-600">{{ adminStatistics.active }}</div>
-                        <div class="text-sm text-gray-600">正常状态</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-red-600">{{ adminStatistics.super_admin }}</div>
-                        <div class="text-sm text-gray-600">超级管理员</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-orange-600">{{ adminStatistics.admin }}</div>
-                        <div class="text-sm text-gray-600">普通管理员</div>
-                    </template>
-                </Card>
-            </div>
+			<!-- 统计卡片 -->
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-blue-600">{{ adminStatistics.total }}</div>
+						<div class="text-sm text-gray-600">总管理员</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-green-600">{{ adminStatistics.active }}</div>
+						<div class="text-sm text-gray-600">正常状态</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-red-600">{{ adminStatistics.super_admin }}</div>
+						<div class="text-sm text-gray-600">超级管理员</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-orange-600">{{ adminStatistics.admin }}</div>
+						<div class="text-sm text-gray-600">普通管理员</div>
+					</template>
+				</Card>
+			</div>
 
-            <!-- 工具栏 -->
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadAdmins" class="p-button-outlined"
-                        size="small" />
-                    <Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small"
-                        :disabled="!selectedAdmins.length" />
-                    <Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small"
-                        :disabled="!selectedAdmins.length" />
-                </div>
-                <div class="flex gap-3">
-                    <InputText v-model="searchKeyword" placeholder="搜索用户名、姓名或邮箱..." class="w-64"
-                        @input="handleSearch" />
-                    <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                    <Dropdown v-model="filterRole" :options="roleOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选角色" class="w-32" @change="handleFilter" />
-                    <Calendar v-model="filterDateRange" selectionMode="range" placeholder="创建日期范围" class="w-48"
-                        @date-select="handleFilter" showIcon />
-                </div>
-            </div>
-        </div>
+			<!-- 工具栏 -->
+			<div class="flex justify-between items-center mb-4">
+				<div class="flex gap-3">
+					<Button label="刷新" icon="pi pi-refresh" @click="loadAdmins" class="p-button-outlined" size="small" />
+					<Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small"
+						:disabled="!selectedAdmins.length" />
+					<Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small"
+						:disabled="!selectedAdmins.length" />
+				</div>
+				<div class="flex gap-3">
+					<InputText v-model="searchKeyword" placeholder="搜索用户名、姓名或邮箱..." class="w-64" @input="handleSearch" />
+					<Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+						placeholder="筛选状态" class="w-32" @change="handleFilter" />
+					<Dropdown v-model="filterRole" :options="roleOptions" optionLabel="label" optionValue="value"
+						placeholder="筛选角色" class="w-32" @change="handleFilter" />
+					<Calendar v-model="filterDateRange" selectionMode="range" placeholder="创建日期范围" class="w-48"
+						@date-select="handleFilter" showIcon />
+				</div>
+			</div>
+		</div>
 
-        <!-- 管理员数据表格 -->
-        <div class="table-section">
-            <DataTable :value="admins" tableStyle="min-width: 50rem" :loading="loading"
-                v-model:selection="selectedAdmins" dataKey="id" paginator :rows="pageSize"
-                :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true" @page="onPage" @sort="onSort"
-                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * pageSize" class="p-datatable-sm"
-                showGridlines responsiveLayout="scroll" selectionMode="multiple" :metaKeySelection="false">
+		<!-- 管理员数据表格 -->
+		<div class="table-section">
+			<DataTable :value="admins" tableStyle="min-width: 50rem" :loading="loading" v-model:selection="selectedAdmins"
+				dataKey="id" paginator :rows="limit" :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true"
+				@page="onPage" @sort="onSort" :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * limit"
+				class="p-datatable-sm" showGridlines responsiveLayout="scroll" selectionMode="multiple"
+				:metaKeySelection="false">
 
-                <template #header>
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-xl font-bold">管理员列表</span>
-                        <Button icon="pi pi-refresh" rounded raised />
-                    </div>
-                </template>
+				<template #header>
+					<div class="flex flex-wrap items-center justify-between gap-2">
+						<span class="text-xl font-bold">管理员列表</span>
+						<Button icon="pi pi-refresh" rounded raised />
+					</div>
+				</template>
 
-                <!-- 选择列 -->
-                <Column selectionMode="multiple" class="w-[3%]"></Column>
+				<!-- 选择列 -->
+				<Column selectionMode="multiple" class="w-[3%]"></Column>
 
-                <!-- 头像列 -->
-                <Column field="avatar" header="头像" class="w-[8%]">
-                    <template #body="{ data }">
-                        <div class="flex justify-center">
-                            <Avatar v-if="data.avatar" :image="data.avatar" size="large" shape="circle" />
-                            <Avatar v-else :label="data.realName.charAt(0)" size="large" shape="circle"
-                                class="bg-blue-500 text-white" />
-                        </div>
-                    </template>
-                </Column>
+				<!-- 头像列 -->
+				<Column field="avatar" header="头像" class="w-[8%]">
+					<template #body="{ data }">
+						<div class="flex justify-center">
+							<Avatar v-if="data.avatar" :image="data.avatar" size="large" shape="circle" />
+							<Avatar v-else :label="data.realName.charAt(0)" size="large" shape="circle"
+								class="bg-blue-500 text-white" />
+						</div>
+					</template>
+				</Column>
 
-                <!-- 管理员信息列 -->
-                <Column field="username" header="管理员信息" sortable class="w-[18%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="font-medium text-sm mb-1">{{ data.realName }}</p>
-                            <p class="text-xs text-gray-600 mb-1">@{{ data.username }}</p>
-                            <p class="text-xs text-gray-600">{{ data.email }}</p>
-                            <p class="text-xs text-gray-500 mt-1">{{ data.department }} - {{ data.position }}</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 管理员信息列 -->
+				<Column field="username" header="管理员信息" sortable class="w-[18%]">
+					<template #body="{ data }">
+						<div>
+							<p class="font-medium text-sm mb-1">{{ data.realName }}</p>
+							<p class="text-xs text-gray-600 mb-1">@{{ data.username }}</p>
+							<p class="text-xs text-gray-600">{{ data.email }}</p>
+							<p class="text-xs text-gray-500 mt-1">{{ data.department }} - {{ data.position }}</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 联系方式列 -->
-                <Column field="phone" header="联系方式" class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="text-sm">{{ data.phone }}</p>
-                            <p class="text-xs text-gray-600 mt-1">登录{{ data.loginCount }}次</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 联系方式列 -->
+				<Column field="phone" header="联系方式" class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<p class="text-sm">{{ data.phone }}</p>
+							<p class="text-xs text-gray-600 mt-1">登录{{ data.loginCount }}次</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 角色权限列 -->
-                <Column field="role" header="角色权限" class="w-[15%]">
-                    <template #body="{ data }">
-                        <div>
-                            <Tag :value="getRoleText(data.role)" :severity="getRoleSeverity(data.role)"
-                                class="text-xs mb-2" />
-                            <div class="flex flex-wrap gap-1">
-                                <Badge v-for="permission in data.permissions.slice(0, 2)" :key="permission"
-                                    :value="permission.split('.')[0]" severity="info" class="text-xs" />
-                                <Badge v-if="data.permissions.length > 2" :value="`+${data.permissions.length - 2}`"
-                                    severity="secondary" class="text-xs" />
-                            </div>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 角色权限列 -->
+				<Column field="role" header="角色权限" class="w-[15%]">
+					<template #body="{ data }">
+						<div>
+							<Tag :value="getRoleText(data.role)" :severity="getRoleSeverity(data.role)" class="text-xs mb-2" />
+							<div class="flex flex-wrap gap-1">
+								<Badge v-for="permission in data.permissions.slice(0, 2)" :key="permission"
+									:value="permission.split('.')[0]" severity="info" class="text-xs" />
+								<Badge v-if="data.permissions.length > 2" :value="`+${data.permissions.length - 2}`"
+									severity="secondary" class="text-xs" />
+							</div>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 状态列 -->
-                <Column field="status" header="状态" class="w-[10%]">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-2">
-                            <ToggleSwitch v-model="data.status" :true-value="'active'" :false-value="'inactive'"
-                                @change="toggleAdminStatus(data)" class="scale-75"
-                                :disabled="data.role === 'super_admin'" />
-                            <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)"
-                                class="text-xs" />
-                        </div>
-                    </template>
-                </Column>
+				<!-- 状态列 -->
+				<Column field="status" header="状态" class="w-[10%]">
+					<template #body="{ data }">
+						<div class="flex items-center gap-2">
+							<ToggleSwitch v-model="data.status" :true-value="'active'" :false-value="'inactive'"
+								@change="toggleAdminStatus(data)" class="scale-75" :disabled="data.role === 'super_admin'" />
+							<Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)" class="text-xs" />
+						</div>
+					</template>
+				</Column>
 
-                <!-- 最后登录列 -->
-                <Column field="lastLoginAt" header="最后登录" sortable class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="text-xs text-gray-600">{{ formatDate(data.lastLoginAt) }}</p>
-                            <p class="text-xs text-gray-500">{{ data.lastLoginIp }}</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 最后登录列 -->
+				<Column field="lastLoginAt" header="最后登录" sortable class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<p class="text-xs text-gray-600">{{ formatDate(data.lastLoginAt) }}</p>
+							<p class="text-xs text-gray-500">{{ data.lastLoginIp }}</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 创建信息列 -->
-                <Column field="createdAt" header="创建信息" sortable class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="text-xs text-gray-600">{{ formatDate(data.createdAt) }}</p>
-                            <p class="text-xs text-gray-500">by {{ data.createdBy }}</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 创建信息列 -->
+				<Column field="createdAt" header="创建信息" sortable class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<p class="text-xs text-gray-600">{{ formatDate(data.createdAt) }}</p>
+							<p class="text-xs text-gray-500">by {{ data.createdBy }}</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 操作列 -->
-                <Column header="操作" class="w-[15%]">
-                    <template #body="{ data }">
-                        <div class="flex gap-2">
-                            <Button icon="pi pi-eye" @click="router.push(`/admin/admins/${data.id}`)"
-                                class="p-button-info p-button-sm" v-tooltip.top="'查看详情'" />
-                            <Button icon="pi pi-pencil" @click="showEditDialog(data)"
-                                class="p-button-warning p-button-sm" v-tooltip.top="'编辑'"
-                                :disabled="data.role === 'super_admin' && data.id !== 1" />
-                            <Button icon="pi pi-key" @click="resetPassword(data)" class="p-button-secondary p-button-sm"
-                                v-tooltip.top="'重置密码'" />
-                            <Button icon="pi pi-trash" @click="confirmDelete(data)" class="p-button-danger p-button-sm"
-                                v-tooltip.top="'删除'" :disabled="data.role === 'super_admin'" />
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
-        </div>
+				<!-- 操作列 -->
+				<Column header="操作" class="w-[15%]">
+					<template #body="{ data }">
+						<div class="flex gap-2">
+							<Button icon="pi pi-eye" @click="router.push(`/admin/admins/${data.id}`)"
+								class="p-button-info p-button-sm" v-tooltip.top="'查看详情'" />
+							<Button icon="pi pi-pencil" @click="showEditDialog(data)" class="p-button-warning p-button-sm"
+								v-tooltip.top="'编辑'" :disabled="data.role === 'super_admin' && data.id !== 1" />
+							<Button icon="pi pi-key" @click="resetPassword(data)" class="p-button-secondary p-button-sm"
+								v-tooltip.top="'重置密码'" />
+							<Button icon="pi pi-trash" @click="confirmDelete(data)" class="p-button-danger p-button-sm"
+								v-tooltip.top="'删除'" :disabled="data.role === 'super_admin'" />
+						</div>
+					</template>
+				</Column>
+			</DataTable>
+		</div>
 
-        <!-- 创建/编辑管理员对话框 -->
-        <Dialog v-model:visible="showCreateDialog" :header="editingAdmin ? '编辑管理员' : '新增管理员'" :modal="true"
-            :closable="true" class="w-[800px]">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">用户名 *</label>
-                        <InputText v-model="adminForm.username" placeholder="请输入用户名" class="w-full"
-                            :class="{ 'p-invalid': !adminForm.username }" />
-                    </div>
+		<!-- 创建/编辑管理员对话框 -->
+		<Dialog v-model:visible="showCreateDialog" :header="editingAdmin ? '编辑管理员' : '新增管理员'" :modal="true" :closable="true"
+			class="w-[800px]">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium mb-2">用户名 *</label>
+						<InputText v-model="adminForm.username" placeholder="请输入用户名" class="w-full"
+							:class="{ 'p-invalid': !adminForm.username }" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">真实姓名 *</label>
-                        <InputText v-model="adminForm.realName" placeholder="请输入真实姓名" class="w-full"
-                            :class="{ 'p-invalid': !adminForm.realName }" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">真实姓名 *</label>
+						<InputText v-model="adminForm.realName" placeholder="请输入真实姓名" class="w-full"
+							:class="{ 'p-invalid': !adminForm.realName }" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">邮箱 *</label>
-                        <InputText v-model="adminForm.email" placeholder="请输入邮箱" class="w-full"
-                            :class="{ 'p-invalid': !adminForm.email }" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">邮箱 *</label>
+						<InputText v-model="adminForm.email" placeholder="请输入邮箱" class="w-full"
+							:class="{ 'p-invalid': !adminForm.email }" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">手机号</label>
-                        <InputText v-model="adminForm.phone" placeholder="请输入手机号" class="w-full" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">手机号</label>
+						<InputText v-model="adminForm.phone" placeholder="请输入手机号" class="w-full" />
+					</div>
 
-                    <div v-if="!editingAdmin">
-                        <label class="block text-sm font-medium mb-2">密码 *</label>
-                        <Password v-model="adminForm.password" placeholder="请输入密码" class="w-full"
-                            :class="{ 'p-invalid': !adminForm.password }" toggleMask />
-                    </div>
+					<div v-if="!editingAdmin">
+						<label class="block text-sm font-medium mb-2">密码 *</label>
+						<Password v-model="adminForm.password" placeholder="请输入密码" class="w-full"
+							:class="{ 'p-invalid': !adminForm.password }" toggleMask />
+					</div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">部门</label>
-                            <Dropdown v-model="adminForm.department" :options="departmentOptions" optionLabel="label"
-                                optionValue="value" placeholder="选择部门" class="w-full" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">职位</label>
-                            <InputText v-model="adminForm.position" placeholder="请输入职位" class="w-full" />
-                        </div>
-                    </div>
-                </div>
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label class="block text-sm font-medium mb-2">部门</label>
+							<Dropdown v-model="adminForm.department" :options="departmentOptions" optionLabel="label"
+								optionValue="value" placeholder="选择部门" class="w-full" />
+						</div>
+						<div>
+							<label class="block text-sm font-medium mb-2">职位</label>
+							<InputText v-model="adminForm.position" placeholder="请输入职位" class="w-full" />
+						</div>
+					</div>
+				</div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">角色</label>
-                        <Dropdown v-model="adminForm.role" :options="adminRoleOptions" optionLabel="label"
-                            optionValue="value" placeholder="选择角色" class="w-full" />
-                    </div>
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium mb-2">角色</label>
+						<Dropdown v-model="adminForm.role" :options="adminRoleOptions" optionLabel="label" optionValue="value"
+							placeholder="选择角色" class="w-full" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">权限</label>
-                        <MultiSelect v-model="adminForm.permissions" :options="permissionOptions" optionLabel="label"
-                            optionValue="value" placeholder="选择权限" class="w-full" display="chip" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">权限</label>
+						<MultiSelect v-model="adminForm.permissions" :options="permissionOptions" optionLabel="label"
+							optionValue="value" placeholder="选择权限" class="w-full" display="chip" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">状态</label>
-                        <Dropdown v-model="adminForm.status" :options="adminStatusOptions" optionLabel="label"
-                            optionValue="value" placeholder="选择状态" class="w-full" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">状态</label>
+						<Dropdown v-model="adminForm.status" :options="adminStatusOptions" optionLabel="label" optionValue="value"
+							placeholder="选择状态" class="w-full" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">备注</label>
-                        <Textarea v-model="adminForm.remark" placeholder="请输入备注" rows="5" class="w-full" />
-                    </div>
-                </div>
-            </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">备注</label>
+						<Textarea v-model="adminForm.remark" placeholder="请输入备注" rows="5" class="w-full" />
+					</div>
+				</div>
+			</div>
 
-            <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Button label="取消" @click="closeDialog" class="p-button-text" />
-                    <Button :label="editingAdmin ? '更新' : '创建'" @click="saveAdmin" :loading="saving"
-                        :disabled="!isFormValid" />
-                </div>
-            </template>
-        </Dialog>
+			<template #footer>
+				<div class="flex justify-end gap-3">
+					<Button label="取消" @click="closeDialog" class="p-button-text" />
+					<Button :label="editingAdmin ? '更新' : '创建'" @click="saveAdmin" :loading="saving" :disabled="!isFormValid" />
+				</div>
+			</template>
+		</Dialog>
 
-        <!-- 确认对话框 -->
-        <ConfirmDialog />
-    </div>
+		<!-- 确认对话框 -->
+		<ConfirmDialog />
+	</div>
 </template>
 
 <style scoped>
 .admins-management {
-    @apply p-0;
+	@apply p-0;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .header-section {
-        @apply mb-4;
-    }
+	.header-section {
+		@apply mb-4;
+	}
 
-    .table-section {
-        @apply overflow-x-auto;
-    }
+	.table-section {
+		@apply overflow-x-auto;
+	}
 }
 </style>

@@ -53,7 +53,7 @@ export class PartnersService {
   async getPartnersList(params: PartnersListQueryDto) {
     const {
       page = 1,
-      pageSize = 10,
+      limit = 10,
       sortBy = "sortOrder",
       sortOrder = "asc",
       search,
@@ -100,8 +100,8 @@ export class PartnersService {
         const orderBy = sortFieldMap[sortBy] || partners.sortOrder;
         return sortOrder === "asc" ? asc(orderBy) : desc(orderBy);
       },
-      limit: pageSize,
-      offset: (page - 1) * pageSize,
+      limit: limit,
+      offset: (page - 1) * limit,
     });
 
     // 构建计算总数的查询，考虑搜索条件
@@ -141,9 +141,9 @@ export class PartnersService {
       items: result,
       meta: {
         page,
-        pageSize,
+        limit,
         total: totalCount,
-        totalPages: Math.ceil(totalCount / pageSize),
+        totalPages: Math.ceil(totalCount / limit),
       },
     };
   }

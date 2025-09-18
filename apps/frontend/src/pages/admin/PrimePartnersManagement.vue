@@ -129,7 +129,7 @@ const templateData = await genPrimeCmsTemplateData<
     name: "",
     isActive: undefined,
     page: 1,
-    pageSize: 20,
+    limit: 20,
   },
 );
 
@@ -162,7 +162,7 @@ const loadImages = async () => {
   try {
     const params: ListImagesQueryDto = {
       page: 1,
-      pageSize: 100, // 加载更多图片供选择
+      limit: 100, // 加载更多图片供选择
     };
 
     const { code, data, message } = await useCmsApi().images.list(params);

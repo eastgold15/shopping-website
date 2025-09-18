@@ -36,7 +36,7 @@ export class CustomeError extends Error {
 					meta: {
 						total: 0,
 						page: 1,
-						pageSize: 10,
+						limit: 10,
 						totalPage: 0,
 					},
 				},

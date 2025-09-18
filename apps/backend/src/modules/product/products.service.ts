@@ -78,7 +78,7 @@ export class ProductsService extends BaseService<
       // 处理查询参数
       const {
         page = 1,
-        pageSize = 10,
+        limit = 10,
         sortBy = "createdAt",
         sortOrder = "desc",
         search,
@@ -171,8 +171,8 @@ export class ProductsService extends BaseService<
       queryBuilder.orderBy(_orderBy);
 
       // 分页
-      const offset = (page - 1) * pageSize;
-      queryBuilder.limit(pageSize).offset(offset);
+      const offset = (page - 1) * limit;
+      queryBuilder.limit(limit).offset(offset);
 
       // 查询数据和总数
       const [rawProducts, totalResult] = await Promise.all([
@@ -226,8 +226,8 @@ export class ProductsService extends BaseService<
         meta: {
           total,
           page,
-          pageSize,
-          totalPages: Math.ceil(total / pageSize),
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
       };
     } catch (error) {

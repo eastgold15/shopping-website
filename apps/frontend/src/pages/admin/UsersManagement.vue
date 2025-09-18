@@ -54,7 +54,7 @@ const users = ref<User[]>([]);
 const selectedUsers = ref<User[]>([]);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("registeredAt");
 const sortOrder = ref(-1);
 const searchKeyword = ref("");
@@ -173,7 +173,7 @@ const loadUsers = async () => {
 		loading.value = true;
 		const params = {
 			page: page.value,
-			pageSize: pageSize.value,
+			limit: limit.value,
 			sortBy: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			search: searchKeyword.value || undefined,
@@ -287,7 +287,7 @@ const loadUsers = async () => {
 // 分页处理
 const onPage = (event: any) => {
 	page.value = event.page + 1;
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadUsers();
 };
 
@@ -602,308 +602,308 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="users-management">
-        <!-- 页面标题和统计 -->
-        <div class="header-section">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">用户管理</h1>
-                    <p class="text-gray-600 mt-1">管理所有用户信息，包括用户状态、等级、积分等</p>
-                </div>
-                <div class="flex gap-3">
-                    <Button label="新增用户" icon="pi pi-plus" @click="showCreateDialog = true" class="p-button-success" />
-                    <Button label="导出用户" icon="pi pi-download" @click="exportUsers" class="p-button-outlined" />
-                </div>
-            </div>
+	<div class="users-management">
+		<!-- 页面标题和统计 -->
+		<div class="header-section">
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-3xl font-bold text-gray-900">用户管理</h1>
+					<p class="text-gray-600 mt-1">管理所有用户信息，包括用户状态、等级、积分等</p>
+				</div>
+				<div class="flex gap-3">
+					<Button label="新增用户" icon="pi pi-plus" @click="showCreateDialog = true" class="p-button-success" />
+					<Button label="导出用户" icon="pi pi-download" @click="exportUsers" class="p-button-outlined" />
+				</div>
+			</div>
 
-            <!-- 统计卡片 -->
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-blue-600">{{ userStatistics.total }}</div>
-                        <div class="text-sm text-gray-600">总用户</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-green-600">{{ userStatistics.active }}</div>
-                        <div class="text-sm text-gray-600">正常用户</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-orange-600">{{ userStatistics.inactive }}</div>
-                        <div class="text-sm text-gray-600">禁用用户</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-red-600">{{ userStatistics.banned }}</div>
-                        <div class="text-sm text-gray-600">封禁用户</div>
-                    </template>
-                </Card>
-                <Card class="text-center">
-                    <template #content>
-                        <div class="text-2xl font-bold text-purple-600">{{ userStatistics.pending }}</div>
-                        <div class="text-sm text-gray-600">待审核</div>
-                    </template>
-                </Card>
-            </div>
+			<!-- 统计卡片 -->
+			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-blue-600">{{ userStatistics.total }}</div>
+						<div class="text-sm text-gray-600">总用户</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-green-600">{{ userStatistics.active }}</div>
+						<div class="text-sm text-gray-600">正常用户</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-orange-600">{{ userStatistics.inactive }}</div>
+						<div class="text-sm text-gray-600">禁用用户</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-red-600">{{ userStatistics.banned }}</div>
+						<div class="text-sm text-gray-600">封禁用户</div>
+					</template>
+				</Card>
+				<Card class="text-center">
+					<template #content>
+						<div class="text-2xl font-bold text-purple-600">{{ userStatistics.pending }}</div>
+						<div class="text-sm text-gray-600">待审核</div>
+					</template>
+				</Card>
+			</div>
 
-            <!-- 工具栏 -->
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadUsers" class="p-button-outlined" size="small" />
-                    <Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small" :disabled="!selectedUsers.length" />
-                    <Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small" :disabled="!selectedUsers.length" />
-                </div>
-                <div class="flex gap-3">
-                    <InputText v-model="searchKeyword" placeholder="搜索用户名、昵称或邮箱..." class="w-64" @input="handleSearch" />
-                    <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                    <Select v-model="filterLevel" :options="levelOptions" optionLabel="label" optionValue="value"
-                        placeholder="筛选等级" class="w-32" @change="handleFilter" />
-                    <Calendar v-model="filterDateRange" selectionMode="range" placeholder="注册日期范围" 
-                        class="w-48" @date-select="handleFilter" showIcon />
-                </div>
-            </div>
-        </div>
+			<!-- 工具栏 -->
+			<div class="flex justify-between items-center mb-4">
+				<div class="flex gap-3">
+					<Button label="刷新" icon="pi pi-refresh" @click="loadUsers" class="p-button-outlined" size="small" />
+					<Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small"
+						:disabled="!selectedUsers.length" />
+					<Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small"
+						:disabled="!selectedUsers.length" />
+				</div>
+				<div class="flex gap-3">
+					<InputText v-model="searchKeyword" placeholder="搜索用户名、昵称或邮箱..." class="w-64" @input="handleSearch" />
+					<Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+						placeholder="筛选状态" class="w-32" @change="handleFilter" />
+					<Select v-model="filterLevel" :options="levelOptions" optionLabel="label" optionValue="value"
+						placeholder="筛选等级" class="w-32" @change="handleFilter" />
+					<Calendar v-model="filterDateRange" selectionMode="range" placeholder="注册日期范围" class="w-48"
+						@date-select="handleFilter" showIcon />
+				</div>
+			</div>
+		</div>
 
-        <!-- 用户数据表格 -->
-        <div class="table-section">
-            <DataTable :value="users" tableStyle="min-width: 50rem" :loading="loading"
-                v-model:selection="selectedUsers" dataKey="id" paginator :rows="pageSize"
-                :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true" @page="onPage" @sort="onSort"
-                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * pageSize" class="p-datatable-sm"
-                showGridlines responsiveLayout="scroll" selectionMode="multiple" :metaKeySelection="false">
+		<!-- 用户数据表格 -->
+		<div class="table-section">
+			<DataTable :value="users" tableStyle="min-width: 50rem" :loading="loading" v-model:selection="selectedUsers"
+				dataKey="id" paginator :rows="limit" :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true"
+				@page="onPage" @sort="onSort" :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * limit"
+				class="p-datatable-sm" showGridlines responsiveLayout="scroll" selectionMode="multiple"
+				:metaKeySelection="false">
 
-                <template #header>
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-xl font-bold">用户列表</span>
-                        <Button icon="pi pi-refresh" rounded raised />
-                    </div>
-                </template>
+				<template #header>
+					<div class="flex flex-wrap items-center justify-between gap-2">
+						<span class="text-xl font-bold">用户列表</span>
+						<Button icon="pi pi-refresh" rounded raised />
+					</div>
+				</template>
 
-                <!-- 选择列 -->
-                <Column selectionMode="multiple" class="w-[3%]"></Column>
+				<!-- 选择列 -->
+				<Column selectionMode="multiple" class="w-[3%]"></Column>
 
-                <!-- 头像列 -->
-                <Column field="avatar" header="头像" class="w-[8%]">
-                    <template #body="{ data }">
-                        <div class="flex justify-center">
-                            <Avatar v-if="data.avatar" :image="data.avatar" size="large" shape="circle" />
-                            <Avatar v-else :label="data.nickname.charAt(0)" size="large" shape="circle" 
-                                class="bg-blue-500 text-white" />
-                        </div>
-                    </template>
-                </Column>
+				<!-- 头像列 -->
+				<Column field="avatar" header="头像" class="w-[8%]">
+					<template #body="{ data }">
+						<div class="flex justify-center">
+							<Avatar v-if="data.avatar" :image="data.avatar" size="large" shape="circle" />
+							<Avatar v-else :label="data.nickname.charAt(0)" size="large" shape="circle"
+								class="bg-blue-500 text-white" />
+						</div>
+					</template>
+				</Column>
 
-                <!-- 用户信息列 -->
-                <Column field="username" header="用户信息" sortable class="w-[18%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="font-medium text-sm mb-1">{{ data.nickname }}</p>
-                            <p class="text-xs text-gray-600 mb-1">@{{ data.username }}</p>
-                            <p class="text-xs text-gray-600">{{ data.email }}</p>
-                            <div class="flex flex-wrap gap-1 mt-1">
-                                <Tag v-for="tag in data.tags" :key="tag" :value="tag" severity="info" class="text-xs" />
-                            </div>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 用户信息列 -->
+				<Column field="username" header="用户信息" sortable class="w-[18%]">
+					<template #body="{ data }">
+						<div>
+							<p class="font-medium text-sm mb-1">{{ data.nickname }}</p>
+							<p class="text-xs text-gray-600 mb-1">@{{ data.username }}</p>
+							<p class="text-xs text-gray-600">{{ data.email }}</p>
+							<div class="flex flex-wrap gap-1 mt-1">
+								<Tag v-for="tag in data.tags" :key="tag" :value="tag" severity="info" class="text-xs" />
+							</div>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 联系方式列 -->
-                <Column field="phone" header="联系方式" class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="text-sm">{{ data.phone }}</p>
-                            <div class="flex gap-1 mt-1">
-                                <Badge v-if="data.isEmailVerified" value="邮箱已验证" severity="success" class="text-xs" />
-                                <Badge v-if="data.isPhoneVerified" value="手机已验证" severity="success" class="text-xs" />
-                            </div>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 联系方式列 -->
+				<Column field="phone" header="联系方式" class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<p class="text-sm">{{ data.phone }}</p>
+							<div class="flex gap-1 mt-1">
+								<Badge v-if="data.isEmailVerified" value="邮箱已验证" severity="success" class="text-xs" />
+								<Badge v-if="data.isPhoneVerified" value="手机已验证" severity="success" class="text-xs" />
+							</div>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 等级积分列 -->
-                <Column field="level" header="等级积分" class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <Tag :value="getLevelText(data.level)" :severity="getLevelSeverity(data.level)" class="text-xs mb-1" />
-                            <p class="text-xs text-gray-600">积分: {{ data.points }}</p>
-                            <p class="text-xs text-gray-600">余额: {{ formatCurrency(data.balance) }}</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 等级积分列 -->
+				<Column field="level" header="等级积分" class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<Tag :value="getLevelText(data.level)" :severity="getLevelSeverity(data.level)" class="text-xs mb-1" />
+							<p class="text-xs text-gray-600">积分: {{ data.points }}</p>
+							<p class="text-xs text-gray-600">余额: {{ formatCurrency(data.balance) }}</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 消费统计列 -->
-                <Column field="totalSpent" header="消费统计" sortable class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="text-sm font-medium text-red-600">{{ formatCurrency(data.totalSpent) }}</p>
-                            <p class="text-xs text-gray-600">订单: {{ data.totalOrders }}笔</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 消费统计列 -->
+				<Column field="totalSpent" header="消费统计" sortable class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<p class="text-sm font-medium text-red-600">{{ formatCurrency(data.totalSpent) }}</p>
+							<p class="text-xs text-gray-600">订单: {{ data.totalOrders }}笔</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 状态列 -->
-                <Column field="status" header="状态" class="w-[10%]">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-2">
-                            <ToggleSwitch v-model="data.status" 
-                                :true-value="'active'" :false-value="'inactive'"
-                                @change="toggleUserStatus(data)" class="scale-75" />
-                            <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)" class="text-xs" />
-                        </div>
-                    </template>
-                </Column>
+				<!-- 状态列 -->
+				<Column field="status" header="状态" class="w-[10%]">
+					<template #body="{ data }">
+						<div class="flex items-center gap-2">
+							<ToggleSwitch v-model="data.status" :true-value="'active'" :false-value="'inactive'"
+								@change="toggleUserStatus(data)" class="scale-75" />
+							<Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)" class="text-xs" />
+						</div>
+					</template>
+				</Column>
 
-                <!-- 最后登录列 -->
-                <Column field="lastLoginAt" header="最后登录" sortable class="w-[12%]">
-                    <template #body="{ data }">
-                        <div>
-                            <p class="text-xs text-gray-600">{{ formatDate(data.lastLoginAt) }}</p>
-                            <p class="text-xs text-gray-500">{{ data.lastLoginIp }}</p>
-                        </div>
-                    </template>
-                </Column>
+				<!-- 最后登录列 -->
+				<Column field="lastLoginAt" header="最后登录" sortable class="w-[12%]">
+					<template #body="{ data }">
+						<div>
+							<p class="text-xs text-gray-600">{{ formatDate(data.lastLoginAt) }}</p>
+							<p class="text-xs text-gray-500">{{ data.lastLoginIp }}</p>
+						</div>
+					</template>
+				</Column>
 
-                <!-- 注册时间列 -->
-                <Column field="registeredAt" header="注册时间" sortable class="w-[10%]">
-                    <template #body="{ data }">
-                        <span class="text-gray-500 text-sm">{{ formatDate(data.registeredAt) }}</span>
-                    </template>
-                </Column>
+				<!-- 注册时间列 -->
+				<Column field="registeredAt" header="注册时间" sortable class="w-[10%]">
+					<template #body="{ data }">
+						<span class="text-gray-500 text-sm">{{ formatDate(data.registeredAt) }}</span>
+					</template>
+				</Column>
 
-                <!-- 操作列 -->
-                <Column header="操作" class="w-[15%]">
-                    <template #body="{ data }">
-                        <div class="flex gap-2">
-                            <Button icon="pi pi-eye" @click="router.push(`/admin/users/${data.id}`)"
-                                class="p-button-info p-button-sm" v-tooltip.top="'查看详情'" />
-                            <Button icon="pi pi-pencil" @click="showEditDialog(data)"
-                                class="p-button-warning p-button-sm" v-tooltip.top="'编辑'" />
-                            <Button icon="pi pi-key" @click="resetPassword(data)"
-                                class="p-button-secondary p-button-sm" v-tooltip.top="'重置密码'" />
-                            <Button icon="pi pi-trash" @click="confirmDelete(data)" 
-                                class="p-button-danger p-button-sm" v-tooltip.top="'删除'" />
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
-        </div>
+				<!-- 操作列 -->
+				<Column header="操作" class="w-[15%]">
+					<template #body="{ data }">
+						<div class="flex gap-2">
+							<Button icon="pi pi-eye" @click="router.push(`/admin/users/${data.id}`)" class="p-button-info p-button-sm"
+								v-tooltip.top="'查看详情'" />
+							<Button icon="pi pi-pencil" @click="showEditDialog(data)" class="p-button-warning p-button-sm"
+								v-tooltip.top="'编辑'" />
+							<Button icon="pi pi-key" @click="resetPassword(data)" class="p-button-secondary p-button-sm"
+								v-tooltip.top="'重置密码'" />
+							<Button icon="pi pi-trash" @click="confirmDelete(data)" class="p-button-danger p-button-sm"
+								v-tooltip.top="'删除'" />
+						</div>
+					</template>
+				</Column>
+			</DataTable>
+		</div>
 
-        <!-- 创建/编辑用户对话框 -->
-        <Dialog v-model:visible="showCreateDialog" :header="editingUser ? '编辑用户' : '新增用户'" :modal="true"
-            :closable="true" class="w-[800px]">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">用户名 *</label>
-                        <InputText v-model="userForm.username" placeholder="请输入用户名" class="w-full"
-                            :class="{ 'p-invalid': !userForm.username }" />
-                    </div>
+		<!-- 创建/编辑用户对话框 -->
+		<Dialog v-model:visible="showCreateDialog" :header="editingUser ? '编辑用户' : '新增用户'" :modal="true" :closable="true"
+			class="w-[800px]">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium mb-2">用户名 *</label>
+						<InputText v-model="userForm.username" placeholder="请输入用户名" class="w-full"
+							:class="{ 'p-invalid': !userForm.username }" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">昵称 *</label>
-                        <InputText v-model="userForm.nickname" placeholder="请输入昵称" class="w-full"
-                            :class="{ 'p-invalid': !userForm.nickname }" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">昵称 *</label>
+						<InputText v-model="userForm.nickname" placeholder="请输入昵称" class="w-full"
+							:class="{ 'p-invalid': !userForm.nickname }" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">邮箱 *</label>
-                        <InputText v-model="userForm.email" placeholder="请输入邮箱" class="w-full"
-                            :class="{ 'p-invalid': !userForm.email }" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">邮箱 *</label>
+						<InputText v-model="userForm.email" placeholder="请输入邮箱" class="w-full"
+							:class="{ 'p-invalid': !userForm.email }" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">手机号</label>
-                        <InputText v-model="userForm.phone" placeholder="请输入手机号" class="w-full" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">手机号</label>
+						<InputText v-model="userForm.phone" placeholder="请输入手机号" class="w-full" />
+					</div>
 
-                    <div v-if="!editingUser">
-                        <label class="block text-sm font-medium mb-2">密码 *</label>
-                        <Password v-model="userForm.password" placeholder="请输入密码" class="w-full"
-                            :class="{ 'p-invalid': !userForm.password }" toggleMask />
-                    </div>
+					<div v-if="!editingUser">
+						<label class="block text-sm font-medium mb-2">密码 *</label>
+						<Password v-model="userForm.password" placeholder="请输入密码" class="w-full"
+							:class="{ 'p-invalid': !userForm.password }" toggleMask />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">性别</label>
-                        <Select v-model="userForm.gender" :options="genderOptions" optionLabel="label" 
-                            optionValue="value" placeholder="选择性别" class="w-full" />
-                    </div>
-                </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">性别</label>
+						<Select v-model="userForm.gender" :options="genderOptions" optionLabel="label" optionValue="value"
+							placeholder="选择性别" class="w-full" />
+					</div>
+				</div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">生日</label>
-                        <Calendar v-model="userForm.birthday" placeholder="选择生日" class="w-full" showIcon />
-                    </div>
+				<div class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium mb-2">生日</label>
+						<Calendar v-model="userForm.birthday" placeholder="选择生日" class="w-full" showIcon />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">用户状态</label>
-                        <Select v-model="userForm.status" :options="userStatusOptions" optionLabel="label" 
-                            optionValue="value" placeholder="选择状态" class="w-full" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">用户状态</label>
+						<Select v-model="userForm.status" :options="userStatusOptions" optionLabel="label" optionValue="value"
+							placeholder="选择状态" class="w-full" />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">用户等级</label>
-                        <Select v-model="userForm.level" :options="userLevelOptions" optionLabel="label" 
-                            optionValue="value" placeholder="选择等级" class="w-full" />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">用户等级</label>
+						<Select v-model="userForm.level" :options="userLevelOptions" optionLabel="label" optionValue="value"
+							placeholder="选择等级" class="w-full" />
+					</div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">积分</label>
-                            <InputNumber v-model="userForm.points" :min="0" placeholder="0" class="w-full" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2">余额</label>
-                            <InputNumber v-model="userForm.balance" :min="0" :maxFractionDigits="2" 
-                                placeholder="0.00" class="w-full" />
-                        </div>
-                    </div>
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label class="block text-sm font-medium mb-2">积分</label>
+							<InputNumber v-model="userForm.points" :min="0" placeholder="0" class="w-full" />
+						</div>
+						<div>
+							<label class="block text-sm font-medium mb-2">余额</label>
+							<InputNumber v-model="userForm.balance" :min="0" :maxFractionDigits="2" placeholder="0.00"
+								class="w-full" />
+						</div>
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">用户标签</label>
-                        <Select v-model="userForm.tags" :options="tagOptions" optionLabel="label" 
-                            optionValue="value" placeholder="选择标签" class="w-full" multiple />
-                    </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">用户标签</label>
+						<Select v-model="userForm.tags" :options="tagOptions" optionLabel="label" optionValue="value"
+							placeholder="选择标签" class="w-full" multiple />
+					</div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2">备注</label>
-                        <Textarea v-model="userForm.remark" placeholder="请输入备注" rows="3" class="w-full" />
-                    </div>
-                </div>
-            </div>
+					<div>
+						<label class="block text-sm font-medium mb-2">备注</label>
+						<Textarea v-model="userForm.remark" placeholder="请输入备注" rows="3" class="w-full" />
+					</div>
+				</div>
+			</div>
 
-            <template #footer>
-                <div class="flex justify-end gap-3">
-                    <Button label="取消" @click="closeDialog" class="p-button-text" />
-                    <Button :label="editingUser ? '更新' : '创建'" @click="saveUser" 
-                        :loading="saving" :disabled="!isFormValid" />
-                </div>
-            </template>
-        </Dialog>
+			<template #footer>
+				<div class="flex justify-end gap-3">
+					<Button label="取消" @click="closeDialog" class="p-button-text" />
+					<Button :label="editingUser ? '更新' : '创建'" @click="saveUser" :loading="saving" :disabled="!isFormValid" />
+				</div>
+			</template>
+		</Dialog>
 
-        <!-- 确认对话框 -->
-        <ConfirmDialog />
-    </div>
+		<!-- 确认对话框 -->
+		<ConfirmDialog />
+	</div>
 </template>
 
 <style scoped>
 .users-management {
-    @apply p-0;
+	@apply p-0;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .header-section {
-        @apply mb-4;
-    }
-    
-    .table-section {
-        @apply overflow-x-auto;
-    }
+	.header-section {
+		@apply mb-4;
+	}
+
+	.table-section {
+		@apply overflow-x-auto;
+	}
 }
 </style>

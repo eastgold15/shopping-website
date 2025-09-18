@@ -2,11 +2,9 @@
 import ImageSelector from "@frontend/components/ImageSelector.vue";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { Form, FormField } from "@primevue/forms";
-import { zodResolver } from "@primevue/forms/resolvers/zod";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { onMounted, reactive, ref } from "vue";
-import { z } from "zod";
 import type {
 	Advertisement,
 	AdvertisementQuery,
@@ -27,7 +25,7 @@ const formRef = ref<any>(null);
 
 // 分页信息
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const total = ref(0);
 
 // 筛选器
@@ -91,7 +89,7 @@ const loadAdvertisements = async () => {
 	try {
 		const params = {
 			page: page.value,
-			pageSize: pageSize.value,
+			limit: limit.value,
 			type: filters.type || undefined,
 			position: filters.position || undefined,
 			isActive: filters.isActive !== undefined ? filters.isActive : undefined,
@@ -150,7 +148,7 @@ const loadAdvertisements = async () => {
  */
 const onPageChange = (event: any) => {
 	page.value = event.page + 1; // DataTable的page从0开始，API从1开始
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadAdvertisements();
 };
 
@@ -272,7 +270,7 @@ const deleteAdvertisement = (advertisement: Advertisement) => {
 		accept: async () => {
 			try {
 				const api = useCmsApi();
-			const res = await api.advertisements.delete(advertisement.id.toString());
+				const res = await api.advertisements.delete(advertisement.id.toString());
 
 				if (res && res.code === 200) {
 					toast.add({
@@ -433,15 +431,13 @@ onMounted(() => {
 					</div>
 					<div>
 						<label class="block text-sm font-medium mb-2">广告位置</label>
-						<Select v-model="filters.position" :options="positionOptions" optionLabel="label"
-							optionValue="value" placeholder="选择位置" showClear @change="loadAdvertisements"
-							class="w-full" />
+						<Select v-model="filters.position" :options="positionOptions" optionLabel="label" optionValue="value"
+							placeholder="选择位置" showClear @change="loadAdvertisements" class="w-full" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium mb-2">状态</label>
-						<Select v-model="filters.isActive" :options="statusOptions" optionLabel="label"
-							optionValue="value" placeholder="选择状态" showClear @change="loadAdvertisements"
-							class="w-full" />
+						<Select v-model="filters.isActive" :options="statusOptions" optionLabel="label" optionValue="value"
+							placeholder="选择状态" showClear @change="loadAdvertisements" class="w-full" />
 					</div>
 					<div class="flex items-end">
 						<Button @click="resetFilters" icon="pi pi-refresh" label="重置" class="p-button-outlined" />
@@ -453,9 +449,9 @@ onMounted(() => {
 		<!-- 广告列表 -->
 		<Card>
 			<template #content>
-				<DataTable :value="advertisements" :loading="loading" paginator :rows="pageSize" :totalRecords="total"
-					:lazy="true" @page="onPageChange" responsiveLayout="scroll" stripedRows
-					:rowsPerPageOptions="[5, 10, 20, 50]" :first="(page - 1) * pageSize">
+				<DataTable :value="advertisements" :loading="loading" paginator :rows="limit" :totalRecords="total" :lazy="true"
+					@page="onPageChange" responsiveLayout="scroll" stripedRows :rowsPerPageOptions="[5, 10, 20, 50]"
+					:first="(page - 1) * limit">
 					<Column field="id" header="ID" :sortable="true" style="width: 80px" />
 
 					<Column header="预览图" style="width: 120px">
@@ -468,8 +464,7 @@ onMounted(() => {
 
 					<Column field="type" header="类型" style="width: 100px">
 						<template #body="{ data }">
-							<Tag :value="getTypeLabel(data.type)"
-								:severity="data.type === 'carousel' ? 'info' : 'warning'" />
+							<Tag :value="getTypeLabel(data.type)" :severity="data.type === 'carousel' ? 'info' : 'warning'" />
 						</template>
 					</Column>
 
@@ -483,8 +478,7 @@ onMounted(() => {
 
 					<Column field="isActive" header="状态" style="width: 100px">
 						<template #body="{ data }">
-							<Tag :value="data.isActive ? '启用' : '禁用'"
-								:severity="data.isActive ? 'success' : 'danger'" />
+							<Tag :value="data.isActive ? '启用' : '禁用'" :severity="data.isActive ? 'success' : 'danger'" />
 						</template>
 					</Column>
 
@@ -493,8 +487,7 @@ onMounted(() => {
 							<div class="flex gap-2">
 								<Button @click="editAdvertisement(data)" icon="pi pi-pencil" size="small"
 									class="p-button-outlined p-button-info" v-tooltip="'编辑'" />
-								<Button @click="toggleStatus(data)"
-									:icon="data.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'" size="small"
+								<Button @click="toggleStatus(data)" :icon="data.isActive ? 'pi pi-eye-slash' : 'pi pi-eye'" size="small"
 									:class="data.isActive ? 'p-button-outlined p-button-warning' : 'p-button-outlined p-button-success'"
 									v-tooltip="data.isActive ? '禁用' : '启用'" />
 								<Button @click="deleteAdvertisement(data)" icon="pi pi-trash" size="small"
@@ -534,12 +527,11 @@ onMounted(() => {
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<FormField v-slot="$field" name="position" class="flex flex-col gap-1">
 						<label class="block text-sm font-medium mb-2">显示位置</label>
-						<Select v-model="$field.value" :options="positionOptions" optionLabel="label"
-							optionValue="value" placeholder="请选择显示位置" class="w-full" />
+						<Select v-model="$field.value" :options="positionOptions" optionLabel="label" optionValue="value"
+							placeholder="请选择显示位置" class="w-full" />
 					</FormField>
 
-					<FormField v-slot="$field" name="sortOrder" :resolver="sortOrderResolver"
-						class="flex flex-col gap-1">
+					<FormField v-slot="$field" name="sortOrder" :resolver="sortOrderResolver" class="flex flex-col gap-1">
 						<label class="block text-sm font-medium mb-2">排序 *</label>
 						<InputNumber v-model="$field.value" placeholder="请输入排序" class="w-full"
 							:class="{ 'p-invalid': $field.invalid }" />
@@ -558,15 +550,14 @@ onMounted(() => {
 							<div class="flex gap-2 justify-center">
 								<Button @click="openImageSelector" icon="pi pi-pencil" label="更换图片"
 									class="p-button-outlined p-button-info" size="small" />
-								<Button @click="removeImage" icon="pi pi-times" label="移除图片"
-									class="p-button-outlined p-button-danger" size="small" />
+								<Button @click="removeImage" icon="pi pi-times" label="移除图片" class="p-button-outlined p-button-danger"
+									size="small" />
 							</div>
 						</div>
 						<div v-else class="text-center">
 							<i class="pi pi-images text-4xl text-gray-400 mb-2"></i>
 							<p class="text-gray-500 mb-2">点击选择轮播图片</p>
-							<Button @click="openImageSelector" icon="pi pi-plus" label="选择图片"
-								class="p-button-outlined" />
+							<Button @click="openImageSelector" icon="pi pi-plus" label="选择图片" class="p-button-outlined" />
 						</div>
 					</div>
 					<Message v-if="$field.invalid" severity="error" size="small" variant="simple">

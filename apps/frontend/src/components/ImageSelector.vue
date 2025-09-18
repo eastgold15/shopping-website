@@ -39,7 +39,7 @@ const hoveredImage = ref<number | undefined>(undefined);
 
 const meta = reactive({
   page: 1,
-  pageSize: 12,
+  limit: 12,
   total: 0,
   totalPages: 0,
 });
@@ -66,7 +66,7 @@ const loadImages = async () => {
   try {
     const params: ListImagesQueryDto = {
       page: meta.page,
-      pageSize: meta.pageSize,
+      limit: meta.limit,
     };
 
     // 添加分类过滤
@@ -94,7 +94,7 @@ const loadImages = async () => {
     // 更新分页信息
     if (data.meta) {
       meta.page = data.meta.page;
-      meta.pageSize = data.meta.pageSize;
+      meta.limit = data.meta.limit;
       // 可以存储总页数等信息
       if (data.meta.totalPages !== undefined) {
         meta.totalPages = data.meta.totalPages;
@@ -172,7 +172,7 @@ const getCategoryIcon = (category: string): string => {
  */
 const onPageChange = (event: any) => {
   meta.page = event.page + 1; // PrimeVue分页器页码从0开始，我们的API从1开始
-  meta.pageSize = event.rows;
+  meta.limit = event.rows;
   loadImages();
 };
 
@@ -180,8 +180,8 @@ const onPageChange = (event: any) => {
  * 计算分页信息
  */
 const paginationOptions = computed(() => ({
-  first: (meta.page - 1) * meta.pageSize,
-  rows: meta.pageSize,
+  first: (meta.page - 1) * meta.limit,
+  rows: meta.limit,
   totalRecords: meta.total,
   rowsPerPageOptions: [12, 24, 36, 48],
 }));

@@ -89,7 +89,7 @@ export class CategoriesService {
       // 1.默认值
       const {
         page = 1,
-        pageSize = 10,
+        limit = 10,
         sortBy = "createdAt",
         sortOrder = "desc",
         search,
@@ -150,7 +150,7 @@ export class CategoriesService {
       // 使用统一的分页函数
       return await paginate(db, baseQuery, {
         page,
-        pageSize,
+        limit,
         orderBy,
         orderDirection,
       });

@@ -35,7 +35,7 @@ export class SiteConfigsService extends BaseService<
   async getList(params: SiteConfigListQueryDto): Promise<PageData<SelectSiteConfigType>> {
     const {
       page = 1,
-      pageSize = 10,
+      limit = 10,
       sortBy = "createdAt",
       sortOrder = "desc",
       search,
@@ -89,7 +89,7 @@ export class SiteConfigsService extends BaseService<
 
     // 使用 BaseService 的分页方法
     return await this.findPaginated(
-      { page, pageSize },
+      { page, limit },
       queryOptions
     );
   }

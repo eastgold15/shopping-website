@@ -58,7 +58,7 @@ export async function genPrimeCmsTemplateData<
     items: [],
     meta: {
       page: 1,
-      pageSize: 10,
+      limit: 10,
       total: 0,
       totalPages: 0,
     },
@@ -78,7 +78,7 @@ export async function genPrimeCmsTemplateData<
     const rawQueryForm = toRaw(queryForm);
     return {
       page: tableData.value.meta.page,
-      pageSize: tableData.value.meta.pageSize,
+      limit: tableData.value.meta.limit,
       ...(rawQueryForm as Partial<PageQuery>),
     };
   });

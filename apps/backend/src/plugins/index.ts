@@ -19,7 +19,7 @@
 //  */
 // export interface PaginationParams {
 // 	page?: number;
-// 	pageSize?: number;
+// 	limit?: number;
 // }
 
 // /**
@@ -27,7 +27,7 @@
 //  */
 // export interface PaginationOptions {
 // 	page: number;
-// 	pageSize: number;
+// 	limit: number;
 // 	orderBy?: PgColumn | SQL | SQL.Aliased;
 // 	orderDirection?: "asc" | "desc";
 // 	scope?: QueryScope;
@@ -41,7 +41,7 @@
 // 	data: T[];
 // 	total: number;
 // 	page: number;
-// 	pageSize: number;
+// 	limit: number;
 // 	totalPages: number;
 // 	hasNext: boolean;
 // 	hasPrev: boolean;
@@ -50,20 +50,20 @@
 // /**
 //  * 解析分页查询参数
 //  * @param query 查询参数对象
-//  * @param defaultPageSize 默认每页大小
+//  * @param defaultlimit 默认每页大小
 //  * @returns 解析后的分页参数
 //  */
 // export function parsePaginationQuery(
 // 	query: Record<string, any>,
-// 	defaultPageSize = 10,
-// ): { page: number; pageSize: number } {
+// 	defaultlimit = 10,
+// ): { page: number; limit: number } {
 // 	const page = Math.max(1, Number(query.page) || 1);
-// 	const pageSize = Math.min(
+// 	const limit = Math.min(
 // 		100,
-// 		Math.max(1, Number(query.pageSize) || defaultPageSize),
+// 		Math.max(1, Number(query.limit) || defaultlimit),
 // 	);
 
-// 	return { page, pageSize };
+// 	return { page, limit };
 // }
 
 // /**
@@ -80,7 +80,7 @@
 // ): Promise<PaginationResult<T>> {
 // 	const {
 // 		page,
-// 		pageSize,
+// 		limit,
 // 		orderBy,
 // 		orderDirection = "asc",
 // 		scope = "active",
@@ -92,12 +92,12 @@
 // 		throw new Error("页码必须大于 0");
 // 	}
 
-// 	if (pageSize < 1 || pageSize > 100) {
+// 	if (limit < 1 || limit > 100) {
 // 		throw new Error("每页大小必须在 1-100 之间");
 // 	}
 
 // 	// 计算偏移量
-// 	const offset = (page - 1) * pageSize;
+// 	const offset = (page - 1) * limit;
 
 // 	// 应用软删除过滤（如果提供了 table，默认只查询活跃记录）
 // 	let filteredDataQuery = dataQuery;
@@ -120,7 +120,7 @@
 // 	}
 
 // 	// 构建数据查询
-// 	let finalDataQuery = filteredDataQuery.limit(pageSize).offset(offset);
+// 	let finalDataQuery = filteredDataQuery.limit(limit).offset(offset);
 
 // 	// 添加排序
 // 	if (orderBy) {
@@ -143,7 +143,7 @@
 // 			: 0;
 
 // 	// 计算分页信息
-// 	const totalPages = Math.ceil(total / pageSize);
+// 	const totalPages = Math.ceil(total / limit);
 // 	const hasNext = page < totalPages;
 // 	const hasPrev = page > 1;
 
@@ -151,7 +151,7 @@
 // 		data: data as T[],
 // 		total,
 // 		page,
-// 		pageSize,
+// 		limit,
 // 		totalPages,
 // 		hasNext,
 // 		hasPrev,
@@ -177,7 +177,7 @@
 // 	): Promise<PaginationResult<T>> => {
 // 		const finalOptions: PaginationOptions = {
 // 			page: options.page || 1,
-// 			pageSize: options.pageSize || 10,
+// 			limit: options.limit || 10,
 // 			orderBy: options.orderBy || defaultOrderBy,
 // 			orderDirection: options.orderDirection || "asc",
 // 			scope: options.scope,

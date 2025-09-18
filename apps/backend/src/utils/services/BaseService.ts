@@ -151,7 +151,7 @@ export abstract class BaseService<
     pagination: PaginationParams,
     queryOptions: QueryOptions = {},
   ): Promise<PageData<T>> {
-    const { page = 1, pageSize = 10 } = pagination;
+    const { page = 1, limit = 10 } = pagination;
 
     const whereClause = this.buildWhereClause(queryOptions.filters || []);
     const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
@@ -177,7 +177,7 @@ export abstract class BaseService<
     // 使用统一的分页函数
     return await paginate<T>(db, baseQuery, {
       page,
-      pageSize,
+      limit,
       orderBy,
       orderDirection,
     });

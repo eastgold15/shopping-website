@@ -128,7 +128,7 @@ const templateData = await genPrimeCmsTemplateData<
     isActive: undefined,
     isFeatured: undefined,
     page: 1,
-    pageSize: 20,
+    limit: 20,
   },
 );
 

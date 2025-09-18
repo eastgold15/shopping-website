@@ -60,7 +60,7 @@ export class ImageService extends BaseService<
       // 处理查询参数
       const {
         page = 1,
-        pageSize = 12,
+        limit = 12,
         sortBy = "createdAt",
         sortOrder = "desc",
         search,
@@ -130,7 +130,7 @@ export class ImageService extends BaseService<
       });
 
       // 调用 BaseService 的 findPaginated 方法
-      return await new ImageService().findPaginated({ page, pageSize }, queryOptions);
+      return await new ImageService().findPaginated({ page, limit }, queryOptions);
     } catch (error) {
       console.error('获取图片列表失败:', error);
       throw handleDatabaseError(error);

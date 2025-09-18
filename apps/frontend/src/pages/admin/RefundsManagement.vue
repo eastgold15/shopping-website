@@ -7,17 +7,8 @@
 				<p class="text-gray-600 mt-1">管理订单退款申请和处理流程</p>
 			</div>
 			<div class="flex gap-3">
-				<Button 
-					label="导出数据" 
-					icon="pi pi-download" 
-					severity="secondary" 
-					@click="exportData"
-				/>
-				<Button 
-					label="刷新" 
-					icon="pi pi-refresh" 
-					@click="loadRefunds"
-				/>
+				<Button label="导出数据" icon="pi pi-download" severity="secondary" @click="exportData" />
+				<Button label="刷新" icon="pi pi-refresh" @click="loadRefunds" />
 			</div>
 		</div>
 
@@ -28,56 +19,28 @@
 					<!-- 搜索框 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">搜索</label>
-						<InputText 
-							v-model="searchKeyword" 
-							placeholder="订单号、用户名、退款单号"
-							class="w-full"
-							@input="handleSearch"
-						/>
+						<InputText v-model="searchKeyword" placeholder="订单号、用户名、退款单号" class="w-full" @input="handleSearch" />
 					</div>
 
 					<!-- 退款状态筛选 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">退款状态</label>
-						<Select 
-							v-model="filterStatus" 
-							:options="statusOptions" 
-							optionLabel="label" 
-							optionValue="value"
-							placeholder="全部状态"
-							class="w-full"
-							@change="handleFilter"
-							showClear
-						/>
+						<Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
+							placeholder="全部状态" class="w-full" @change="handleFilter" showClear />
 					</div>
 
 					<!-- 退款类型筛选 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">退款类型</label>
-						<Select 
-							v-model="filterType" 
-							:options="typeOptions" 
-							optionLabel="label" 
-							optionValue="value"
-							placeholder="全部类型"
-							class="w-full"
-							@change="handleFilter"
-							showClear
-						/>
+						<Select v-model="filterType" :options="typeOptions" optionLabel="label" optionValue="value"
+							placeholder="全部类型" class="w-full" @change="handleFilter" showClear />
 					</div>
 
 					<!-- 日期范围筛选 -->
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-2">申请日期</label>
-						<Calendar 
-							v-model="dateRange" 
-							selectionMode="range" 
-							:manualInput="false"
-							placeholder="选择日期范围"
-							class="w-full"
-							@date-select="handleFilter"
-							showIcon
-						/>
+						<Calendar v-model="dateRange" selectionMode="range" :manualInput="false" placeholder="选择日期范围" class="w-full"
+							@date-select="handleFilter" showIcon />
 					</div>
 				</div>
 			</template>
@@ -86,36 +49,17 @@
 		<!-- 退款数据表格 -->
 		<Card>
 			<template #content>
-				<DataTable 
-					:value="refunds" 
-					:loading="loading"
-					:paginator="true"
-					:rows="pageSize"
-					:totalRecords="total"
-					:lazy="true"
-					@page="onPage"
-					@sort="onSort"
-					:sortField="sortField"
-					:sortOrder="sortOrder"
-					class="p-datatable-sm"
-					showGridlines
-					responsiveLayout="scroll"
-					v-model:selection="selectedRefunds"
-					dataKey="id"
-					selectionMode="multiple"
-				>
+				<DataTable :value="refunds" :loading="loading" :paginator="true" :rows="limit" :totalRecords="total"
+					:lazy="true" @page="onPage" @sort="onSort" :sortField="sortField" :sortOrder="sortOrder"
+					class="p-datatable-sm" showGridlines responsiveLayout="scroll" v-model:selection="selectedRefunds"
+					dataKey="id" selectionMode="multiple">
 					<!-- 表格头部 -->
 					<template #header>
 						<div class="flex justify-between items-center">
 							<span class="text-lg font-semibold">退款列表</span>
 							<div class="flex gap-2">
-								<Button 
-									label="批量处理" 
-									icon="pi pi-check" 
-									size="small" 
-									:disabled="!selectedRefunds.length"
-									@click="batchProcess"
-								/>
+								<Button label="批量处理" icon="pi pi-check" size="small" :disabled="!selectedRefunds.length"
+									@click="batchProcess" />
 							</div>
 						</div>
 					</template>
@@ -153,20 +97,14 @@
 					<!-- 退款类型 -->
 					<Column field="refundType" header="退款类型">
 						<template #body="{ data }">
-							<Tag 
-								:value="getRefundTypeLabel(data.refundType)" 
-								:severity="getRefundTypeSeverity(data.refundType)"
-							/>
+							<Tag :value="getRefundTypeLabel(data.refundType)" :severity="getRefundTypeSeverity(data.refundType)" />
 						</template>
 					</Column>
 
 					<!-- 退款状态 -->
 					<Column field="status" header="状态">
 						<template #body="{ data }">
-							<Tag 
-								:value="getStatusLabel(data.status)" 
-								:severity="getStatusSeverity(data.status)"
-							/>
+							<Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
 						</template>
 					</Column>
 
@@ -186,29 +124,12 @@
 					<Column header="操作" :exportable="false">
 						<template #body="{ data }">
 							<div class="flex gap-2">
-								<Button 
-									icon="pi pi-eye" 
-									size="small" 
-									severity="info" 
-									@click="viewRefund(data)"
-									v-tooltip.top="'查看详情'"
-								/>
-								<Button 
-									icon="pi pi-check" 
-									size="small" 
-									severity="success" 
-									@click="approveRefund(data)"
-									v-tooltip.top="'同意退款'"
-									:disabled="data.status !== 'pending'"
-								/>
-								<Button 
-									icon="pi pi-times" 
-									size="small" 
-									severity="danger" 
-									@click="rejectRefund(data)"
-									v-tooltip.top="'拒绝退款'"
-									:disabled="data.status !== 'pending'"
-								/>
+								<Button icon="pi pi-eye" size="small" severity="info" @click="viewRefund(data)"
+									v-tooltip.top="'查看详情'" />
+								<Button icon="pi pi-check" size="small" severity="success" @click="approveRefund(data)"
+									v-tooltip.top="'同意退款'" :disabled="data.status !== 'pending'" />
+								<Button icon="pi pi-times" size="small" severity="danger" @click="rejectRefund(data)"
+									v-tooltip.top="'拒绝退款'" :disabled="data.status !== 'pending'" />
 							</div>
 						</template>
 					</Column>
@@ -217,13 +138,8 @@
 		</Card>
 
 		<!-- 退款详情对话框 -->
-		<Dialog 
-			v-model:visible="detailDialogVisible" 
-			header="退款详情" 
-			:style="{ width: '800px' }"
-			:modal="true"
-			class="p-fluid"
-		>
+		<Dialog v-model:visible="detailDialogVisible" header="退款详情" :style="{ width: '800px' }" :modal="true"
+			class="p-fluid">
 			<div v-if="selectedRefund" class="space-y-6">
 				<!-- 基本信息 -->
 				<div class="grid grid-cols-2 gap-4">
@@ -249,17 +165,12 @@
 				<div class="grid grid-cols-2 gap-4">
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">退款类型</label>
-						<Tag 
-							:value="getRefundTypeLabel(selectedRefund.refundType)" 
-							:severity="getRefundTypeSeverity(selectedRefund.refundType)"
-						/>
+						<Tag :value="getRefundTypeLabel(selectedRefund.refundType)"
+							:severity="getRefundTypeSeverity(selectedRefund.refundType)" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">退款状态</label>
-						<Tag 
-							:value="getStatusLabel(selectedRefund.status)" 
-							:severity="getStatusSeverity(selectedRefund.status)"
-						/>
+						<Tag :value="getStatusLabel(selectedRefund.status)" :severity="getStatusSeverity(selectedRefund.status)" />
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1">原订单金额</label>
@@ -298,65 +209,31 @@
 
 			<template #footer>
 				<div class="flex justify-end gap-3">
-					<Button 
-						label="关闭" 
-						icon="pi pi-times" 
-						severity="secondary" 
-						@click="detailDialogVisible = false"
-					/>
-					<Button 
-						v-if="selectedRefund?.status === 'pending'"
-						label="同意退款" 
-						icon="pi pi-check" 
-						severity="success" 
-						@click="approveRefund(selectedRefund)"
-					/>
-					<Button 
-						v-if="selectedRefund?.status === 'pending'"
-						label="拒绝退款" 
-						icon="pi pi-times" 
-						severity="danger" 
-						@click="rejectRefund(selectedRefund)"
-					/>
+					<Button label="关闭" icon="pi pi-times" severity="secondary" @click="detailDialogVisible = false" />
+					<Button v-if="selectedRefund?.status === 'pending'" label="同意退款" icon="pi pi-check" severity="success"
+						@click="approveRefund(selectedRefund)" />
+					<Button v-if="selectedRefund?.status === 'pending'" label="拒绝退款" icon="pi pi-times" severity="danger"
+						@click="rejectRefund(selectedRefund)" />
 				</div>
 			</template>
 		</Dialog>
 
 		<!-- 处理退款对话框 -->
-		<Dialog 
-			v-model:visible="processDialogVisible" 
-			:header="processAction === 'approve' ? '同意退款' : '拒绝退款'" 
-			:style="{ width: '500px' }"
-			:modal="true"
-			class="p-fluid"
-		>
+		<Dialog v-model:visible="processDialogVisible" :header="processAction === 'approve' ? '同意退款' : '拒绝退款'"
+			:style="{ width: '500px' }" :modal="true" class="p-fluid">
 			<div class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-gray-700 mb-2">处理备注</label>
-					<Textarea 
-						v-model="processNote" 
-						placeholder="请输入处理备注..."
-						rows="4"
-						class="w-full"
-					/>
+					<Textarea v-model="processNote" placeholder="请输入处理备注..." rows="4" class="w-full" />
 				</div>
 			</div>
 
 			<template #footer>
 				<div class="flex justify-end gap-3">
-					<Button 
-						label="取消" 
-						icon="pi pi-times" 
-						severity="secondary" 
-						@click="processDialogVisible = false"
-					/>
-					<Button 
-						:label="processAction === 'approve' ? '确认同意' : '确认拒绝'" 
-						icon="pi pi-check" 
-						:severity="processAction === 'approve' ? 'success' : 'danger'" 
-						@click="confirmProcess"
-						:loading="processing"
-					/>
+					<Button label="取消" icon="pi pi-times" severity="secondary" @click="processDialogVisible = false" />
+					<Button :label="processAction === 'approve' ? '确认同意' : '确认拒绝'" icon="pi pi-check"
+						:severity="processAction === 'approve' ? 'success' : 'danger'" @click="confirmProcess"
+						:loading="processing" />
 				</div>
 			</template>
 		</Dialog>
@@ -395,7 +272,7 @@ const selectedRefund = ref<Refund | null>(null);
 const loading = ref(false);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("createdAt");
 const sortOrder = ref(-1);
 
@@ -566,8 +443,8 @@ const loadRefunds = async () => {
 		total.value = filteredRefunds.length;
 
 		// 分页
-		const start = (page.value - 1) * pageSize.value;
-		const end = start + pageSize.value;
+		const start = (page.value - 1) * limit.value;
+		const end = start + limit.value;
 		refunds.value = filteredRefunds.slice(start, end);
 	} catch (error) {
 		console.error("加载退款数据失败:", error);
@@ -587,7 +464,7 @@ const loadRefunds = async () => {
 // 分页处理
 const onPage = (event: any) => {
 	page.value = event.page + 1;
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadRefunds();
 };
 
@@ -797,7 +674,7 @@ onMounted(() => {
 	@apply bg-gray-50 border-b border-gray-200;
 }
 
-.p-datatable .p-datatable-tbody > tr:hover {
+.p-datatable .p-datatable-tbody>tr:hover {
 	@apply bg-gray-50;
 }
 

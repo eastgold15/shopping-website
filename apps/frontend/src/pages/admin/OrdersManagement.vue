@@ -5,66 +5,66 @@ import { useToast } from "primevue/usetoast";
 
 // 类型定义
 interface Order {
-	id: number;
-	orderNumber: string;
-	userId: number;
-	userName: string;
-	userEmail: string;
-	userPhone: string;
-	status: OrderStatus;
-	paymentStatus: PaymentStatus;
-	shippingStatus: ShippingStatus;
-	totalAmount: number;
-	discountAmount: number;
-	shippingFee: number;
-	finalAmount: number;
-	paymentMethod: string;
-	shippingAddress: ShippingAddress;
-	items: OrderItem[];
-	remark: string;
-	createdAt: Date;
-	updatedAt: Date;
-	paidAt?: Date;
-	shippedAt?: Date;
-	deliveredAt?: Date;
-	cancelledAt?: Date;
+    id: number;
+    orderNumber: string;
+    userId: number;
+    userName: string;
+    userEmail: string;
+    userPhone: string;
+    status: OrderStatus;
+    paymentStatus: PaymentStatus;
+    shippingStatus: ShippingStatus;
+    totalAmount: number;
+    discountAmount: number;
+    shippingFee: number;
+    finalAmount: number;
+    paymentMethod: string;
+    shippingAddress: ShippingAddress;
+    items: OrderItem[];
+    remark: string;
+    createdAt: Date;
+    updatedAt: Date;
+    paidAt?: Date;
+    shippedAt?: Date;
+    deliveredAt?: Date;
+    cancelledAt?: Date;
 }
 
 interface OrderItem {
-	id: number;
-	productId: number;
-	productName: string;
-	productImage: string;
-	sku: string;
-	price: number;
-	quantity: number;
-	totalPrice: number;
+    id: number;
+    productId: number;
+    productName: string;
+    productImage: string;
+    sku: string;
+    price: number;
+    quantity: number;
+    totalPrice: number;
 }
 
 interface ShippingAddress {
-	name: string;
-	phone: string;
-	province: string;
-	city: string;
-	district: string;
-	address: string;
-	zipCode: string;
+    name: string;
+    phone: string;
+    province: string;
+    city: string;
+    district: string;
+    address: string;
+    zipCode: string;
 }
 
 type OrderStatus =
-	| "pending"
-	| "confirmed"
-	| "shipped"
-	| "delivered"
-	| "cancelled"
-	| "refunded";
+    | "pending"
+    | "confirmed"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
 type PaymentStatus = "unpaid" | "paid" | "refunded" | "partial_refund";
 type ShippingStatus =
-	| "pending"
-	| "preparing"
-	| "shipped"
-	| "delivered"
-	| "returned";
+    | "pending"
+    | "preparing"
+    | "shipped"
+    | "delivered"
+    | "returned";
 
 // 响应式数据
 const loading = ref(false);
@@ -72,7 +72,7 @@ const orders = ref<Order[]>([]);
 const selectedOrders = ref<Order[]>([]);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("createdAt");
 const sortOrder = ref(-1);
 const searchKeyword = ref("");
@@ -87,30 +87,30 @@ const statusRemark = ref("");
 
 // 选项数据
 const statusOptions = [
-	{ label: "全部状态", value: "all" },
-	{ label: "待确认", value: "pending" },
-	{ label: "已确认", value: "confirmed" },
-	{ label: "已发货", value: "shipped" },
-	{ label: "已送达", value: "delivered" },
-	{ label: "已取消", value: "cancelled" },
-	{ label: "已退款", value: "refunded" },
+    { label: "全部状态", value: "all" },
+    { label: "待确认", value: "pending" },
+    { label: "已确认", value: "confirmed" },
+    { label: "已发货", value: "shipped" },
+    { label: "已送达", value: "delivered" },
+    { label: "已取消", value: "cancelled" },
+    { label: "已退款", value: "refunded" },
 ];
 
 const paymentStatusOptions = [
-	{ label: "全部支付状态", value: "all" },
-	{ label: "未支付", value: "unpaid" },
-	{ label: "已支付", value: "paid" },
-	{ label: "已退款", value: "refunded" },
-	{ label: "部分退款", value: "partial_refund" },
+    { label: "全部支付状态", value: "all" },
+    { label: "未支付", value: "unpaid" },
+    { label: "已支付", value: "paid" },
+    { label: "已退款", value: "refunded" },
+    { label: "部分退款", value: "partial_refund" },
 ];
 
 const orderStatusOptions = [
-	{ label: "待确认", value: "pending" },
-	{ label: "已确认", value: "confirmed" },
-	{ label: "已发货", value: "shipped" },
-	{ label: "已送达", value: "delivered" },
-	{ label: "已取消", value: "cancelled" },
-	{ label: "已退款", value: "refunded" },
+    { label: "待确认", value: "pending" },
+    { label: "已确认", value: "confirmed" },
+    { label: "已发货", value: "shipped" },
+    { label: "已送达", value: "delivered" },
+    { label: "已取消", value: "cancelled" },
+    { label: "已退款", value: "refunded" },
 ];
 
 // 工具函数
@@ -120,345 +120,345 @@ const toast = useToast();
 
 // 计算属性
 const orderStatistics = computed(() => {
-	const stats = {
-		total: orders.value.length,
-		pending: 0,
-		confirmed: 0,
-		shipped: 0,
-		delivered: 0,
-		cancelled: 0,
-	};
+    const stats = {
+        total: orders.value.length,
+        pending: 0,
+        confirmed: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
+    };
 
-	orders.value.forEach((order) => {
-		stats[order.status]++;
-	});
+    orders.value.forEach((order) => {
+        stats[order.status]++;
+    });
 
-	return stats;
+    return stats;
 });
 
 // 方法
 const loadOrders = async () => {
-	try {
-		loading.value = true;
-		const params = {
-			page: page.value,
-			pageSize: pageSize.value,
-			sortBy: sortField.value,
-			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
-			search: searchKeyword.value || undefined,
-			status: filterStatus.value !== "all" ? filterStatus.value : undefined,
-			paymentStatus:
-				filterPaymentStatus.value !== "all"
-					? filterPaymentStatus.value
-					: undefined,
-			startDate: filterDateRange.value?.[0],
-			endDate: filterDateRange.value?.[1],
-		};
+    try {
+        loading.value = true;
+        const params = {
+            page: page.value,
+            limit: limit.value,
+            sortBy: sortField.value,
+            sortOrder: sortOrder.value === 1 ? "asc" : "desc",
+            search: searchKeyword.value || undefined,
+            status: filterStatus.value !== "all" ? filterStatus.value : undefined,
+            paymentStatus:
+                filterPaymentStatus.value !== "all"
+                    ? filterPaymentStatus.value
+                    : undefined,
+            startDate: filterDateRange.value?.[0],
+            endDate: filterDateRange.value?.[1],
+        };
 
-		// 实际API调用
-		const api = useCmsApi();
-		const response = await api.orders.list(params);
+        // 实际API调用
+        const api = useCmsApi();
+        const response = await api.orders.list(params);
 
-		if (response.code === 200) {
-			orders.value = response.data.orders || [];
-			total.value = response.data.total || 0;
-		} else {
-			throw new Error(response.message || "加载订单失败");
-		}
+        if (response.code === 200) {
+            orders.value = response.data.orders || [];
+            total.value = response.data.total || 0;
+        } else {
+            throw new Error(response.message || "加载订单失败");
+        }
 
-		// 临时模拟数据（如果API未实现）
-		const mockOrders: Order[] = [
-			{
-				id: 1,
-				orderNumber: "ORD202401001",
-				userId: 1,
-				userName: "张三",
-				userEmail: "zhangsan@example.com",
-				userPhone: "13800138000",
-				status: "confirmed",
-				paymentStatus: "paid",
-				shippingStatus: "preparing",
-				totalAmount: 1299,
-				discountAmount: 100,
-				shippingFee: 15,
-				finalAmount: 1214,
-				paymentMethod: "微信支付",
-				shippingAddress: {
-					name: "张三",
-					phone: "13800138000",
-					province: "广东省",
-					city: "深圳市",
-					district: "南山区",
-					address: "科技园南区深南大道10000号",
-					zipCode: "518000",
-				},
-				items: [
-					{
-						id: 1,
-						productId: 1,
-						productName: "iPhone 15 Pro",
-						productImage: "/uploads/iphone15pro.jpg",
-						sku: "IP15P-001",
-						price: 7999,
-						quantity: 1,
-						totalPrice: 7999,
-					},
-				],
-				remark: "请尽快发货",
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				paidAt: new Date(Date.now() - 3600000),
-			},
-			{
-				id: 2,
-				orderNumber: "ORD202401002",
-				userId: 2,
-				userName: "李四",
-				userEmail: "lisi@example.com",
-				userPhone: "13900139000",
-				status: "shipped",
-				paymentStatus: "paid",
-				shippingStatus: "shipped",
-				totalAmount: 2999,
-				discountAmount: 0,
-				shippingFee: 0,
-				finalAmount: 2999,
-				paymentMethod: "支付宝",
-				shippingAddress: {
-					name: "李四",
-					phone: "13900139000",
-					province: "北京市",
-					city: "北京市",
-					district: "朝阳区",
-					address: "建国门外大街1号",
-					zipCode: "100000",
-				},
-				items: [
-					{
-						id: 2,
-						productId: 2,
-						productName: 'MacBook Pro 14"',
-						productImage: "/uploads/macbookpro14.jpg",
-						sku: "MBP14-001",
-						price: 14999,
-						quantity: 1,
-						totalPrice: 14999,
-					},
-				],
-				remark: "",
-				createdAt: new Date(Date.now() - 86400000),
-				updatedAt: new Date(Date.now() - 3600000),
-				paidAt: new Date(Date.now() - 82800000),
-				shippedAt: new Date(Date.now() - 3600000),
-			},
-		];
+        // 临时模拟数据（如果API未实现）
+        const mockOrders: Order[] = [
+            {
+                id: 1,
+                orderNumber: "ORD202401001",
+                userId: 1,
+                userName: "张三",
+                userEmail: "zhangsan@example.com",
+                userPhone: "13800138000",
+                status: "confirmed",
+                paymentStatus: "paid",
+                shippingStatus: "preparing",
+                totalAmount: 1299,
+                discountAmount: 100,
+                shippingFee: 15,
+                finalAmount: 1214,
+                paymentMethod: "微信支付",
+                shippingAddress: {
+                    name: "张三",
+                    phone: "13800138000",
+                    province: "广东省",
+                    city: "深圳市",
+                    district: "南山区",
+                    address: "科技园南区深南大道10000号",
+                    zipCode: "518000",
+                },
+                items: [
+                    {
+                        id: 1,
+                        productId: 1,
+                        productName: "iPhone 15 Pro",
+                        productImage: "/uploads/iphone15pro.jpg",
+                        sku: "IP15P-001",
+                        price: 7999,
+                        quantity: 1,
+                        totalPrice: 7999,
+                    },
+                ],
+                remark: "请尽快发货",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                paidAt: new Date(Date.now() - 3600000),
+            },
+            {
+                id: 2,
+                orderNumber: "ORD202401002",
+                userId: 2,
+                userName: "李四",
+                userEmail: "lisi@example.com",
+                userPhone: "13900139000",
+                status: "shipped",
+                paymentStatus: "paid",
+                shippingStatus: "shipped",
+                totalAmount: 2999,
+                discountAmount: 0,
+                shippingFee: 0,
+                finalAmount: 2999,
+                paymentMethod: "支付宝",
+                shippingAddress: {
+                    name: "李四",
+                    phone: "13900139000",
+                    province: "北京市",
+                    city: "北京市",
+                    district: "朝阳区",
+                    address: "建国门外大街1号",
+                    zipCode: "100000",
+                },
+                items: [
+                    {
+                        id: 2,
+                        productId: 2,
+                        productName: 'MacBook Pro 14"',
+                        productImage: "/uploads/macbookpro14.jpg",
+                        sku: "MBP14-001",
+                        price: 14999,
+                        quantity: 1,
+                        totalPrice: 14999,
+                    },
+                ],
+                remark: "",
+                createdAt: new Date(Date.now() - 86400000),
+                updatedAt: new Date(Date.now() - 3600000),
+                paidAt: new Date(Date.now() - 82800000),
+                shippedAt: new Date(Date.now() - 3600000),
+            },
+        ];
 
-		orders.value = mockOrders;
-		total.value = mockOrders.length;
-	} catch (error) {
-		console.error("加载订单失败:", error);
-		orders.value = [];
-		total.value = 0;
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "加载订单失败",
-			life: 1000,
-		});
-	} finally {
-		loading.value = false;
-	}
+        orders.value = mockOrders;
+        total.value = mockOrders.length;
+    } catch (error) {
+        console.error("加载订单失败:", error);
+        orders.value = [];
+        total.value = 0;
+        toast.add({
+            severity: "error",
+            summary: "错误",
+            detail: "加载订单失败",
+            life: 1000,
+        });
+    } finally {
+        loading.value = false;
+    }
 };
 
 // 分页处理
 const onPage = (event: any) => {
-	page.value = event.page + 1;
-	pageSize.value = event.rows;
-	loadOrders();
+    page.value = event.page + 1;
+    limit.value = event.rows;
+    loadOrders();
 };
 
 // 排序处理
 const onSort = (event: any) => {
-	sortField.value = event.sortField;
-	sortOrder.value = event.sortOrder;
-	loadOrders();
+    sortField.value = event.sortField;
+    sortOrder.value = event.sortOrder;
+    loadOrders();
 };
 
 // 搜索处理
 const handleSearch = () => {
-	page.value = 1;
-	loadOrders();
+    page.value = 1;
+    loadOrders();
 };
 
 // 筛选处理
 const handleFilter = () => {
-	page.value = 1;
-	loadOrders();
+    page.value = 1;
+    loadOrders();
 };
 
 // 显示订单详情
 const showOrderDetails = (order: Order) => {
-	selectedOrder.value = order;
-	showOrderDetail.value = true;
+    selectedOrder.value = order;
+    showOrderDetail.value = true;
 };
 
 // 显示状态修改对话框
 const showChangeStatus = (order: Order) => {
-	selectedOrder.value = order;
-	newStatus.value = order.status;
-	statusRemark.value = "";
-	showStatusDialog.value = true;
+    selectedOrder.value = order;
+    newStatus.value = order.status;
+    statusRemark.value = "";
+    showStatusDialog.value = true;
 };
 
 // 更新订单状态
 const updateOrderStatus = async () => {
-	if (!selectedOrder.value) return;
+    if (!selectedOrder.value) return;
 
-	try {
-		// 实际API调用
-		const api = useCmsApi();
-		const response = await api.orders.updateStatus(
-			selectedOrder.value.id.toString(),
-			{
-				status: newStatus.value,
-				remark: statusRemark.value,
-			},
-		);
+    try {
+        // 实际API调用
+        const api = useCmsApi();
+        const response = await api.orders.updateStatus(
+            selectedOrder.value.id.toString(),
+            {
+                status: newStatus.value,
+                remark: statusRemark.value,
+            },
+        );
 
-		if (response.code === 200) {
-			selectedOrder.value.status = newStatus.value;
-			selectedOrder.value.updatedAt = new Date();
-		} else {
-			throw new Error(response.message || "更新订单状态失败");
-		}
+        if (response.code === 200) {
+            selectedOrder.value.status = newStatus.value;
+            selectedOrder.value.updatedAt = new Date();
+        } else {
+            throw new Error(response.message || "更新订单状态失败");
+        }
 
-		toast.add({
-			severity: "success",
-			summary: "成功",
-			detail: "订单状态更新成功",
-			life: 1000,
-		});
-		showStatusDialog.value = false;
-		loadOrders();
-	} catch (error) {
-		console.error("更新订单状态失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "更新订单状态失败",
-			life: 1000,
-		});
-	}
+        toast.add({
+            severity: "success",
+            summary: "成功",
+            detail: "订单状态更新成功",
+            life: 1000,
+        });
+        showStatusDialog.value = false;
+        loadOrders();
+    } catch (error) {
+        console.error("更新订单状态失败:", error);
+        toast.add({
+            severity: "error",
+            summary: "错误",
+            detail: "更新订单状态失败",
+            life: 1000,
+        });
+    }
 };
 
 // 确认删除订单
 const confirmDeleteOrder = (order: Order) => {
-	confirm.require({
-		message: `确定要删除订单 "${order.orderNumber}" 吗？`,
-		header: "删除确认",
-		icon: "pi pi-exclamation-triangle",
-		acceptClass: "p-button-danger",
-		accept: () => deleteOrder(order.id),
-	});
+    confirm.require({
+        message: `确定要删除订单 "${order.orderNumber}" 吗？`,
+        header: "删除确认",
+        icon: "pi pi-exclamation-triangle",
+        acceptClass: "p-button-danger",
+        accept: () => deleteOrder(order.id),
+    });
 };
 
 // 删除订单
 const deleteOrder = async (id: number) => {
-	try {
-		toast.add({
-			severity: "success",
-			summary: "成功",
-			detail: "删除订单成功",
-			life: 1000,
-		});
-		loadOrders();
-	} catch (error) {
-		console.error("删除订单失败:", error);
-		toast.add({
-			severity: "error",
-			summary: "错误",
-			detail: "删除订单失败",
-			life: 1000,
-		});
-	}
+    try {
+        toast.add({
+            severity: "success",
+            summary: "成功",
+            detail: "删除订单成功",
+            life: 1000,
+        });
+        loadOrders();
+    } catch (error) {
+        console.error("删除订单失败:", error);
+        toast.add({
+            severity: "error",
+            summary: "错误",
+            detail: "删除订单失败",
+            life: 1000,
+        });
+    }
 };
 
 // 获取状态标签样式
 const getStatusSeverity = (status: OrderStatus) => {
-	const severityMap = {
-		pending: "warning",
-		confirmed: "info",
-		shipped: "primary",
-		delivered: "success",
-		cancelled: "danger",
-		refunded: "secondary",
-	};
-	return severityMap[status] || "secondary";
+    const severityMap = {
+        pending: "warning",
+        confirmed: "info",
+        shipped: "primary",
+        delivered: "success",
+        cancelled: "danger",
+        refunded: "secondary",
+    };
+    return severityMap[status] || "secondary";
 };
 
 const getPaymentStatusSeverity = (status: PaymentStatus) => {
-	const severityMap = {
-		unpaid: "danger",
-		paid: "success",
-		refunded: "warning",
-		partial_refund: "info",
-	};
-	return severityMap[status] || "secondary";
+    const severityMap = {
+        unpaid: "danger",
+        paid: "success",
+        refunded: "warning",
+        partial_refund: "info",
+    };
+    return severityMap[status] || "secondary";
 };
 
 // 获取状态文本
 const getStatusText = (status: OrderStatus) => {
-	const textMap = {
-		pending: "待确认",
-		confirmed: "已确认",
-		shipped: "已发货",
-		delivered: "已送达",
-		cancelled: "已取消",
-		refunded: "已退款",
-	};
-	return textMap[status] || status;
+    const textMap = {
+        pending: "待确认",
+        confirmed: "已确认",
+        shipped: "已发货",
+        delivered: "已送达",
+        cancelled: "已取消",
+        refunded: "已退款",
+    };
+    return textMap[status] || status;
 };
 
 const getPaymentStatusText = (status: PaymentStatus) => {
-	const textMap = {
-		unpaid: "未支付",
-		paid: "已支付",
-		refunded: "已退款",
-		partial_refund: "部分退款",
-	};
-	return textMap[status] || status;
+    const textMap = {
+        unpaid: "未支付",
+        paid: "已支付",
+        refunded: "已退款",
+        partial_refund: "部分退款",
+    };
+    return textMap[status] || status;
 };
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+    return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
 };
 
 // 格式化日期
 const formatDate = (date: Date | string) => {
-	const d = new Date(date);
-	return d.toLocaleDateString("zh-CN", {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
+    const d = new Date(date);
+    return d.toLocaleDateString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 };
 
 // 导出订单
 const exportOrders = () => {
-	toast.add({
-		severity: "info",
-		summary: "提示",
-		detail: "导出功能开发中...",
-		life: 1000,
-	});
+    toast.add({
+        severity: "info",
+        summary: "提示",
+        detail: "导出功能开发中...",
+        life: 1000,
+    });
 };
 
 // 组件挂载时加载数据
 onMounted(() => {
-	loadOrders();
+    loadOrders();
 });
 </script>
 
@@ -473,7 +473,8 @@ onMounted(() => {
                 </div>
                 <div class="flex gap-3">
                     <Button label="导出订单" icon="pi pi-download" @click="exportOrders" class="p-button-outlined" />
-                    <Button label="批量处理" icon="pi pi-cog" class="p-button-outlined" :disabled="!selectedOrders.length" />
+                    <Button label="批量处理" icon="pi pi-cog" class="p-button-outlined"
+                        :disabled="!selectedOrders.length" />
                 </div>
             </div>
 
@@ -520,18 +521,21 @@ onMounted(() => {
             <!-- 工具栏 -->
             <div class="flex justify-between items-center mb-4">
                 <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadOrders" class="p-button-outlined" size="small" />
-                    <Button label="批量确认" icon="pi pi-check" class="p-button-outlined" size="small" :disabled="!selectedOrders.length" />
-                    <Button label="批量发货" icon="pi pi-send" class="p-button-outlined" size="small" :disabled="!selectedOrders.length" />
+                    <Button label="刷新" icon="pi pi-refresh" @click="loadOrders" class="p-button-outlined"
+                        size="small" />
+                    <Button label="批量确认" icon="pi pi-check" class="p-button-outlined" size="small"
+                        :disabled="!selectedOrders.length" />
+                    <Button label="批量发货" icon="pi pi-send" class="p-button-outlined" size="small"
+                        :disabled="!selectedOrders.length" />
                 </div>
                 <div class="flex gap-3">
                     <InputText v-model="searchKeyword" placeholder="搜索订单号或用户..." class="w-64" @input="handleSearch" />
                     <Select v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
-                    <Select v-model="filterPaymentStatus" :options="paymentStatusOptions" optionLabel="label" optionValue="value"
-                        placeholder="支付状态" class="w-32" @change="handleFilter" />
-                    <Calendar v-model="filterDateRange" selectionMode="range" placeholder="选择日期范围" 
-                        class="w-48" @date-select="handleFilter" showIcon />
+                    <Select v-model="filterPaymentStatus" :options="paymentStatusOptions" optionLabel="label"
+                        optionValue="value" placeholder="支付状态" class="w-32" @change="handleFilter" />
+                    <Calendar v-model="filterDateRange" selectionMode="range" placeholder="选择日期范围" class="w-48"
+                        @date-select="handleFilter" showIcon />
                 </div>
             </div>
         </div>
@@ -539,9 +543,9 @@ onMounted(() => {
         <!-- 订单数据表格 -->
         <div class="table-section">
             <DataTable :value="orders" tableStyle="min-width: 50rem" :loading="loading"
-                v-model:selection="selectedOrders" dataKey="id" paginator :rows="pageSize"
+                v-model:selection="selectedOrders" dataKey="id" paginator :rows="limit"
                 :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true" @page="onPage" @sort="onSort"
-                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * pageSize" class="p-datatable-sm"
+                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * limit" class="p-datatable-sm"
                 showGridlines responsiveLayout="scroll" selectionMode="multiple" :metaKeySelection="false">
 
                 <template #header>
@@ -580,13 +584,16 @@ onMounted(() => {
                     <template #body="{ data }">
                         <div class="space-y-1">
                             <div v-for="item in data.items.slice(0, 2)" :key="item.id" class="flex items-center gap-2">
-                                <img :src="item.productImage" :alt="item.productName" class="w-8 h-8 rounded object-cover" />
+                                <img :src="item.productImage" :alt="item.productName"
+                                    class="w-8 h-8 rounded object-cover" />
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs font-medium truncate">{{ item.productName }}</p>
-                                    <p class="text-xs text-gray-600">{{ formatCurrency(item.price) }} × {{ item.quantity }}</p>
+                                    <p class="text-xs text-gray-600">{{ formatCurrency(item.price) }} × {{ item.quantity
+                                        }}</p>
                                 </div>
                             </div>
-                            <p v-if="data.items.length > 2" class="text-xs text-gray-500">等{{ data.items.length }}件商品</p>
+                            <p v-if="data.items.length > 2" class="text-xs text-gray-500">等{{ data.items.length }}件商品
+                            </p>
                         </div>
                     </template>
                 </Column>
@@ -611,7 +618,7 @@ onMounted(() => {
                     <template #body="{ data }">
                         <div>
                             <p class="text-sm">{{ data.paymentMethod }}</p>
-                            <Tag :value="getPaymentStatusText(data.paymentStatus)" 
+                            <Tag :value="getPaymentStatusText(data.paymentStatus)"
                                 :severity="getPaymentStatusSeverity(data.paymentStatus)" class="text-xs" />
                         </div>
                     </template>
@@ -620,7 +627,8 @@ onMounted(() => {
                 <!-- 订单状态列 -->
                 <Column field="status" header="订单状态" class="w-[10%]">
                     <template #body="{ data }">
-                        <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)" class="text-xs" />
+                        <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)"
+                            class="text-xs" />
                     </template>
                 </Column>
 
@@ -628,13 +636,13 @@ onMounted(() => {
                 <Column header="操作" class="w-[18%]">
                     <template #body="{ data }">
                         <div class="flex gap-2">
-                            <Button icon="pi pi-eye" @click="showOrderDetails(data)"
-                                class="p-button-info p-button-sm" v-tooltip.top="'查看详情'" />
+                            <Button icon="pi pi-eye" @click="showOrderDetails(data)" class="p-button-info p-button-sm"
+                                v-tooltip.top="'查看详情'" />
                             <Button icon="pi pi-pencil" @click="showChangeStatus(data)"
                                 class="p-button-warning p-button-sm" v-tooltip.top="'修改状态'" />
                             <Button icon="pi pi-print" @click="router.push(`/admin/orders/${data.id}/print`)"
                                 class="p-button-secondary p-button-sm" v-tooltip.top="'打印'" />
-                            <Button icon="pi pi-trash" @click="confirmDeleteOrder(data)" 
+                            <Button icon="pi pi-trash" @click="confirmDeleteOrder(data)"
                                 class="p-button-danger p-button-sm" v-tooltip.top="'删除'" />
                         </div>
                     </template>
@@ -661,12 +669,12 @@ onMounted(() => {
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">订单状态:</span>
-                                    <Tag :value="getStatusText(selectedOrder.status)" 
+                                    <Tag :value="getStatusText(selectedOrder.status)"
                                         :severity="getStatusSeverity(selectedOrder.status)" />
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">支付状态:</span>
-                                    <Tag :value="getPaymentStatusText(selectedOrder.paymentStatus)" 
+                                    <Tag :value="getPaymentStatusText(selectedOrder.paymentStatus)"
                                         :severity="getPaymentStatusSeverity(selectedOrder.paymentStatus)" />
                                 </div>
                             </div>
@@ -709,7 +717,9 @@ onMounted(() => {
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">详细地址:</span>
-                                <span>{{ selectedOrder.shippingAddress.province }}{{ selectedOrder.shippingAddress.city }}{{ selectedOrder.shippingAddress.district }}{{ selectedOrder.shippingAddress.address }}</span>
+                                <span>{{ selectedOrder.shippingAddress.province }}{{ selectedOrder.shippingAddress.city
+                                    }}{{ selectedOrder.shippingAddress.district }}{{
+                                    selectedOrder.shippingAddress.address }}</span>
                             </div>
                         </div>
                     </template>
@@ -722,7 +732,8 @@ onMounted(() => {
                         <DataTable :value="selectedOrder.items" class="p-datatable-sm">
                             <Column field="productImage" header="图片" class="w-[15%]">
                                 <template #body="{ data }">
-                                    <img :src="data.productImage" :alt="data.productName" class="w-12 h-12 rounded object-cover" />
+                                    <img :src="data.productImage" :alt="data.productName"
+                                        class="w-12 h-12 rounded object-cover" />
                                 </template>
                             </Column>
                             <Column field="productName" header="商品名称" class="w-[35%]">
@@ -771,7 +782,8 @@ onMounted(() => {
                             </div>
                             <div class="flex justify-between border-t pt-2">
                                 <span class="font-medium">实付金额:</span>
-                                <span class="font-bold text-red-600 text-lg">{{ formatCurrency(selectedOrder.finalAmount) }}</span>
+                                <span class="font-bold text-red-600 text-lg">{{
+                                    formatCurrency(selectedOrder.finalAmount) }}</span>
                             </div>
                         </div>
                     </template>
@@ -784,8 +796,8 @@ onMounted(() => {
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-2">订单状态</label>
-                    <Select v-model="newStatus" :options="orderStatusOptions" optionLabel="label" 
-                        optionValue="value" placeholder="选择状态" class="w-full" />
+                    <Select v-model="newStatus" :options="orderStatusOptions" optionLabel="label" optionValue="value"
+                        placeholder="选择状态" class="w-full" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-2">备注说明</label>
@@ -816,7 +828,7 @@ onMounted(() => {
     .header-section {
         @apply mb-4;
     }
-    
+
     .table-section {
         @apply overflow-x-auto;
     }

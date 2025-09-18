@@ -89,7 +89,7 @@ const templateData = await genPrimeCmsTemplateData<
     name: "",
     isVisible: undefined,
     page: 1,
-    pageSize: 20,
+    limit: 20,
   },
 );
 

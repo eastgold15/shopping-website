@@ -55,7 +55,7 @@ export type FormInstanceRef = Ref<FormInstance | null>;
  */
 export interface BaseQueryParams {
   page?: number;
-  pageSize?: number;
+  limit?: number;
 }
 
 /**

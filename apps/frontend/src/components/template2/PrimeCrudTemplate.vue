@@ -75,8 +75,8 @@
 
   // 分页配置
   const paginationOptions = computed(() => ({
-    first: (tableData.value.meta.page - 1) * tableData.value.meta.pageSize,
-    rows: tableData.value.meta.pageSize,
+    first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
+    rows: tableData.value.meta.limit,
     totalRecords: tableData.value.meta.total,
     rowsPerPageOptions: [20, 30, 50, 100],
   }));
@@ -84,7 +84,7 @@
   // 分页事件处理
   const onPageChange = (event: { first: number; rows: number }) => {
     tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
-    tableData.value.meta.pageSize = event.rows;
+    tableData.value.meta.limit = event.rows;
     // 根据表格类型调用对应的数据获取方法
     fetchData(props.useTreeTable || false);
   };

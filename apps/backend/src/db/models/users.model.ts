@@ -129,7 +129,7 @@ export interface UserListResponse {
   users: SelectUsersVo[];
   total: number;
   page: number;
-  pageSize: number;
+  limit: number;
   totalPages: number;
 }
 

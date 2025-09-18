@@ -649,7 +649,7 @@ const fetchProduct = async (productId: string) => {
 const fetchRelatedProducts = async () => {
   try {
     // 调用API获取相关商品
-    const res = await api.products.list({ page: 1, pageSize: 4 });
+    const res = await api.products.list({ page: 1, limit: 4 });
     if (res && res.code === 200) {
       // 过滤掉当前商品
       relatedProducts.value = res.data?.items.filter((item: any) => item.id !== product.value?.id).slice(0, 4);

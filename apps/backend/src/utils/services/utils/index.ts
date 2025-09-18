@@ -105,8 +105,8 @@ export function buildQueryOptions(query: any) {
 	if (query.page !== undefined) {
 		options.page = parseInt(query.page);
 	}
-	if (query.pageSize !== undefined) {
-		options.pageSize = parseInt(query.pageSize);
+	if (query.limit !== undefined) {
+		options.limit = parseInt(query.limit);
 	}
 
 	// 排序参数
@@ -126,7 +126,7 @@ export function buildQueryOptions(query: any) {
 
 	// 其他过滤器
 	Object.keys(query).forEach((key) => {
-		if (!["page", "pageSize", "sortBy", "sortOrder", "search"].includes(key)) {
+		if (!["page", "limit", "sortBy", "sortOrder", "search"].includes(key)) {
 			options[key] = query[key];
 		}
 	});

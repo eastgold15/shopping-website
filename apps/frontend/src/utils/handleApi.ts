@@ -9,7 +9,7 @@ const pageDefaultValue = {
     meta: {
       total: 0,
       page: 1,
-      pageSize: 10,
+      limit: 10,
       totalPages: 0
     }
   }
