@@ -4,7 +4,6 @@ import {
   CustomeError,
   handleDatabaseError,
   InternalServerError,
-  UploadError,
 } from "@backend/utils/error/customError";
 
 import { UploadImagesDto } from "@backend/db/models";
@@ -167,13 +166,7 @@ export class UploadService {
 
       return await ossService.deleteFile(key);
     } catch (error) {
-      if (error instanceof CustomeError) {
-        throw error;
-      }
-      console.error("文件删除失败:", error);
-      throw new UploadError(
-        error instanceof Error ? error.message : "文件删除失败",
-      );
+      throw new InternalServerError("文件删除失败", error);
     }
   }
 
@@ -200,13 +193,7 @@ export class UploadService {
 
       return exists;
     } catch (error) {
-      if (error instanceof CustomeError) {
-        throw error;
-      }
-      console.error("检查文件存在性失败:", error);
-      throw new UploadError(
-        error instanceof Error ? error.message : "检查文件存在性失败",
-      );
+      throw new InternalServerError("文件删除失败", error);
     }
   }
 
@@ -237,13 +224,7 @@ export class UploadService {
       };
       return fileInfo;
     } catch (error) {
-      if (error instanceof CustomeError) {
-        throw error;
-      }
-      console.error("获取文件信息失败:", error);
-      throw new UploadError(
-        error instanceof Error ? error.message : "获取文件信息失败",
-      );
+      throw new InternalServerError("文件删除失败", error);
     }
   }
 }

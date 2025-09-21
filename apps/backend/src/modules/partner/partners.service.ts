@@ -1,21 +1,20 @@
 import { db } from "@backend/db/connection";
-import { UpdateSortDtoType } from "@backend/types";
+import { imagesTable } from "@backend/types";
 import {
-  DatabaseError,
+  handleDatabaseError,
   InternalServerError,
-  NotFoundError,
+  NotFoundError
 } from "@backend/utils/error/customError";
 import {
   and,
+  count,
   eq,
   getTableColumns,
+  inArray,
   like,
-  or,
-  sql
+  or
 } from "drizzle-orm";
-import { InsertPartnersDto, PartnersListQueryDto, partnersTable, UpdatePartnersDto } from "../../db/models/partners.model";
-
-
+import { InsertPartners, partnerImagesTable, PartnersListQueryDto, partnersTable, UpdatePartnersDto } from "../../db/models/partners.model";
 /**
  * 合作伙伴服务类
  * 处理合作伙伴相关的业务逻辑
@@ -29,24 +28,61 @@ export class PartnersService {
    */
   async getActivePartnersList() {
     // 使用Drizzle ORM的关联查询功能
-    const result = await db.query.partnersTable.findMany({
-      with: {
-        imageRef: true, // 关联查询图片信息
-      },
-      where: (partners, { eq }) => eq(partners.isActive, true),
-      orderBy: (partners, { asc }) => asc(partners.sortOrder),
-    });
+    const res = await db.select().from(partnersTable)
+      .leftJoin(partnerImagesTable, eq(partnerImagesTable.partnerId, partnersTable.id))
+      .leftJoin(imagesTable, eq(partnerImagesTable.imageId, imagesTable.id))
+    const aggregated = Object.values(
+      res.reduce((acc, items) => {
+        const { partners, partner_images, images } = items
+        // 如果没有id 则添加id
+        if (!acc[partners.id]) {
+          acc[partners.id] = {
+            ...partners,
+            images: []
+          }
+        }
+        acc[partners.id].images.push({
+          ...images,
+          isMain: partner_images?.isMain
+        })
+        return acc
+      }, {} as Record<string, any>)
+    )
+    return aggregated
+    // const result = await db.query.partnersTable.findMany({
+    //   with: {
+    //     partnerImageRef: {
+    //       columns: {
 
-    // 转换数据格式以匹配前端期望
-    return result.map(partner => ({
-      ...partner,
-      imageUrl: partner.imageRef?.imageUrl || null,
-      image: undefined, // 移除image字段，因为我们现在有imageRef
-    }));
+    //       },
+    //       with: {
+
+    //         imageRef: {
+    //         }, // 自动 JOIN 并加载 imageRef 数据
+    //       },
+    //     },
+    //   },
+    //   where: (partners, { eq }) => eq(partners.isActive, true),
+    //   orderBy: (partners, { asc }) => asc(partners.sortOrder),
+    // });
+
+    // // 转换数据格式以匹配前端期望
+    // return result.map(partner => ({
+    //   ...partner,
+    //   isMain: partner.partnerImageRef?.isMain || false,
+    //   imageUrl: {
+    //     id: partner.partnerImageRef?.imageRef?.id || null,
+    //     imageUrl: partner.partnerImageRef?.imageRef?.imageUrl || null,
+    //     fileName: partner.partnerImageRef.imageRef.fileName || null,
+    //     category: partner.partnerImageRef.imageRef.category || null,
+    //   },
+    //   imageRef: undefined, // 移除image字段，因为我们现在有imageRef
+    //   partnerImageRef: undefined, // 移除partnerImageRef字段，因为我们现在有imageRef
+    // }));
   }
 
   /**
-   * 获取合作伙伴列表（管理后台用）- 使用统一的分页函数
+   * 分页获取合作伙伴列表（管理后台用）- 使用统一的分页函数
    * @param params 查询参数
    * @returns 分页的合作伙伴列表
    */
@@ -57,88 +93,80 @@ export class PartnersService {
       sort = "sortOrder",
       sortOrder = "asc",
       search,
-      name,
       isActive,
     } = params;
 
-    // 使用Drizzle ORM的关联查询功能
-    const result = await db.query.partnersTable.findMany({
-      with: {
-        imageRef: true, // 关联查询图片信息
-      },
-      where: (partners, { and, like, eq, or }) => {
-        const conditions = [];
-
-        // search参数：使用or连接多个字段搜索
-        if (search) {
-          conditions.push(
-            or(
-              like(partners.name, `%${search}%`),
-              like(partners.description, `%${search}%`),
-            ),
-          );
-        }
-
-        // 独立的精确搜索条件
-        if (name) {
-          conditions.push(like(partners.name, `%${name}%`));
-        }
-        if (isActive !== undefined) {
-          conditions.push(eq(partners.isActive, isActive));
-        }
-
-        return conditions.length > 0 ? and(...conditions) : undefined;
-      },
-      orderBy: (partners, { asc, desc }) => {
-        const sortFieldMap: Record<string, any> = {
-          name: partners.name,
-          sortOrder: partners.sortOrder,
-          createdAt: partners.createdAt,
-          updatedAt: partners.updatedAt,
-        };
-        // 确定排序字段和方向
-        const orderBy = sortFieldMap[sort] || partners.sortOrder;
-        return sortOrder === "asc" ? asc(orderBy) : desc(orderBy);
-      },
-      limit: limit,
-      offset: (page - 1) * limit,
-    });
-
-    // 构建计算总数的查询，考虑搜索条件
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(partnersTable);
-
-    // 搜索条件构建
-    const whereConditions = [];
-
+    const conditions = [];
     // search参数：使用or连接多个字段搜索
     if (search) {
-      whereConditions.push(
+      conditions.push(
         or(
           like(partnersTable.name, `%${search}%`),
           like(partnersTable.description, `%${search}%`),
         ),
       );
     }
-
-    // 独立的精确搜索条件
-    if (name) {
-      whereConditions.push(like(partnersTable.name, `%${name}%`));
-    }
     if (isActive !== undefined) {
-      whereConditions.push(eq(partnersTable.isActive, isActive));
+      conditions.push(eq(partnersTable.isActive, isActive));
     }
 
-    // 应用查询条件
-    if (whereConditions.length > 0) {
-      // @ts-ignore
-      countQuery = countQuery.where(and(...whereConditions));
+
+    // 构建计算总数的查询，考虑搜索条件
+    let countQuery = db.select({ count: count() }).from(partnersTable);
+    if (conditions.length > 0) {
+      countQuery.where(and(...conditions));
     }
 
-    // @ts-ignore
-    const totalCountResult = await countQuery;
-    const totalCount = Number(totalCountResult[0].count);
+    const [result, totalArr] = await Promise.all([
+      db.query.partnersTable.findMany({
+        with: {
+          partnerImageRef: {
+            columns: {
+              partnerId: false,
+              imageId: false,
+            },
+            with: {
+              imageRef: {
+                columns: {
+                  id: true,
+                  imageUrl: true,
+                  fileName: true,
+                  category: true,
+                }
+              },
+            },
+          },
+        },
+        where: conditions.length > 0 ? and(...conditions) : undefined,
+        orderBy: (partners, { asc, desc }) => {
+          const sortFieldMap: Record<string, any> = {
+            updatedAt: partners.updatedAt,
+          };
+          // 确定排序字段和方向
+          const orderBy = sortFieldMap[sort] || partners.updatedAt;
+          return sortOrder === "asc" ? asc(orderBy) : desc(orderBy);
+        },
+        limit: limit,
+        offset: (page - 1) * limit,
+      }),
+      countQuery
+    ]);
+
+
+    const res = result.map((item) => ({
+      ...item,
+      images: item.partnerImageRef.map(ref => ({
+        ...ref.imageRef,
+        isMain: ref.isMain
+      })),
+      partnerImageRef: undefined
+    }))
+
+
+    const totalCount = totalArr[0]?.count ?? 0;
+
     return {
-      items: result,
+      items: res,
       meta: {
         page,
         limit,
@@ -156,7 +184,11 @@ export class PartnersService {
   async getPartnerById(id: number) {
     const result = await db.query.partnersTable.findFirst({
       with: {
-        imageRef: true, // 关联查询图片信息
+        partnerImageRef: {
+          with: {
+            imageRef: true
+          }
+        }, // 关联查询图片信息
       },
       where: (partners, { eq }) => eq(partners.id, id),
     });
@@ -165,11 +197,12 @@ export class PartnersService {
       throw new NotFoundError("合作伙伴不存在", "com");
     }
 
+
     // 转换数据格式以匹配前端期望
     return {
       ...result,
-      imageUrl: result.imageRef?.imageUrl || null,
-      image: undefined, // 移除image字段，因为我们现在有imageRef
+      images: result.partnerImageRef.map((item) => ({ isMain: item.isMain, ...item.imageRef })),
+      partnerImageRef: undefined
     };
   }
 
@@ -178,15 +211,39 @@ export class PartnersService {
    * @param data 创建数据
    * @returns 创建的合作伙伴
    */
-  async createPartner(data: InsertPartnersDto) {
-    const [newPartner] = await db
-      .insert(partnersTable)
-      .values(data)
-      .returning();
+  async createPartner(data: InsertPartners) {
 
-    if (!newPartner) {
-      throw new InternalServerError("创建合作伙伴失败");
-    }
+    const { image_ids, ...partner } = data
+
+    let newPartner;
+    await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(partnersTable)
+        .values(partner)
+        .returning();
+      newPartner = inserted
+      if (!inserted) throw new InternalServerError("创建失败")
+
+      if (image_ids && image_ids.length > 0) {
+        const existingImages = await tx.query.imagesTable.findMany({
+          where: inArray(imagesTable.id, image_ids)
+        });
+        const foundIds = existingImages.map(img => img.id)
+        const notFound = image_ids.filter(id => !foundIds.includes(id))
+
+        if (notFound.length > 0) {
+          throw new NotFoundError(`图片 ID ${notFound.join(', ')} 不存在`);
+        }
+
+        // 批量插入关联关系
+        const refsToInsert = image_ids.map((imageId, index) => ({
+          partnerId: inserted.id,
+          imageId,
+          isMain: index == 0 ? true : false // 默认都不是主图，您也可以扩展逻辑
+        }));
+        await tx.insert(partnerImagesTable).values(refsToInsert)
+      }
+    })
     return newPartner;
   }
 
@@ -197,97 +254,98 @@ export class PartnersService {
    * @returns 更新后的合作伙伴
    */
   async updatePartner(id: number, data: UpdatePartnersDto) {
-    const [updatedPartner] = await db
-      .update(partnersTable)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(partnersTable.id, id))
-      .returning(this.columns);
 
-    if (!updatedPartner) {
-      throw new NotFoundError("合作伙伴不存在");
-    }
+    const { image_ids, ...partner } = data
 
+    let updatedPartner;
+    await db.transaction(async (tx) => {
+      const [updated] = await tx.update(partnersTable).set({
+        ...partner,
+        updatedAt: new Date()
+      }).where(eq(partnersTable.id, id))
+        .returning()
+      updatedPartner = updated
+
+      if (!updated) throw new InternalServerError("更新合作伙伴状态失败")
+      if (image_ids && image_ids.length > 0) {
+        const existingImages = await tx.query.imagesTable.findMany({
+          where: inArray(imagesTable.id, image_ids)
+        })
+        const foundIds = existingImages.map(img => img.id)
+        const notFound = image_ids.filter((id) => !foundIds.includes(id));
+        if (notFound.length > 0) {
+          throw new NotFoundError(`图片 ID ${notFound.join(', ')} 不存在`);
+        }
+
+        // 🧹 2.2 删除旧的关联（关键！否则会残留旧数据）
+        await tx
+          .delete(partnerImagesTable)
+          .where(eq(partnerImagesTable.partnerId, updated.id));
+
+        // ➕ 2.3 插入新的关联
+        const refsToInsert = image_ids.map((imageId, index) => ({
+          partnerId: updated.id,
+          imageId,
+          isMain: index === 0, // 第一张图设为主图（可自定义逻辑）
+        }));
+        await tx.insert(partnerImagesTable).values(refsToInsert);
+      }
+    })
     return updatedPartner;
   }
 
+
+  async exists(ids: number | number[]): Promise<boolean> {
+    const whereCondition = Array.isArray(ids)
+      ? inArray(partnersTable.id, ids)
+      : eq(partnersTable.id, ids);
+
+    const result = await db
+      .select({ id: partnersTable.id })
+      .from(partnersTable)
+      .where(whereCondition)
+      .limit(1) // 👈 只查一个，性能优化
+
+    return result.length > 0;
+  }
+
   /**
-   * 删除合作伙伴
-   * @param id 合作伙伴ID
-   */
-  async deletePartner(id: number) {
-    // 先检查合作伙伴是否存在
-    await this.getPartnerById(id);
+  * 删除合作伙伴
+  * @param id 合作伙伴ID（支持单个或多个）
+  */
+  async deletePartner(ids: number | number[]): Promise<boolean> {
+    const idList = Array.isArray(ids) ? ids : [ids];
+
+    if (idList.length === 0) {
+      return true; // 空数组，视为删除成功
+    }
 
     try {
-      const result = await db
-        .delete(partnersTable)
-        .where(eq(partnersTable.id, id));
+      await db.transaction(async (tx) => {
+        // ✅ 1. 先检查合作伙伴是否存在
+        const existing = await tx.query.partnersTable.findMany({
+          where: inArray(partnersTable.id, idList),
+          columns: { id: true } // 只查 ID，提高性能
+        });
+        const foundIds = existing.map(item => item.id);
+        const notFound = idList.filter(id => !foundIds.includes(id));
+        if (notFound.length > 0) {
+          throw new NotFoundError(`合作伙伴 ID ${notFound.join(', ')} 不存在`);
+        }
+        // ✅ 2. 先删除关联表数据（避免外键约束）
+        await tx
+          .delete(partnerImagesTable)
+          .where(inArray(partnerImagesTable.partnerId, idList));
 
-      if (!result || result.rowCount === 0) {
-        throw new InternalServerError("删除合作伙伴失败");
-      }
+        // ✅ 3. 删除主表数据
+        const result = await tx
+          .delete(partnersTable)
+          .where(inArray(partnersTable.id, idList));
 
+      });
       return true;
     } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-      throw new DatabaseError("数据库操作失败");
+      throw handleDatabaseError(error)
     }
-  }
-
-  /**
-   * 更新合作伙伴排序
-   * @param id 合作伙伴ID
-   * @param data 排序数据
-   * @returns 更新后的合作伙伴
-   */
-  async updatePartnerSort(id: number, data: UpdateSortDtoType) {
-    const [updatedPartner] = await db
-      .update(partnersTable)
-      .set({
-        sortOrder: data.sortOrder,
-        updatedAt: new Date(),
-      })
-      .where(eq(partnersTable.id, id))
-      .returning(this.columns);
-
-    if (!updatedPartner) {
-      throw new NotFoundError("合作伙伴不存在");
-    }
-
-    return updatedPartner;
-  }
-
-  /**
-   * 切换合作伙伴启用状态
-   * @param id 合作伙伴ID
-   * @returns 更新后的合作伙伴或null
-   */
-  async togglePartnerActive(id: number) {
-    // 先获取当前状态
-    const currentPartner = await this.getPartnerById(id);
-    if (!currentPartner) {
-      throw new NotFoundError("合作伙伴不存在");
-    }
-
-    // 切换状态
-    const [updatedPartner] = await db
-      .update(partnersTable)
-      .set({
-        isActive: !currentPartner.isActive,
-        updatedAt: new Date(),
-      })
-      .where(eq(partnersTable.id, id))
-      .returning(this.columns);
-
-    if (!updatedPartner) {
-      throw new InternalServerError("更新合作伙伴状态失败");
-    }
-
-    return updatedPartner;
   }
 }

@@ -22,6 +22,6 @@
   },
   "dependencies": {
     "@pori15/config": "^0.0.5",
-    "elysia": "1.4.5"
+    "elysia": "1.4.6"
   }
 }

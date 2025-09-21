@@ -6,7 +6,7 @@ import { t } from "elysia";
 import { z } from "zod/v4";
 import { advertisementsTable } from "./advertisements.model";
 import { orderItemsTable } from "./orderItems.model";
-import { partnersTable } from "./partners.model";
+import { partnerImagesTable, partnersTable } from "./partners.model";
 import { productImagesTable } from "./product.model";
 import { UnoQueryZod } from "./utils";
 
@@ -78,6 +78,7 @@ export const imagesRelations = relations(imagesTable, ({ many }) => ({
   orderItems: many(orderItemsTable),
   // 图片可以被多个商品使用(通过中间表)
   productImages: many(productImagesTable),
+  partnerImagesRef: many(partnerImagesTable),
 }));
 
 

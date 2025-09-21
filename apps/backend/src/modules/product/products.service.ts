@@ -1,6 +1,6 @@
 import { InsertProductDto, ListProductQueryDto, productImagesTable, productsModel, productsTable, SelectProductType, UpdateProductDto } from "@backend/db/models/product.model";
 
-import { categoriesTable, imagesTable } from "@backend/db/models";
+import { categoriesTable, imagesTable, partnersTable } from "@backend/db/models";
 import {
   handleDatabaseError,
   NotFoundError,
@@ -17,7 +17,7 @@ import {
   or,
 } from "drizzle-orm";
 import { db } from "../../db/connection";
-
+import { buildWhereArray, buildOrder ,GenericWhere} from 'drizzle-dynamic-query'
 /**
  * 商品服务类
  * 处理所有商品相关的业务逻辑
