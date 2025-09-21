@@ -1,5 +1,9 @@
 <script lang="ts" setup>
-import type { PartnerlFormDto, PartnersListVo, SelectImagesVo } from "@backend/types";
+import type {
+	PartnerlFormDto,
+	PartnersListVo,
+	SelectImagesVo,
+} from "@backend/types";
 import type { CrudMode } from "@frontend/types/prime-cms";
 import { formatDate } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
@@ -11,7 +15,6 @@ import { computed, onMounted, ref, toRaw } from "vue";
 import z from "zod/v4";
 import { genPrimeCmsTemplateData } from "./usePrimeTemplateGen";
 
-
 const $crud = useCmsApi().partner;
 const toast = useToast();
 
@@ -22,29 +25,31 @@ const disabled = false;
 
 // 使用zod定义表单验证schema
 const partnerSchema = z.object({
-  name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
-  description: z
-    .string()
-    .min(1, "请输入合作伙伴描述"),
-  sortOrder: z
-    .number()
-    .min(0, "排序权重不能小于0")
-    .max(9999, "排序权重不能超过9999"),
-  url: z.string().url("请输入有效的URL").optional().or(z.literal("")),
-  isActive: z.boolean(),
-  images: z.array(z.object({
-    id: z.number(),
-    imageUrl: z.string(),
-    fileName: z.string(),
-    category: z.string(),
-    isMain: z.boolean().optional()
-  })).optional(),
+	name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
+	description: z.string().min(1, "请输入合作伙伴描述"),
+	sortOrder: z
+		.number()
+		.min(0, "排序权重不能小于0")
+		.max(9999, "排序权重不能超过9999"),
+	url: z.string().url("请输入有效的URL").optional().or(z.literal("")),
+	isActive: z.boolean(),
+	images: z
+		.array(
+			z.object({
+				id: z.number(),
+				imageUrl: z.string(),
+				fileName: z.string(),
+				category: z.string(),
+				isMain: z.boolean().optional(),
+			}),
+		)
+		.optional(),
 });
 
 // 查询表单验证schema
 const querySchema = z.object({
-  name: z.string().max(100, "搜索名称不能超过100个字符").optional(),
-  isActive: z.boolean().optional(),
+	name: z.string().max(100, "搜索名称不能超过100个字符").optional(),
+	isActive: z.boolean().optional(),
 });
 
 // 创建resolver
@@ -53,116 +58,120 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-  PartnersListVo,
-  any,
-  PartnerlFormDto
+	PartnersListVo,
+	any,
+	PartnerlFormDto
 >(
-  {
-    // 1. 定义查询表单
-    // @ts-ignore
-    getList: $crud.list,
-    // @ts-ignore
-    create: $crud.create,
-    // @ts-ignore
-    update: $crud.update,
-    // @ts-ignore
-    delete: $crud.delete,
+	{
+		// 1. 定义查询表单
+		// @ts-ignore
+		getList: $crud.list,
+		// @ts-ignore
+		create: $crud.create,
+		// @ts-ignore
+		update: $crud.update,
+		// @ts-ignore
+		delete: $crud.delete,
 
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      "id": 0,
-      "name": "string",
-      "description": "string",
-      "url": "string",
-      "sortOrder": 0,
-      "isActive": true,
-      "createdAt": "string",
-      "updatedAt": "string",
-      "images": [
-        {
-          "isMain": true,
-          "id": 0,
-          "imageUrl": "string",
-          "fileName": "string",
-          "category": "string"
-        }
-      ]
-    }),
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除合作伙伴${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` 合作伙伴#${ids.join(",")} `;
-    },
-    // 5. 数据转换
-    transformSubmitData: (data: any, mode: CrudMode) => {
-      // 确保数字类型正确
-      if (typeof data.sortOrder === "string") {
-        const parsed = parseInt(data.sortOrder, 10);
-        data.sortOrder = isNaN(parsed) ? 0 : parsed;
-      }
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			name: "string",
+			description: "string",
+			url: "string",
+			sortOrder: 0,
+			isActive: true,
+			createdAt: "string",
+			updatedAt: "string",
+			images: [
+				{
+					isMain: true,
+					id: 0,
+					imageUrl: "string",
+					fileName: "string",
+					category: "string",
+				},
+			],
+		}),
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除合作伙伴${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` 合作伙伴#${ids.join(",")} `;
+		},
+		// 5. 数据转换
+		transformSubmitData: (data: any, _mode: CrudMode) => {
+			// 确保数字类型正确
+			if (typeof data.sortOrder === "string") {
+				const parsed = parseInt(data.sortOrder, 10);
+				data.sortOrder = isNaN(parsed) ? 0 : parsed;
+			}
 
-      // 从images数组中提取主图片ID
-      if (data.images && data.images.length > 0) {
-        const mainImage = data.images.find((img: any) => img.isMain) || data.images[0];
-        data.image_id = mainImage.id;
-      } else {
-        data.image_id = -1;
-      }
+			// 从images数组中提取主图片ID
+			if (data.images && data.images.length > 0) {
+				const mainImage =
+					data.images.find((img: any) => img.isMain) || data.images[0];
+				data.image_id = mainImage.id;
+			} else {
+				data.image_id = -1;
+			}
 
-      // @ts-ignore
-      delete data.createdAt
-      // @ts-ignore
-      delete data.updatedAt
-    },
-  },
-  // 6. 定义查询表单
-  {
-    name: "",
-    isActive: undefined,
-    page: 1,
-    limit: 20,
-  },
+			// @ts-ignore
+			delete data.createdAt;
+			// @ts-ignore
+			delete data.updatedAt;
+		},
+	},
+	// 6. 定义查询表单
+	{
+		name: "",
+		isActive: undefined,
+		page: 1,
+		limit: 20,
+	},
 );
 
-const { tableData, queryForm, fetchList, FormSearch,
-  formLoading,
-  handleCrudDialog,
-  crudDialogOptions,
-  resetForm,
-  handleDeletes
+const {
+	tableData,
+	queryForm,
+	fetchList,
+	FormSearch,
+	formLoading,
+	handleCrudDialog,
+	crudDialogOptions,
+	resetForm,
+	handleDeletes,
 } = templateData;
 
 // 状态选项
 const statusOptions = [
-  { label: "全部", value: undefined },
-  { label: "启用", value: true },
-  { label: "禁用", value: false },
+	{ label: "全部", value: undefined },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
 ];
-
 
 // 图片选择器相关
 const imageSelectorVisible = ref(false);
 
 // 打开图片选择器
 const openImageSelector = () => {
-  imageSelectorVisible.value = true;
+	imageSelectorVisible.value = true;
 };
 
 // 选择图片回调 - 直接绑定到表单的images字段
 const handleImageSelect = (selectedImages: SelectImagesVo[]) => {
-  console.log('选中的图片:', selectedImages);
-  // 更新表单数据中的images字段
-  if (crudDialogOptionsRef.value?.data) {
-    // 为选中的图片添加isMain标记
-    const imagesWithMain = selectedImages.map((img, index) => ({
-      ...img,
-      isMain: index === 0 // 第一张设为主图
-    }));
+	console.log("选中的图片:", selectedImages);
+	// 更新表单数据中的images字段
+	if (crudDialogOptionsRef.value?.data) {
+		// 为选中的图片添加isMain标记
+		const imagesWithMain = selectedImages.map((img, index) => ({
+			...img,
+			isMain: index === 0, // 第一张设为主图
+		}));
 
-    crudDialogOptionsRef.value.data.images = imagesWithMain;
-  }
+		crudDialogOptionsRef.value.data.images = imagesWithMain;
+	}
 };
 
 // 为 crudDialogOptions 添加类型注解
@@ -170,17 +179,17 @@ const crudDialogOptionsRef = crudDialogOptions;
 
 // 计算当前表单中的图片数据
 const currentFormImages = computed(() => {
-  const formData = crudDialogOptionsRef.value?.data;
-  return formData?.images || [];
+	const formData = crudDialogOptionsRef.value?.data;
+	return formData?.images || [];
 });
 
 // 计算主图片用于显示
 const mainImageForDisplay = computed(() => {
-  const images = currentFormImages.value;
-  if (images.length === 0) return null;
-  // 找到主图或第一张图
-  // @ts-ignore
-  return images.find(img => img.isMain) || images[0];
+	const images = currentFormImages.value;
+	if (images.length === 0) return null;
+	// 找到主图或第一张图
+	// @ts-ignore
+	return images.find((img) => img.isMain) || images[0];
 });
 
 const _crudController = computed(() => crudController || 15);
@@ -191,135 +200,136 @@ const drawerFormRef = ref<FormInstance | null>(null);
 
 // 分页配置
 const paginationOptions = computed(() => ({
-  first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
-  rows: tableData.value.meta.limit,
-  totalRecords: tableData.value.meta.total,
-  rowsPerPageOptions: [20, 30, 50, 100],
+	first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
+	rows: tableData.value.meta.limit,
+	totalRecords: tableData.value.meta.total,
+	rowsPerPageOptions: [20, 30, 50, 100],
 }));
 
 // 分页事件处理
 const onPageChange = (event: { first: number; rows: number }) => {
-  tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
-  tableData.value.meta.limit = event.rows;
-  fetchList()
+	tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
+	tableData.value.meta.limit = event.rows;
+	fetchList();
 };
 
 // 查询表单提交处理
 const onQueryFormSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    await FormSearch(queryFormRef.value);
-  } else {
-    toast.add({
-      severity: "error",
-      summary: "查询表单验证失败",
-      detail: "请检查输入内容",
-      life: 3000,
-    });
-  }
+	if (event.valid) {
+		await FormSearch(queryFormRef.value);
+	} else {
+		toast.add({
+			severity: "error",
+			summary: "查询表单验证失败",
+			detail: "请检查输入内容",
+			life: 3000,
+		});
+	}
 };
 
 // 表单提交处理
 const onFormSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    try {
-      crudDialogOptionsRef.value.loading = true;
+	if (event.valid) {
+		try {
+			crudDialogOptionsRef.value.loading = true;
 
-      const formData = event.values as TForm;
+			const formData = event.values as TForm;
 
-      // 获取当前表单数据
-      const currentData = crudDialogOptionsRef.value.data || {};
-      const submitData = { ...currentData, ...formData } as TForm;
+			// 获取当前表单数据
+			const currentData = crudDialogOptionsRef.value.data || {};
+			const submitData = { ...currentData, ...formData } as TForm;
 
-      // 转换提交数据
-      if (templateData.transformSubmitData) {
-        templateData.transformSubmitData(
-          submitData,
-          crudDialogOptionsRef.value.mode,
-        );
-      }
+			// 转换提交数据
+			if (templateData.transformSubmitData) {
+				templateData.transformSubmitData(
+					submitData,
+					crudDialogOptionsRef.value.mode,
+				);
+			}
 
-      // 提交数据
-      const rawSubmitData = toRaw(submitData) as TForm;
-      let res;
+			// 提交数据
+			const rawSubmitData = toRaw(submitData) as TForm;
+			let res;
 
-      if (crudDialogOptionsRef.value.mode === "EDIT") {
-        // 对于编辑操作，需要从表格数据中获取ID
-        // @ts-ignore
-        const tableItem = tableData.value.items.flat().find(item => item.id === (currentData as any).id);
-        res = await templateData.update(
-          (tableItem as unknown as any).id!,
-          rawSubmitData,
-        );
-        console.log("res", res);
-        if (res.code === 200) {
-          toast.add({
-            severity: "success",
-            summary: "修改成功",
-            detail: "数据已成功修改",
-            life: 3000,
-          });
-        } else {
-          toast.add({
-            severity: "error",
-            summary: "修改失败",
-            detail: res.message ?? "修改失败！",
-            life: 3000,
-          });
-        }
-      } else {
-        // 对于新建操作，需要移除id字段（如果存在）
-        const { id, ...createData } = rawSubmitData;
-        res = await templateData.create(createData as Omit<TForm, "id">);
-        console.log("res", res);
-        if (res.code === 201) {
-          toast.add({
-            severity: "success",
-            summary: "添加成功",
-            detail: "数据已成功添加",
-            life: 3000,
-          });
-        } else {
-          toast.add({
-            severity: "error",
-            summary: "添加失败",
-            detail: res.message ?? "添加失败！",
-            life: 3000,
-          });
-        }
-      }
+			if (crudDialogOptionsRef.value.mode === "EDIT") {
+				// 对于编辑操作，需要从表格数据中获取ID
+				// @ts-ignore
+				const tableItem = tableData.value.items
+					.flat()
+					.find((item) => item.id === (currentData as any).id);
+				res = await templateData.update(
+					(tableItem as unknown as any).id!,
+					rawSubmitData,
+				);
+				console.log("res", res);
+				if (res.code === 200) {
+					toast.add({
+						severity: "success",
+						summary: "修改成功",
+						detail: "数据已成功修改",
+						life: 3000,
+					});
+				} else {
+					toast.add({
+						severity: "error",
+						summary: "修改失败",
+						detail: res.message ?? "修改失败！",
+						life: 3000,
+					});
+				}
+			} else {
+				// 对于新建操作，需要移除id字段（如果存在）
+				const { id, ...createData } = rawSubmitData;
+				res = await templateData.create(createData as Omit<TForm, "id">);
+				console.log("res", res);
+				if (res.code === 201) {
+					toast.add({
+						severity: "success",
+						summary: "添加成功",
+						detail: "数据已成功添加",
+						life: 3000,
+					});
+				} else {
+					toast.add({
+						severity: "error",
+						summary: "添加失败",
+						detail: res.message ?? "添加失败！",
+						life: 3000,
+					});
+				}
+			}
 
-      // 统一处理成功后的逻辑
-      if (res?.code === 200 || res?.code === 201) {
-        crudDialogOptionsRef.value.visible = false;
-        await fetchList();
-      }
-    } catch (error) {
-      console.error("表单提交失败:", error);
-      toast.add({
-        severity: "error",
-        summary: "提交失败",
-        detail: "表单提交失败，请稍后重试",
-        life: 3000,
-      });
-    } finally {
-      crudDialogOptionsRef.value.loading = false;
-    }
-  } else {
-    toast.add({
-      severity: "error",
-      summary: "表单验证失败",
-      detail: "请检查输入内容",
-      life: 3000,
-    });
-  }
+			// 统一处理成功后的逻辑
+			if (res?.code === 200 || res?.code === 201) {
+				crudDialogOptionsRef.value.visible = false;
+				await fetchList();
+			}
+		} catch (error) {
+			console.error("表单提交失败:", error);
+			toast.add({
+				severity: "error",
+				summary: "提交失败",
+				detail: "表单提交失败，请稍后重试",
+				life: 3000,
+			});
+		} finally {
+			crudDialogOptionsRef.value.loading = false;
+		}
+	} else {
+		toast.add({
+			severity: "error",
+			summary: "表单验证失败",
+			detail: "请检查输入内容",
+			life: 3000,
+		});
+	}
 };
 
 // 组件挂载时自动加载数据
 onMounted(async () => {
-  await fetchList();
-  // await loadImages();
+	await fetchList();
+	// await loadImages();
 });
-
 </script>
 
 <template>

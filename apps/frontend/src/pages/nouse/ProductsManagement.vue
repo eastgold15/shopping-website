@@ -459,7 +459,7 @@ const toggleFeatured = async (product: Product) => {
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+	return `¥${amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 })}`;
 };
 
 // 格式化日期

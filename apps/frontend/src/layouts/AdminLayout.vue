@@ -165,7 +165,7 @@ const toggleSidebar = () => {
 	sidebarVisible.value = !sidebarVisible.value;
 };
 
-const toggleUserMenu = (event) => {
+const toggleUserMenu = (_event) => {
 	userMenuVisible.value = !userMenuVisible.value;
 };
 const isDarkMode = ref(false);

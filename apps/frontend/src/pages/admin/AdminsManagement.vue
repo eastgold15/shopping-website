@@ -404,7 +404,7 @@ const confirmDelete = (admin: Admin) => {
 };
 
 // 删除管理员
-const deleteAdmin = async (id: number) => {
+const deleteAdmin = async (_id: number) => {
 	try {
 		toast.add({
 			severity: "success",

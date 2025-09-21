@@ -1,9 +1,9 @@
 import type { CommonRes, PageData, PageRes } from "@backend/types";
 import type {
-  BaseQueryParams,
-  CrudDialogOptions,
-  CrudMode,
-  PrimeTemplateCrudHandler
+	BaseQueryParams,
+	CrudDialogOptions,
+	CrudMode,
+	PrimeTemplateCrudHandler,
 } from "@frontend/types/prime-cms";
 import type { UnPromisify } from "@frontend/utils/handleApi";
 import type { FormInstance } from "@primevue/forms";
@@ -17,9 +17,9 @@ import { computed, reactive, ref, toRaw } from "vue";
  * @param formEl 表单实例
  */
 export function resetForm(formEl: FormInstance | null) {
-  if (formEl) {
-    formEl.reset?.();
-  }
+	if (formEl) {
+		formEl.reset?.();
+	}
 }
 
 /**
@@ -27,18 +27,19 @@ export function resetForm(formEl: FormInstance | null) {
  * @param data 表单数据
  * @param imageData 图片数据
  */
-export function handleImageIdTransform<T extends Record<string, any>>(data: T, imageData?: any) {
-  if (imageData && imageData.id) {
-    data.image_id = imageData.id;
-    // 保留图片引用信息用于显示
-    data.imageRef = imageData;
-  } else if (!data.image_id) {
-    data.image_id = -1; // 设置默认值
-  }
-  return data;
+export function handleImageIdTransform<T extends Record<string, any>>(
+	data: T,
+	imageData?: any,
+) {
+	if (imageData?.id) {
+		data.image_id = imageData.id;
+		// 保留图片引用信息用于显示
+		data.imageRef = imageData;
+	} else if (!data.image_id) {
+		data.image_id = -1; // 设置默认值
+	}
+	return data;
 }
-
-
 
 /**
  * PrimeVue版本的CMS模板数据生成器
@@ -47,261 +48,269 @@ export function handleImageIdTransform<T extends Record<string, any>>(data: T, i
  * @returns 模板数据
  */
 export async function genPrimeCmsTemplateData<
-  T extends { id: number },
-  PageQuery extends BaseQueryParams,
-  TForm extends Record<string, any> = T,
+	T extends { id: number },
+	PageQuery extends BaseQueryParams,
+	TForm extends Record<string, any> = T,
 >(
-  dataCrudHandler: PrimeTemplateCrudHandler<T, PageQuery, TForm>,
-  queryData: Partial<PageQuery>,
+	dataCrudHandler: PrimeTemplateCrudHandler<T, PageQuery, TForm>,
+	queryData: Partial<PageQuery>,
 ) {
-  // PrimeVue服务
-  const confirm = useConfirm();
-  const toast = useToast();
+	// PrimeVue服务
+	const confirm = useConfirm();
+	const toast = useToast();
 
-  // 表单加载状态
-  const formLoading = ref(false);
+	// 表单加载状态
+	const formLoading = ref(false);
 
-  /**表格数据 */
-  const tableData = ref<PageData<T[]>>({
-    items: [],
-    meta: {
-      page: 1,
-      limit: 10,
-      total: 0,
-      totalPages: 0,
-    },
-  });
+	/**表格数据 */
+	const tableData = ref<PageData<T[]>>({
+		items: [],
+		meta: {
+			page: 1,
+			limit: 10,
+			total: 0,
+			totalPages: 0,
+		},
+	});
 
-  /**树形数据 */
-  const treeData = ref<T[]>([]);
+	/**树形数据 */
+	const treeData = ref<T[]>([]);
 
-  /**
-   * 搜索表单
-   */
-  const queryForm = reactive<Partial<PageQuery>>({ ...queryData });
+	/**
+	 * 搜索表单
+	 */
+	const queryForm = reactive<Partial<PageQuery>>({ ...queryData });
 
-  // 查询参数计算属性
-  const queryParams = computed<Partial<PageQuery>>(() => {
-    const rawQueryForm = toRaw(queryForm);
-    return {
-      page: tableData.value.meta.page,
-      limit: tableData.value.meta.limit,
-      ...(rawQueryForm as Partial<PageQuery>),
-    };
-  });
+	// 查询参数计算属性
+	const queryParams = computed<Partial<PageQuery>>(() => {
+		const rawQueryForm = toRaw(queryForm);
+		return {
+			page: tableData.value.meta.page,
+			limit: tableData.value.meta.limit,
+			...(rawQueryForm as Partial<PageQuery>),
+		};
+	});
 
-  // 类型守卫函数，用于检查是否提供了 getList 方法
-  function hasGetList(handler: PrimeTemplateCrudHandler<T, PageQuery, TForm>): handler is PrimeTemplateCrudHandler<T, PageQuery, TForm> & { getList: (query: Partial<PageQuery>) => Promise<PageRes<T[]>> } {
-    return 'getList' in handler;
-  }
+	// 类型守卫函数，用于检查是否提供了 getList 方法
+	function hasGetList(
+		handler: PrimeTemplateCrudHandler<T, PageQuery, TForm>,
+	): handler is PrimeTemplateCrudHandler<T, PageQuery, TForm> & {
+		getList: (query: Partial<PageQuery>) => Promise<PageRes<T[]>>;
+	} {
+		return "getList" in handler;
+	}
 
-  // 类型守卫函数，用于检查是否提供了 getTree 方法
-  function hasGetTree(handler: PrimeTemplateCrudHandler<T, PageQuery, TForm>): handler is PrimeTemplateCrudHandler<T, PageQuery, TForm> & { getTree: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>> } {
-    return 'getTree' in handler;
-  }
+	// 类型守卫函数，用于检查是否提供了 getTree 方法
+	function hasGetTree(
+		handler: PrimeTemplateCrudHandler<T, PageQuery, TForm>,
+	): handler is PrimeTemplateCrudHandler<T, PageQuery, TForm> & {
+		getTree: (query: Partial<PageQuery>) => Promise<CommonRes<T[]>>;
+	} {
+		return "getTree" in handler;
+	}
 
-  // 获取数据方法
-  const fetchList = async (params: Partial<PageQuery> = queryParams.value) => {
-    try {
-      formLoading.value = true;
-      const safeParams = omitBy(
-        params,
-        (v) => v == null || v === "",
-      ) as Partial<PageQuery>;
+	// 获取数据方法
+	const fetchList = async (params: Partial<PageQuery> = queryParams.value) => {
+		try {
+			formLoading.value = true;
+			const safeParams = omitBy(
+				params,
+				(v) => v == null || v === "",
+			) as Partial<PageQuery>;
 
-      // 使用类型守卫确保 getList 存在
-      if (!hasGetList(dataCrudHandler)) {
-        throw new Error('getList 方法未定义');
-      }
+			// 使用类型守卫确保 getList 存在
+			if (!hasGetList(dataCrudHandler)) {
+				throw new Error("getList 方法未定义");
+			}
 
-      const { code, data, message } = await dataCrudHandler.getList(safeParams);
+			const { code, data, message } = await dataCrudHandler.getList(safeParams);
 
-      if (code === 200) {
-        if (dataCrudHandler.onFetchSuccess) {
-          await dataCrudHandler.onFetchSuccess(data);
-          tableData.value = data;
-        } else {
-          tableData.value = data;
-        }
-      } else {
-        toast.add({
-          severity: "error",
-          summary: "查询失败",
-          detail: message || "数据获取失败",
-          life: 3000,
-        });
-      }
-    } catch (error) {
-      console.error("fetchList error:", error);
-      toast.add({
-        severity: "error",
-        summary: "查询异常",
-        detail: "网络异常，请稍后重试",
-        life: 3000,
-      });
-    } finally {
-      formLoading.value = false;
-    }
-  };
+			if (code === 200) {
+				if (dataCrudHandler.onFetchSuccess) {
+					await dataCrudHandler.onFetchSuccess(data);
+					tableData.value = data;
+				} else {
+					tableData.value = data;
+				}
+			} else {
+				toast.add({
+					severity: "error",
+					summary: "查询失败",
+					detail: message || "数据获取失败",
+					life: 3000,
+				});
+			}
+		} catch (error) {
+			console.error("fetchList error:", error);
+			toast.add({
+				severity: "error",
+				summary: "查询异常",
+				detail: "网络异常，请稍后重试",
+				life: 3000,
+			});
+		} finally {
+			formLoading.value = false;
+		}
+	};
 
-  // 获取树形数据方法
-  const fetchTree = async (params: Partial<PageQuery> = queryParams.value) => {
-    try {
-      formLoading.value = true;
-      const safeParams = omitBy(
-        params,
-        (v) => v == null || v === "",
-      ) as Partial<PageQuery>;
+	// 获取树形数据方法
+	const fetchTree = async (params: Partial<PageQuery> = queryParams.value) => {
+		try {
+			formLoading.value = true;
+			const safeParams = omitBy(
+				params,
+				(v) => v == null || v === "",
+			) as Partial<PageQuery>;
 
-      // 使用类型守卫确保 getTree 存在
-      if (!hasGetTree(dataCrudHandler)) {
-        throw new Error('getTree 方法未定义');
-      }
+			// 使用类型守卫确保 getTree 存在
+			if (!hasGetTree(dataCrudHandler)) {
+				throw new Error("getTree 方法未定义");
+			}
 
-      const { code, data, message } = await dataCrudHandler.getTree(safeParams);
+			const { code, data, message } = await dataCrudHandler.getTree(safeParams);
 
-      if (code === 200) {
-        treeData.value = data;
-      } else {
-        toast.add({
-          severity: "error",
-          summary: "查询失败",
-          detail: message || "树形数据获取失败",
-          life: 3000,
-        });
-      }
-    } catch (error) {
-      console.error("fetchTree error:", error);
-      toast.add({
-        severity: "error",
-        summary: "查询异常",
-        detail: "网络异常，请稍后重试",
-        life: 3000,
-      });
-    } finally {
-      formLoading.value = false;
-    }
-  };
+			if (code === 200) {
+				treeData.value = data;
+			} else {
+				toast.add({
+					severity: "error",
+					summary: "查询失败",
+					detail: message || "树形数据获取失败",
+					life: 3000,
+				});
+			}
+		} catch (error) {
+			console.error("fetchTree error:", error);
+			toast.add({
+				severity: "error",
+				summary: "查询异常",
+				detail: "网络异常，请稍后重试",
+				life: 3000,
+			});
+		} finally {
+			formLoading.value = false;
+		}
+	};
 
-  // 搜索表单
-  const FormSearch = async (
-    formEl: FormInstance | null,
-    param: Partial<PageQuery> = queryParams.value,
-  ) => {
-    try {
-      // 表单验证现在由Form组件自动处理，我们只需要调用fetchList
-      await fetchList(param);
-    } catch (error) {
-      console.error("表单搜索错误:", error);
-      await fetchList(param);
-    }
-  };
+	// 搜索表单
+	const FormSearch = async (
+		_formEl: FormInstance | null,
+		param: Partial<PageQuery> = queryParams.value,
+	) => {
+		try {
+			// 表单验证现在由Form组件自动处理，我们只需要调用fetchList
+			await fetchList(param);
+		} catch (error) {
+			console.error("表单搜索错误:", error);
+			await fetchList(param);
+		}
+	};
 
-  // CRUD对话框选项
-  const crudDialogOptions = ref<CrudDialogOptions<T>>({
-    visible: false,
-    mode: "NEW",
-    data: null,
-    loading: false,
-  });
+	// CRUD对话框选项
+	const crudDialogOptions = ref<CrudDialogOptions<T>>({
+		visible: false,
+		mode: "NEW",
+		data: null,
+		loading: false,
+	});
 
-  // 处理CRUD对话框
-  function handleCrudDialog(data: T | null, mode: CrudMode) {
-    crudDialogOptions.value = {
-      ...crudDialogOptions.value,
-      mode,
-      data: data || dataCrudHandler.getEmptyModel(),
-      visible: true,
-    };
-    dataCrudHandler.handleCrudDialog?.(data!, mode);
-  }
+	// 处理CRUD对话框
+	function handleCrudDialog(data: T | null, mode: CrudMode) {
+		crudDialogOptions.value = {
+			...crudDialogOptions.value,
+			mode,
+			data: data || dataCrudHandler.getEmptyModel(),
+			visible: true,
+		};
+		dataCrudHandler.handleCrudDialog?.(data!, mode);
+	}
 
-  // 删除数据
-  async function handleDeletes(ids: Array<number>) {
-    console.log("handleDeletes", ids);
-    confirm.require({
-      message: `你确定要删除${dataCrudHandler.getDeleteBoxTitles(ids)} 吗？删除后这个${dataCrudHandler.getDeleteBoxTitles(ids)}永久无法找回。`,
-      header: "确认删除",
-      icon: "pi pi-exclamation-triangle",
-      rejectClass: "p-button-secondary p-button-outlined",
-      rejectLabel: "取消",
-      acceptLabel: "确定删除",
-      acceptClass: "p-button-danger",
-      accept: async () => {
-        try {
-          let res: CommonRes<null>;
-          if (ids.length === 1) {
-            res = await dataCrudHandler.delete!(ids[0]!);
-          } else {
-            res = await dataCrudHandler.deletes!(ids);
-          }
+	// 删除数据
+	async function handleDeletes(ids: Array<number>) {
+		console.log("handleDeletes", ids);
+		confirm.require({
+			message: `你确定要删除${dataCrudHandler.getDeleteBoxTitles(ids)} 吗？删除后这个${dataCrudHandler.getDeleteBoxTitles(ids)}永久无法找回。`,
+			header: "确认删除",
+			icon: "pi pi-exclamation-triangle",
+			rejectClass: "p-button-secondary p-button-outlined",
+			rejectLabel: "取消",
+			acceptLabel: "确定删除",
+			acceptClass: "p-button-danger",
+			accept: async () => {
+				try {
+					let res: CommonRes<null>;
+					if (ids.length === 1) {
+						res = await dataCrudHandler.delete!(ids[0]!);
+					} else {
+						res = await dataCrudHandler.deletes!(ids);
+					}
 
-          if (res.code !== 204) {
-            toast.add({
-              severity: "error",
-              summary: "删除失败",
-              detail: res.message || "删除失败！",
-              life: 3000,
-            });
-            return;
-          }
+					if (res.code !== 204) {
+						toast.add({
+							severity: "error",
+							summary: "删除失败",
+							detail: res.message || "删除失败！",
+							life: 3000,
+						});
+						return;
+					}
 
-          await fetchList(); // 刷新数据
-          toast.add({
-            severity: "info",
-            summary: "删除成功",
-            detail: `你永久删除了${dataCrudHandler.getDeleteBoxTitles(ids)}！`,
-            life: 3000,
-          });
-        } catch (error) {
-          console.error("删除失败:", error);
-          toast.add({
-            severity: "error",
-            summary: "删除异常",
-            detail: "删除操作异常，请稍后重试",
-            life: 3000,
-          });
-        }
-      },
-      reject: () => {
-        toast.add({
-          severity: "info",
-          summary: "已取消",
-          detail: `已取消删除${dataCrudHandler.getDeleteBoxTitles(ids)}！`,
-          life: 3000,
-        });
-      },
-    });
-  }
+					await fetchList(); // 刷新数据
+					toast.add({
+						severity: "info",
+						summary: "删除成功",
+						detail: `你永久删除了${dataCrudHandler.getDeleteBoxTitles(ids)}！`,
+						life: 3000,
+					});
+				} catch (error) {
+					console.error("删除失败:", error);
+					toast.add({
+						severity: "error",
+						summary: "删除异常",
+						detail: "删除操作异常，请稍后重试",
+						life: 3000,
+					});
+				}
+			},
+			reject: () => {
+				toast.add({
+					severity: "info",
+					summary: "已取消",
+					detail: `已取消删除${dataCrudHandler.getDeleteBoxTitles(ids)}！`,
+					life: 3000,
+				});
+			},
+		});
+	}
 
+	const result = {
+		tableData,
+		treeData,
+		queryForm,
+		formLoading,
+		crudDialogOptions,
+		resetForm,
+		FormSearch,
+		handleCrudDialog,
+		fetchList,
+		fetchTree,
+		handleDeletes,
+		// 添加CRUD操作方法
+		create: dataCrudHandler.create,
+		update: dataCrudHandler.update,
+		transformSubmitData: dataCrudHandler.transformSubmitData,
+		// 添加图片处理工具函数
+		handleImageIdTransform,
+	};
 
-
-  const result = {
-    tableData,
-    treeData,
-    queryForm,
-    formLoading,
-    crudDialogOptions,
-    resetForm,
-    FormSearch,
-    handleCrudDialog,
-    fetchList,
-    fetchTree,
-    handleDeletes,
-    // 添加CRUD操作方法
-    create: dataCrudHandler.create,
-    update: dataCrudHandler.update,
-    transformSubmitData: dataCrudHandler.transformSubmitData,
-    // 添加图片处理工具函数
-    handleImageIdTransform,
-  };
-
-  return result;
+	return result;
 }
 
 // 自动提取类型
 export type GenCmsTemplateData<
-  T extends { id: number },
-  PageQuery extends BaseQueryParams,
-  TForm extends Record<string, any> = T,
-> = UnPromisify<ReturnType<typeof genPrimeCmsTemplateData<T, PageQuery, TForm>>>;
+	T extends { id: number },
+	PageQuery extends BaseQueryParams,
+	TForm extends Record<string, any> = T,
+> = UnPromisify<
+	ReturnType<typeof genPrimeCmsTemplateData<T, PageQuery, TForm>>
+>;

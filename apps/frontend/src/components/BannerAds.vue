@@ -63,7 +63,6 @@
 import { client } from "@frontend/utils/useTreaty";
 import type { Advertisement } from "../types/advertisement";
 
-
 // Props
 interface Props {
 	/** 广告位置 */
@@ -143,9 +142,9 @@ const loadBannerAds = async () => {
 	try {
 		const query = props.position ? { position: props.position } : {};
 
-		const { data, error } = await 
-			client.api.advertisements.get({ query: { ...query, type: 'banner' } }
-		);
+		const { data, error } = await client.api.advertisements.get({
+			query: { ...query, type: "banner" },
+		});
 
 		if (data) {
 			advertisements.value = data;

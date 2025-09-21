@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import type { SelectPartnersVo } from "@backend/types";
 import { useFrontApi } from "@frontend/utils/handleApi";
 
@@ -7,193 +6,179 @@ import { nextTick, onUnmounted, ref } from "vue";
 
 // 合作伙伴数据
 const partners = ref<SelectPartnersVo[]>([
-  {
-    id: 1,
-    name: "Partner 1",
-    imageRef: {
-      id: 1,
-      fileName: "partner1.jpg",
-      imageUrl: "https://via.placeholder.com/150",
-      category: "partner",
-      fileSize: 1024,
-      mimeType: "image/jpeg",
-      alt: "Partner 1",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    description: "This is a partner description.",
-    url: "https://example.com",
-    sortOrder: 0,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
+	{
+		id: 1,
+		name: "Partner 1",
+		imageRef: {
+			id: 1,
+			fileName: "partner1.jpg",
+			imageUrl: "https://via.placeholder.com/150",
+			category: "partner",
+			fileSize: 1024,
+			mimeType: "image/jpeg",
+			alt: "Partner 1",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		},
+		description: "This is a partner description.",
+		url: "https://example.com",
+		sortOrder: 0,
+		isActive: true,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	},
 ]);
 
 interface ViewConfig {
-  partners_intro_paragraphs: string[];
-  footer_copyright: string;
+	partners_intro_paragraphs: string[];
+	footer_copyright: string;
 }
 
-
-
-
-
-
-
-
-
 // 当前界面配置数据
-const viewConfig = ref<ViewConfig>(
-  {
-    partners_intro_paragraphs: [
-      "Founded in 2008 and headquartered in Dongguan since 2025, Dongqi Footwear combines decades of footwear expertise with global sales experience to serve international brands and industrial clients.",
-      "We specialize in high-performance outdoor and safety footwear — from puncture-proof work boots to athletic sneakers — all compliant with global standards and trusted by industries like power, mining, and electronics.",
-      "With two dedicated factories and certifications including BSCI, SEDEX, WRAP, Walmart, and Disney, we ensure responsible manufacturing and premium quality at scale.",
-      "Partner with us to step forward — together, we build durable footwear for every journey, and lasting value for every business."
-    ],
-    footer_copyright: "Copyright © 2023 Your Company. All rights reserved."
-  }
-);
-
-
+const viewConfig = ref<ViewConfig>({
+	partners_intro_paragraphs: [
+		"Founded in 2008 and headquartered in Dongguan since 2025, Dongqi Footwear combines decades of footwear expertise with global sales experience to serve international brands and industrial clients.",
+		"We specialize in high-performance outdoor and safety footwear — from puncture-proof work boots to athletic sneakers — all compliant with global standards and trusted by industries like power, mining, and electronics.",
+		"With two dedicated factories and certifications including BSCI, SEDEX, WRAP, Walmart, and Disney, we ensure responsible manufacturing and premium quality at scale.",
+		"Partner with us to step forward — together, we build durable footwear for every journey, and lasting value for every business.",
+	],
+	footer_copyright: "Copyright © 2023 Your Company. All rights reserved.",
+});
 
 const api = useFrontApi();
 // 加载合作伙伴数据
 const loadPartners = async () => {
-  try {
-    const { code, data, message } = await api.partner.all()
-    if (code == 200 && data) {
-      partners.value = data
-      console.log("合作伙伴数据:", message);
-    }
-  } catch (error) {
-    console.error("获取合作伙伴数据失败:", error);
-  }
+	try {
+		const { code, data, message } = await api.partner.all();
+		if (code == 200 && data) {
+			partners.value = data;
+			console.log("合作伙伴数据:", message);
+		}
+	} catch (error) {
+		console.error("获取合作伙伴数据失败:", error);
+	}
 };
-
-
 
 // 加载当前界面配置数据
 const loadViewConfig = async () => {
-  try {
-    const { code, data, message } = await api.siteConfigs.getByCategory("footer");
-    if (code === 200) {
-      console.log("配置数据", data)
-      // 将配置数组转换为对象，便于模板使用
-      const configObj: Record<string, any> = {};
-      if (!data) {
-        return
-      }
-      data.forEach((config) => {
-        configObj[config.key] = config.value || '空'
-      });
+	try {
+		const { code, data, message } =
+			await api.siteConfigs.getByCategory("footer");
+		if (code === 200) {
+			console.log("配置数据", data);
+			// 将配置数组转换为对象，便于模板使用
+			const configObj: Record<string, any> = {};
+			if (!data) {
+				return;
+			}
+			data.forEach((config) => {
+				configObj[config.key] = config.value || "空";
+			});
 
-      console.log("配置对象", configObj.partners_intro_paragraphs)
-      const grapgh = configObj.partners_intro_paragraphs
+			console.log("配置对象", configObj.partners_intro_paragraphs);
+			const grapgh = configObj.partners_intro_paragraphs;
 
+			const graphArr: string[] = Array.from(grapgh.split("//"));
 
-      const graphArr: string[] = Array.from(grapgh.split('//'))
-
-      console.log("graphArr", graphArr)
-      viewConfig.value = {
-        ...configObj,
-        footer_copyright: configObj.footer_copyright.replaceAll('\n', ''),
-        partners_intro_paragraphs: graphArr,
-      };
-      console.log("当前界面配置对象:", viewConfig.value);
-    }
-  } catch (error) {
-    console.error("获取当前界面配置失败:", error);
-  }
+			console.log("graphArr", graphArr);
+			viewConfig.value = {
+				...configObj,
+				footer_copyright: configObj.footer_copyright.replaceAll("\n", ""),
+				partners_intro_paragraphs: graphArr,
+			};
+			console.log("当前界面配置对象:", viewConfig.value);
+		}
+	} catch (error) {
+		console.error("获取当前界面配置失败:", error);
+	}
 };
 
 // 滚动吸附功能
 const initScrollSnap = () => {
-  let currentSectionIndex = 0;
-  const sections = document.querySelectorAll('section');
-  let isScrolling = false;
+	let currentSectionIndex = 0;
+	const sections = document.querySelectorAll("section");
+	let isScrolling = false;
 
-  const scrollToSection = (index: number) => {
-    if (index >= 0 && index < sections.length && sections[index]) {
-      isScrolling = true;
-      sections[index].scrollIntoView({ behavior: 'smooth' });
-      currentSectionIndex = index;
-      setTimeout(() => {
-        isScrolling = false;
-      }, 800);
-    }
-  };
-  const handleWheel = (e: WheelEvent) => {
-    if (isScrolling) {
-      e.preventDefault();
-      return;
-    }
+	const scrollToSection = (index: number) => {
+		if (index >= 0 && index < sections.length && sections[index]) {
+			isScrolling = true;
+			sections[index].scrollIntoView({ behavior: "smooth" });
+			currentSectionIndex = index;
+			setTimeout(() => {
+				isScrolling = false;
+			}, 800);
+		}
+	};
+	const handleWheel = (e: WheelEvent) => {
+		if (isScrolling) {
+			e.preventDefault();
+			return;
+		}
 
-    e.preventDefault();
+		e.preventDefault();
 
-    if (e.deltaY > 0) {
-      // 向下滚动
-      if (currentSectionIndex < sections.length - 1) {
-        scrollToSection(currentSectionIndex + 1);
-      }
-    } else {
-      // 向上滚动
-      if (currentSectionIndex > 0) {
-        scrollToSection(currentSectionIndex - 1);
-      }
-    }
-  };
+		if (e.deltaY > 0) {
+			// 向下滚动
+			if (currentSectionIndex < sections.length - 1) {
+				scrollToSection(currentSectionIndex + 1);
+			}
+		} else {
+			// 向上滚动
+			if (currentSectionIndex > 0) {
+				scrollToSection(currentSectionIndex - 1);
+			}
+		}
+	};
 
-  const handleKeydown = (e: KeyboardEvent) => {
-    if (isScrolling) return;
+	const handleKeydown = (e: KeyboardEvent) => {
+		if (isScrolling) return;
 
-    switch (e.key) {
-      case 'ArrowDown':
-      case 'PageDown':
-        e.preventDefault();
-        if (currentSectionIndex < sections.length - 1) {
-          scrollToSection(currentSectionIndex + 1);
-        }
-        break;
-      case 'ArrowUp':
-      case 'PageUp':
-        e.preventDefault();
-        if (currentSectionIndex > 0) {
-          scrollToSection(currentSectionIndex - 1);
-        }
-        break;
-    }
-  };
+		switch (e.key) {
+			case "ArrowDown":
+			case "PageDown":
+				e.preventDefault();
+				if (currentSectionIndex < sections.length - 1) {
+					scrollToSection(currentSectionIndex + 1);
+				}
+				break;
+			case "ArrowUp":
+			case "PageUp":
+				e.preventDefault();
+				if (currentSectionIndex > 0) {
+					scrollToSection(currentSectionIndex - 1);
+				}
+				break;
+		}
+	};
 
-  // 添加事件监听器
-  document.addEventListener('wheel', handleWheel, { passive: false });
-  document.addEventListener('keydown', handleKeydown);
+	// 添加事件监听器
+	document.addEventListener("wheel", handleWheel, { passive: false });
+	document.addEventListener("keydown", handleKeydown);
 
-  // 返回清理函数
-  return () => {
-    document.removeEventListener('wheel', handleWheel);
-    document.removeEventListener('keydown', handleKeydown);
-  };
+	// 返回清理函数
+	return () => {
+		document.removeEventListener("wheel", handleWheel);
+		document.removeEventListener("keydown", handleKeydown);
+	};
 };
 
 // 页面加载时的初始化
 onMounted(async () => {
-  console.log("首页已加载");
-  await Promise.all([loadPartners(), loadViewConfig()]);
+	console.log("首页已加载");
+	await Promise.all([loadPartners(), loadViewConfig()]);
 
-  // 等待DOM渲染完成后初始化滚动吸附
-  nextTick(() => {
-    // 延迟初始化，确保动态数据已加载
-    setTimeout(() => {
-      initScrollSnap();
-    }, 1000);
-  });
+	// 等待DOM渲染完成后初始化滚动吸附
+	nextTick(() => {
+		// 延迟初始化，确保动态数据已加载
+		setTimeout(() => {
+			initScrollSnap();
+		}, 1000);
+	});
 });
 
 // 组件卸载时清理
 onUnmounted(() => {
-  // 清理事件监听器会在initScrollSnap返回的函数中处理
+	// 清理事件监听器会在initScrollSnap返回的函数中处理
 });
 </script>
 

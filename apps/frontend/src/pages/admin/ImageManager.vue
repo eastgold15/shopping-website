@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { ListImagesQueryDto, SelectImagesVo } from "@backend/types";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
-import { formatDate, formatSize, getImageUrl } from "@frontend/utils/formatUtils";
+import {
+	formatDate,
+	formatSize,
+	getImageUrl,
+} from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
@@ -18,15 +22,18 @@ const $crud = useCmsApi().images;
 
 // 使用zod定义表单验证schema
 const imageSchema = z.object({
-  fileName: z.string().min(1, "文件名不能为空").max(255, "文件名不能超过255个字符"),
-  category: z.string().min(1, "请选择分类"),
-  alt: z.string().max(500, "Alt文本不能超过500个字符").optional(),
+	fileName: z
+		.string()
+		.min(1, "文件名不能为空")
+		.max(255, "文件名不能超过255个字符"),
+	category: z.string().min(1, "请选择分类"),
+	alt: z.string().max(500, "Alt文本不能超过500个字符").optional(),
 });
 
 // 查询表单验证schema
 const querySchema = z.object({
-  filename: z.string().max(255, "搜索文件名不能超过255个字符").optional(),
-  category: z.string().optional(),
+	filename: z.string().max(255, "搜索文件名不能超过255个字符").optional(),
+	category: z.string().optional(),
 });
 
 // 创建resolver
@@ -35,100 +42,100 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-  SelectImagesVo,
-  ListImagesQueryDto
+	SelectImagesVo,
+	ListImagesQueryDto
 >(
-  {
-    // 1. 定义查询表单
-    getList: async (params) => {
-      // 调用API获取图片列表
-      const result = await $crud.list(params as ListImagesQueryDto);
-      // 确保返回正确的类型
-      return result as any;
-    },
-    create: async (data) => {
-      // 图片创建通过上传实现，这里返回成功
-      return { code: 200, message: "操作成功", data: null };
-    },
-    update: async (id, data) => {
-      // 调用API更新图片信息
-      const result = await $crud.update(id, data);
-      // 确保返回正确的类型
-      return result as any;
-    },
-    delete: async (id) => {
-      // 调用API删除图片
-      const result = await $crud.delete(id);
-      // 确保返回正确的类型
-      return result as any;
-    },
-    deletes: async (ids) => {
-      // 调用API批量删除图片
-      const result = await $crud.batchDelete({ ids });
-      // 确保返回正确的类型
-      return result as any;
-    },
+	{
+		// 1. 定义查询表单
+		getList: async (params) => {
+			// 调用API获取图片列表
+			const result = await $crud.list(params as ListImagesQueryDto);
+			// 确保返回正确的类型
+			return result as any;
+		},
+		create: async (_data) => {
+			// 图片创建通过上传实现，这里返回成功
+			return { code: 200, message: "操作成功", data: null };
+		},
+		update: async (id, data) => {
+			// 调用API更新图片信息
+			const result = await $crud.update(id, data);
+			// 确保返回正确的类型
+			return result as any;
+		},
+		delete: async (id) => {
+			// 调用API删除图片
+			const result = await $crud.delete(id);
+			// 确保返回正确的类型
+			return result as any;
+		},
+		deletes: async (ids) => {
+			// 调用API批量删除图片
+			const result = await $crud.batchDelete({ ids });
+			// 确保返回正确的类型
+			return result as any;
+		},
 
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      id: 0,
-      fileName: "",
-      imageUrl: "",
-      category: "general",
-      fileSize: 0,
-      mimeType: "",
-      alt: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }),
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			fileName: "",
+			imageUrl: "",
+			category: "general",
+			fileSize: 0,
+			mimeType: "",
+			alt: "",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		}),
 
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除图片${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` 图片#${ids.join(",")} `;
-    },
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除图片${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` 图片#${ids.join(",")} `;
+		},
 
-    // 5. 数据转换
-    transformSubmitData: (data, type) => {
-      // 移除只读字段
-      // @ts-ignore
-      delete data.imageUrl;
-      // @ts-ignore
-      delete data.fileSize;
-      // @ts-ignore
-      delete data.mimeType;
-      // @ts-ignore
-      delete data.createdAt;
-      // @ts-ignore
-      delete data.updatedAt;
-    },
-  },
-  // 6. 定义查询表单
-  {
-    filename: "",
-    category: undefined,
-    page: 1,
-    limit: 12,
-  },
+		// 5. 数据转换
+		transformSubmitData: (data, _type) => {
+			// 移除只读字段
+			// @ts-ignore
+			delete data.imageUrl;
+			// @ts-ignore
+			delete data.fileSize;
+			// @ts-ignore
+			delete data.mimeType;
+			// @ts-ignore
+			delete data.createdAt;
+			// @ts-ignore
+			delete data.updatedAt;
+		},
+	},
+	// 6. 定义查询表单
+	{
+		filename: "",
+		category: undefined,
+		page: 1,
+		limit: 12,
+	},
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-  await fetchList();
+	await fetchList();
 });
 
 // 分类选项
 const categoryOptions = [
-  { label: "全部", value: "all" },
-  { label: "常规图", value: "general" },
-  { label: "轮播图", value: "banner" },
-  { label: "商品图片", value: "product" },
-  { label: "logo图片", value: "logo" },
-  { label: "头像图片", value: "avatar" },
-  { label: "其他图片", value: "other" },
+	{ label: "全部", value: "all" },
+	{ label: "常规图", value: "general" },
+	{ label: "轮播图", value: "banner" },
+	{ label: "商品图片", value: "product" },
+	{ label: "logo图片", value: "logo" },
+	{ label: "头像图片", value: "avatar" },
+	{ label: "其他图片", value: "other" },
 ];
 
 // 上传相关
@@ -136,8 +143,8 @@ const showUploadDialog = ref(false);
 
 // 上传成功回调
 const onUploadSuccess = async () => {
-  showUploadDialog.value = false;
-  await fetchList();
+	showUploadDialog.value = false;
+	await fetchList();
 };
 </script>
 

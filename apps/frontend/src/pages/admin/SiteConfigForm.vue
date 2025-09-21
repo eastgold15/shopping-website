@@ -1,22 +1,21 @@
 <script setup lang="ts">
-
 import type { SelectSiteConfigVo } from "@backend/types";
 import { useCmsApi } from "@frontend/utils/handleApi";
-import { Form } from '@primevue/forms';
-import { zodResolver } from '@primevue/forms/resolvers/zod';
-import Button from 'primevue/button';
-import Checkbox from 'primevue/checkbox';
-import InputNumber from 'primevue/inputnumber';
-import InputText from 'primevue/inputtext';
-import Message from 'primevue/message';
-import Select from 'primevue/select';
-import TabPanel from 'primevue/tabpanel';
-import TabView from 'primevue/tabview';
-import Textarea from 'primevue/textarea';
-import Toast from 'primevue/toast';
-import { useToast } from 'primevue/usetoast';
-import { nextTick, onMounted, ref } from 'vue';
-import { z } from 'zod';
+import { Form } from "@primevue/forms";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
+import Button from "primevue/button";
+import Checkbox from "primevue/checkbox";
+import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Select from "primevue/select";
+import TabPanel from "primevue/tabpanel";
+import TabView from "primevue/tabview";
+import Textarea from "primevue/textarea";
+import Toast from "primevue/toast";
+import { useToast } from "primevue/usetoast";
+import { nextTick, onMounted, ref } from "vue";
+import { z } from "zod";
 
 // 组合式API
 const toast = useToast();
@@ -29,401 +28,414 @@ const loading = ref(false);
 
 // 货币选项
 const currencyOptions = [
-  { label: "美元 (USD)", value: "USD" },
-  { label: "人民币 (CNY)", value: "CNY" },
-  { label: "欧元 (EUR)", value: "EUR" },
-  { label: "英镑 (GBP)", value: "GBP" },
+	{ label: "美元 (USD)", value: "USD" },
+	{ label: "人民币 (CNY)", value: "CNY" },
+	{ label: "欧元 (EUR)", value: "EUR" },
+	{ label: "英镑 (GBP)", value: "GBP" },
 ];
 
 // 帮助链接和底部栏目的响应式数据
 const headerHelpLinks = ref([{ text: "Help", url: "/help" }]);
 export interface footerLink {
-  title: string,
-  links: {
-    text: string,
-    url: string
-  }[]
+	title: string;
+	links: {
+		text: string;
+		url: string;
+	}[];
 }
 const footerSections = ref<footerLink[]>([
-  {
-    title: "For You",
-    links: [{ text: "Favorites", url: "/favorites" }],
-  },
+	{
+		title: "For You",
+		links: [{ text: "Favorites", url: "/favorites" }],
+	},
 ]);
 
 // 表单初始值
 const initialValues = ref({
-  // 基本设置
-  site_name: "",
-  site_logo: "",
-  currency: "USD",
+	// 基本设置
+	site_name: "",
+	site_logo: "",
+	currency: "USD",
 
-  // SEO设置
-  site_keywords: "",
-  site_description: "",
+	// SEO设置
+	site_keywords: "",
+	site_description: "",
 
-  // 导航页配置
-  nav_home_enabled: true,
-  nav_products_enabled: true,
-  nav_categories_enabled: true,
-  nav_about_enabled: true,
-  nav_contact_enabled: true,
+	// 导航页配置
+	nav_home_enabled: true,
+	nav_products_enabled: true,
+	nav_categories_enabled: true,
+	nav_about_enabled: true,
+	nav_contact_enabled: true,
 
-  // 网站顶部配置
-  header_banner_text: "",
-  header_banner_link: "",
-  header_track_order_text: "",
-  header_track_order_link: "",
-  free_shipping_threshold: 59,
-  header_search_enabled: true,
-  header_cart_enabled: true,
-  header_user_menu_enabled: true,
+	// 网站顶部配置
+	header_banner_text: "",
+	header_banner_link: "",
+	header_track_order_text: "",
+	header_track_order_link: "",
+	free_shipping_threshold: 59,
+	header_search_enabled: true,
+	header_cart_enabled: true,
+	header_user_menu_enabled: true,
 
-  // 底部配置
-  icp_number: "",
-  footer_copyright: "",
-  footer_back_to_top_text: "",
+	// 底部配置
+	icp_number: "",
+	footer_copyright: "",
+	footer_back_to_top_text: "",
 
-  // 伙伴介绍
-  partners_intro_paragraphs: ""
+	// 伙伴介绍
+	partners_intro_paragraphs: "",
 });
 
 // 表单验证规则
 const resolver = zodResolver(
-  z.object({
-    // 基本设置验证
-    site_name: z.string().optional(),
-    site_logo: z.string().optional(),
-    currency: z.string().min(1, { message: '请选择货币单位' }),
+	z.object({
+		// 基本设置验证
+		site_name: z.string().optional(),
+		site_logo: z.string().optional(),
+		currency: z.string().min(1, { message: "请选择货币单位" }),
 
-    // SEO设置验证
-    site_keywords: z.string().optional(),
-    site_description: z.string().optional(),
+		// SEO设置验证
+		site_keywords: z.string().optional(),
+		site_description: z.string().optional(),
 
-    // 导航页配置验证
-    nav_home_enabled: z.boolean().optional(),
-    nav_products_enabled: z.boolean().optional(),
-    nav_categories_enabled: z.boolean().optional(),
-    nav_about_enabled: z.boolean().optional(),
-    nav_contact_enabled: z.boolean().optional(),
+		// 导航页配置验证
+		nav_home_enabled: z.boolean().optional(),
+		nav_products_enabled: z.boolean().optional(),
+		nav_categories_enabled: z.boolean().optional(),
+		nav_about_enabled: z.boolean().optional(),
+		nav_contact_enabled: z.boolean().optional(),
 
-    // 网站顶部配置验证
-    header_banner_text: z.string().optional(),
-    header_banner_link: z.string().optional(),
-    header_track_order_text: z.string().optional(),
-    header_track_order_link: z.string().optional(),
-    free_shipping_threshold: z.number().min(0, { message: '免费配送门槛不能小于0' }).optional(),
-    header_search_enabled: z.boolean().optional(),
-    header_cart_enabled: z.boolean().optional(),
-    header_user_menu_enabled: z.boolean().optional(),
+		// 网站顶部配置验证
+		header_banner_text: z.string().optional(),
+		header_banner_link: z.string().optional(),
+		header_track_order_text: z.string().optional(),
+		header_track_order_link: z.string().optional(),
+		free_shipping_threshold: z
+			.number()
+			.min(0, { message: "免费配送门槛不能小于0" })
+			.optional(),
+		header_search_enabled: z.boolean().optional(),
+		header_cart_enabled: z.boolean().optional(),
+		header_user_menu_enabled: z.boolean().optional(),
 
-    // 底部配置验证
-    icp_number: z.string().optional(),
-    footer_copyright: z.string().optional(),
-    footer_back_to_top_text: z.string().optional(),
+		// 底部配置验证
+		icp_number: z.string().optional(),
+		footer_copyright: z.string().optional(),
+		footer_back_to_top_text: z.string().optional(),
 
-    // 伙伴介绍验证
-    partners_intro_paragraphs: z.string().optional(),
-  })
+		// 伙伴介绍验证
+		partners_intro_paragraphs: z.string().optional(),
+	}),
 );
 
 // 添加顶部帮助链接
 const addHeaderHelpLink = () => {
-  headerHelpLinks.value.push({ text: "", url: "" });
+	headerHelpLinks.value.push({ text: "", url: "" });
 };
 
 // 删除顶部帮助链接
 const removeHeaderHelpLink = (index: number) => {
-  if (headerHelpLinks.value.length > 1) {
-    headerHelpLinks.value.splice(index, 1);
-  }
+	if (headerHelpLinks.value.length > 1) {
+		headerHelpLinks.value.splice(index, 1);
+	}
 };
 
 // 添加底部栏目
 const addFooterSection = () => {
-  footerSections.value.push({
-    title: "",
-    links: [{ text: "", url: "" }],
-  });
+	footerSections.value.push({
+		title: "",
+		links: [{ text: "", url: "" }],
+	});
 };
 
 // 删除底部栏目
 const removeFooterSection = (index: number) => {
-  if (footerSections.value.length > 1) {
-    footerSections.value.splice(index, 1);
-  }
+	if (footerSections.value.length > 1) {
+		footerSections.value.splice(index, 1);
+	}
 };
 
 // 添加底部链接
 const addFooterLink = (sectionIndex: number) => {
-  footerSections?.value[sectionIndex]?.links.push({ text: "", url: "" });
+	footerSections?.value[sectionIndex]?.links.push({ text: "", url: "" });
 };
 
 // 删除底部链接
 const removeFooterLink = (sectionIndex: number, linkIndex: number) => {
-  const section = footerSections.value[sectionIndex];
-  if (section?.links?.length > 1) {
-    section.links.splice(linkIndex, 1);
-  }
+	const section = footerSections.value[sectionIndex];
+	if (section?.links?.length > 1) {
+		section.links.splice(linkIndex, 1);
+	}
 };
 
 // 配置处理策略映射表
 const configProcessors = {
-  // 数字类型处理器
-  number: (value: string, defaultValue: number = 0) => {
-    const num = Number(value);
-    return isNaN(num) ? defaultValue : num;
-  },
+	// 数字类型处理器
+	number: (value: string, defaultValue: number = 0) => {
+		const num = Number(value);
+		return isNaN(num) ? defaultValue : num;
+	},
 
-  // 布尔类型处理器
-  boolean: (value: string, defaultValue: boolean = false) => {
-    return value === "true" || (value === "" && defaultValue);
-  },
+	// 布尔类型处理器
+	boolean: (value: string, defaultValue: boolean = false) => {
+		return value === "true" || (value === "" && defaultValue);
+	},
 
-  // JSON数组类型处理器
-  jsonArray: (value: string, defaultValue: any[] = []) => {
-    try {
-      return JSON.parse(value || JSON.stringify(defaultValue));
-    } catch {
-      return defaultValue;
-    }
-  },
+	// JSON数组类型处理器
+	jsonArray: (value: string, defaultValue: any[] = []) => {
+		try {
+			return JSON.parse(value || JSON.stringify(defaultValue));
+		} catch {
+			return defaultValue;
+		}
+	},
 
-  // 字符串类型处理器
-  string: (value: string, defaultValue: string = "") => {
-    return value || defaultValue;
-  }
+	// 字符串类型处理器
+	string: (value: string, defaultValue: string = "") => {
+		return value || defaultValue;
+	},
 };
 
+const configTypeMap: Record<
+	string,
+	{
+		type: keyof typeof configProcessors;
+		defaultValue?: any;
+		target?: "form" | "ref"; // 指定数据存储位置
+		refName?: string; // 如果target是ref，指定ref的名称
+	}
+> = {
+	// 数字类型配置
+	free_shipping_threshold: { type: "number", defaultValue: 59 },
 
-const configTypeMap: Record<string, {
-  type: keyof typeof configProcessors;
-  defaultValue?: any;
-  target?: 'form' | 'ref'; // 指定数据存储位置
-  refName?: string; // 如果target是ref，指定ref的名称
-}> = {
-  // 数字类型配置
-  free_shipping_threshold: { type: 'number', defaultValue: 59 },
+	// 布尔类型配置（所有_enabled结尾的字段）
+	nav_home_enabled: { type: "boolean", defaultValue: true },
+	nav_products_enabled: { type: "boolean", defaultValue: true },
+	nav_categories_enabled: { type: "boolean", defaultValue: true },
+	nav_about_enabled: { type: "boolean", defaultValue: true },
+	nav_contact_enabled: { type: "boolean", defaultValue: true },
+	header_search_enabled: { type: "boolean", defaultValue: true },
+	header_cart_enabled: { type: "boolean", defaultValue: true },
+	header_user_menu_enabled: { type: "boolean", defaultValue: true },
 
-  // 布尔类型配置（所有_enabled结尾的字段）
-  nav_home_enabled: { type: 'boolean', defaultValue: true },
-  nav_products_enabled: { type: 'boolean', defaultValue: true },
-  nav_categories_enabled: { type: 'boolean', defaultValue: true },
-  nav_about_enabled: { type: 'boolean', defaultValue: true },
-  nav_contact_enabled: { type: 'boolean', defaultValue: true },
-  header_search_enabled: { type: 'boolean', defaultValue: true },
-  header_cart_enabled: { type: 'boolean', defaultValue: true },
-  header_user_menu_enabled: { type: 'boolean', defaultValue: true },
-
-  // JSON数组类型配置（存储到ref中）
-  header_help_links: {
-    type: 'jsonArray',
-    defaultValue: [{ text: "Help", url: "/help" }],
-    target: 'ref',
-    refName: 'headerHelpLinks'
-  },
-  footer_sections: {
-    type: 'jsonArray',
-    defaultValue: [{
-      title: "For You",
-      links: [{ text: "Favorites", url: "/favorites" }]
-    }],
-    target: 'ref',
-    refName: 'footerSections'
-  }
+	// JSON数组类型配置（存储到ref中）
+	header_help_links: {
+		type: "jsonArray",
+		defaultValue: [{ text: "Help", url: "/help" }],
+		target: "ref",
+		refName: "headerHelpLinks",
+	},
+	footer_sections: {
+		type: "jsonArray",
+		defaultValue: [
+			{
+				title: "For You",
+				links: [{ text: "Favorites", url: "/favorites" }],
+			},
+		],
+		target: "ref",
+		refName: "footerSections",
+	},
 };
 
 // 通用配置处理函数
 const processConfigValue = (key: string, value: string) => {
-  const config = configTypeMap[key];
+	const config = configTypeMap[key];
 
-  if (!config) {
-    // 默认按字符串处理
-    return configProcessors.string(value);
-  }
+	if (!config) {
+		// 默认按字符串处理
+		return configProcessors.string(value);
+	}
 
-  const processor = configProcessors[config.type];
-  return processor(value, config.defaultValue);
+	const processor = configProcessors[config.type];
+	return processor(value, config.defaultValue);
 };
 
 // 加载配置数据
 const loadConfigs = async () => {
-  try {
-    loading.value = true;
+	try {
+		loading.value = true;
 
-    const api = useCmsApi();
-    const { code, message, data } = await api.siteConfigs.all({ category: 'site' });
-    if (code === 200) {
-      // 将配置数组转换为对象并更新初始值
-      const configData: any = {};
+		const api = useCmsApi();
+		const { code, message, data } = await api.siteConfigs.all({
+			category: "site",
+		});
+		if (code === 200) {
+			// 将配置数组转换为对象并更新初始值
+			const configData: any = {};
 
-      data.forEach((config: SelectSiteConfigVo) => {
-        // 检查配置是否在initialValues中或者在configTypeMap中定义
-        if (config.key in initialValues.value || config.key in configTypeMap) {
-          const configMeta = configTypeMap[config.key];
-          const processedValue = processConfigValue(config.key, config.value);
+			data.forEach((config: SelectSiteConfigVo) => {
+				// 检查配置是否在initialValues中或者在configTypeMap中定义
+				if (config.key in initialValues.value || config.key in configTypeMap) {
+					const configMeta = configTypeMap[config.key];
+					const processedValue = processConfigValue(config.key, config.value);
 
-          // 根据配置决定存储位置
-          if (configMeta?.target === 'ref' && configMeta.refName) {
-            // 存储到指定的ref中
-            const targetRef = configMeta.refName === 'headerHelpLinks' ? headerHelpLinks : footerSections;
-            targetRef.value = processedValue;
-          } else {
-            // 存储到表单数据中
-            configData[config.key] = processedValue;
-          }
-        }
-      });
+					// 根据配置决定存储位置
+					if (configMeta?.target === "ref" && configMeta.refName) {
+						// 存储到指定的ref中
+						const targetRef =
+							configMeta.refName === "headerHelpLinks"
+								? headerHelpLinks
+								: footerSections;
+						targetRef.value = processedValue;
+					} else {
+						// 存储到表单数据中
+						configData[config.key] = processedValue;
+					}
+				}
+			});
 
-      // 更新初始值
-      Object.assign(initialValues.value, configData);
+			// 更新初始值
+			Object.assign(initialValues.value, configData);
 
-      // 强制重置表单以应用新的初始值
-      nextTick(() => {
-        if (formRef.value) {
-          formRef.value.reset();
-        }
-      });
-    } else {
-      console.error("API返回的数据格式错误:", { code, message, data });
-      toast.add({
-        severity: "error",
-        summary: "错误",
-        detail: "配置数据格式错误",
-        life: 3000,
-      });
-    }
-  } catch (error) {
-    console.error("加载配置失败:", error);
-    toast.add({
-      severity: "error",
-      summary: "错误",
-      detail: "加载配置失败",
-      life: 3000,
-    });
-  } finally {
-    loading.value = false;
-  }
+			// 强制重置表单以应用新的初始值
+			nextTick(() => {
+				if (formRef.value) {
+					formRef.value.reset();
+				}
+			});
+		} else {
+			console.error("API返回的数据格式错误:", { code, message, data });
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: "配置数据格式错误",
+				life: 3000,
+			});
+		}
+	} catch (error) {
+		console.error("加载配置失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "错误",
+			detail: "加载配置失败",
+			life: 3000,
+		});
+	} finally {
+		loading.value = false;
+	}
 };
 
 // 配置序列化策略映射表
 const configSerializers = {
-  // 数字类型序列化器
-  number: (value: number) => String(value),
+	// 数字类型序列化器
+	number: (value: number) => String(value),
 
-  // 布尔类型序列化器
-  boolean: (value: boolean) => value ? "true" : "false",
+	// 布尔类型序列化器
+	boolean: (value: boolean) => (value ? "true" : "false"),
 
-  // JSON数组类型序列化器
-  jsonArray: (value: any[]) => JSON.stringify(value),
+	// JSON数组类型序列化器
+	jsonArray: (value: any[]) => JSON.stringify(value),
 
-  // 字符串类型序列化器
-  string: (value: string) => value
+	// 字符串类型序列化器
+	string: (value: string) => value,
 };
 
 // 通用配置序列化函数
 const serializeConfigValue = (key: string, value: any) => {
-  const config = configTypeMap[key];
+	const config = configTypeMap[key];
 
-  if (!config) {
-    // 默认按字符串处理
-    return configSerializers.string(String(value));
-  }
+	if (!config) {
+		// 默认按字符串处理
+		return configSerializers.string(String(value));
+	}
 
-  const serializer = configSerializers[config.type];
-  return serializer(value);
+	const serializer = configSerializers[config.type];
+	return serializer(value);
 };
 
 // 表单提交处理
 const onFormSubmit = async (formData: any) => {
-  if (formData.valid) {
-    try {
-      saving.value = true;
+	if (formData.valid) {
+		try {
+			saving.value = true;
 
-      // 准备批量更新数据 - 合并表单数据和初始值
-      const allFormData = { ...initialValues.value, ...formData.values };
-      const updateData = Object.entries(allFormData).map(([key, value]) => ({
-        key,
-        value: serializeConfigValue(key, value)
-      }));
+			// 准备批量更新数据 - 合并表单数据和初始值
+			const allFormData = { ...initialValues.value, ...formData.values };
+			const updateData = Object.entries(allFormData).map(([key, value]) => ({
+				key,
+				value: serializeConfigValue(key, value),
+			}));
 
-      console.log('提交的表单数据:', allFormData);
-      console.log('序列化后的更新数据:', updateData);
+			console.log("提交的表单数据:", allFormData);
+			console.log("序列化后的更新数据:", updateData);
 
-      // 添加ref中的配置数据
-      const refConfigs = [
-        { key: "header_help_links", value: headerHelpLinks.value },
-        { key: "footer_sections", value: footerSections.value }
-      ];
+			// 添加ref中的配置数据
+			const refConfigs = [
+				{ key: "header_help_links", value: headerHelpLinks.value },
+				{ key: "footer_sections", value: footerSections.value },
+			];
 
-      refConfigs.forEach(({ key, value }) => {
-        updateData.push({
-          key,
-          value: serializeConfigValue(key, value)
-        });
-      });
+			refConfigs.forEach(({ key, value }) => {
+				updateData.push({
+					key,
+					value: serializeConfigValue(key, value),
+				});
+			});
 
-      const api = useCmsApi();
-      const { code, data, message } = await api.siteConfigs.batchUpdate(updateData);
+			const api = useCmsApi();
+			const { code, data, message } =
+				await api.siteConfigs.batchUpdate(updateData);
 
-      if (code === 200) {
-        // 保存成功后重新加载配置数据，确保表单显示最新值
-        await loadConfigs();
-        toast.add({
-          severity: "success",
-          summary: "成功",
-          detail: "配置保存成功",
-          life: 3000,
-        });
-      } else {
-        throw new Error(message || "保存失败");
-      }
-    } catch (error) {
-      console.error("保存配置失败:", error);
-      toast.add({
-        severity: "error",
-        summary: "错误",
-        detail: "保存配置失败",
-        life: 3000,
-      });
-    } finally {
-      saving.value = false;
-    }
-  }
+			if (code === 200) {
+				// 保存成功后重新加载配置数据，确保表单显示最新值
+				await loadConfigs();
+				toast.add({
+					severity: "success",
+					summary: "成功",
+					detail: "配置保存成功",
+					life: 3000,
+				});
+			} else {
+				throw new Error(message || "保存失败");
+			}
+		} catch (error) {
+			console.error("保存配置失败:", error);
+			toast.add({
+				severity: "error",
+				summary: "错误",
+				detail: "保存配置失败",
+				life: 3000,
+			});
+		} finally {
+			saving.value = false;
+		}
+	}
 };
 
 // 使用表单实例提交
 const submitForm = () => {
-  if (formRef.value) {
-    formRef.value.submit();
-  }
+	if (formRef.value) {
+		formRef.value.submit();
+	}
 };
 
 // 重置表单
 const resetForm = () => {
-  if (formRef.value) {
-    formRef.value.reset();
-    // 重置额外的响应式数据
-    headerHelpLinks.value = [{ text: "Help", url: "/help" }];
-    footerSections.value = [
-      {
-        title: "For You",
-        links: [{ text: "Favorites", url: "/favorites" }],
-      },
-    ];
+	if (formRef.value) {
+		formRef.value.reset();
+		// 重置额外的响应式数据
+		headerHelpLinks.value = [{ text: "Help", url: "/help" }];
+		footerSections.value = [
+			{
+				title: "For You",
+				links: [{ text: "Favorites", url: "/favorites" }],
+			},
+		];
 
-    toast.add({
-      severity: "info",
-      summary: "提示",
-      detail: "表单已重置",
-      life: 3000,
-    });
-  }
+		toast.add({
+			severity: "info",
+			summary: "提示",
+			detail: "表单已重置",
+			life: 3000,
+		});
+	}
 };
 
 // 组件挂载时加载数据
 onMounted(async () => {
-  await loadConfigs();
+	await loadConfigs();
 });
 </script>
 

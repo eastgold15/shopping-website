@@ -1,49 +1,43 @@
 {
-  "compilerOptions": {
-    /* 基础选项 */
-    "target": "ES2022", // 使用现代 ES 特性，Bun/Node 都支持
-    "module": "ESNext", // 【关键】输出 ESM 格式，Bun 的首选，也适用于现代 Node
-    "moduleResolution": "Bundler", // 【关键】Bun 本身也是一个打包器，用 Bundler 策略最匹配。如果用 Node 则改为 "NodeNext"
-    "moduleDetection": "force", // 强制所有文件都是模块，避免全局污染
-    "allowSyntheticDefaultImports": true, // 允许没有默认导出的模块用默认导入（兼容性）
-    "esModuleInterop": true, // 提供 ESM 和 CJS 互操作的运行时帮助
-    /* 输出控制 */
-    "outDir": "./dist", // 编译输出目录
-    "removeComments": true, // 移除注释，减小体积
-    "sourceMap": true, // 生成 source map，便于调试
-    /* 类型检查严格性（推荐开启） */
-    "forceConsistentCasingInFileNames": true, // 强制文件名大小写一致
-    /* Elysia 开发体验优化 */
-    // "allowImportingTsExtensions": true, // 如果你直接用 Bun 运行 .ts 文件，这个很有用
-    "noEmitOnError": false, // 即使有类型错误也发出文件（Bun 有时需要）
-    "types": [
-      "bun-types"
-    ],
-    "declaration": true,
-    "declarationMap": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "incremental": false,
-    "isolatedModules": true,
-    /* 路径映射（必须与 vite.config.ts 中的 alias 匹配） */
-    "baseUrl": ".",
-    "paths": {
-      "@backend/*": [
-        "../backend/src/*"
-      ],
-      "@backend/types": [
-        "../backend/src/types/index.ts"
-      ]
-    }
-  },
-  "include": [
-    "src/**/*", // 包含 src 目录下所有文件
-    "test/**/*", // 包含测试文件
-    "types/**/*" // 包含自定义类型文件
-  ],
-  "exclude": [
-    "node_modules",
-    "dist" // 排除输出目录
-  ]
+	"compilerOptions": {
+		/* 基础选项 */
+		"target": "ES2022", // 使用现代 ES 特性，Bun/Node 都支持
+		"module": "ESNext", // 【关键】输出 ESM 格式，Bun 的首选，也适用于现代 Node
+		"moduleResolution": "Bundler", // 【关键】Bun 本身也是一个打包器，用 Bundler 策略最匹配。如果用 Node 则改为 "NodeNext"
+		"moduleDetection": "force", // 强制所有文件都是模块，避免全局污染
+		"allowSyntheticDefaultImports": true, // 允许没有默认导出的模块用默认导入（兼容性）
+		"esModuleInterop": true, // 提供 ESM 和 CJS 互操作的运行时帮助
+		/* 输出控制 */
+		"outDir": "./dist", // 编译输出目录
+		"removeComments": true, // 移除注释，减小体积
+		"sourceMap": true, // 生成 source map，便于调试
+		/* 类型检查严格性（推荐开启） */
+		"forceConsistentCasingInFileNames": true, // 强制文件名大小写一致
+		/* Elysia 开发体验优化 */
+		// "allowImportingTsExtensions": true, // 如果你直接用 Bun 运行 .ts 文件，这个很有用
+		"noEmitOnError": false, // 即使有类型错误也发出文件（Bun 有时需要）
+		"types": ["bun-types"],
+		"declaration": true,
+		"declarationMap": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"incremental": false,
+		"isolatedModules": true,
+		/* 路径映射（必须与 vite.config.ts 中的 alias 匹配） */
+		"baseUrl": ".",
+		"paths": {
+			"@backend/*": ["../backend/src/*"],
+			"@backend/types": ["../backend/src/types/index.ts"]
+		}
+	},
+	"include": [
+		"src/**/*", // 包含 src 目录下所有文件
+		"test/**/*", // 包含测试文件
+		"types/**/*" // 包含自定义类型文件
+	],
+	"exclude": [
+		"node_modules",
+		"dist" // 排除输出目录
+	]
 }

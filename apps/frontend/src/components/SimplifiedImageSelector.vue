@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
 import type { SelectImagesVo } from "@backend/types";
 import { getImageUrl } from "@frontend/utils/formatUtils";
+import { computed, ref } from "vue";
 
 // Props
 interface Props {
-  modelValue?: number;
-  placeholder?: string;
-  category?: string;
+	modelValue?: number;
+	placeholder?: string;
+	category?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  modelValue: undefined,
-  placeholder: "选择图片",
-  category: "all",
+	modelValue: undefined,
+	placeholder: "选择图片",
+	category: "all",
 });
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: number | undefined): void;
-  (e: "select", imageUrl: string, imageData: SelectImagesVo): void;
+	(e: "update:modelValue", value: number | undefined): void;
+	(e: "select", imageUrl: string, imageData: SelectImagesVo): void;
 }>();
 
 // 响应式数据
@@ -27,67 +27,67 @@ const showSelector = ref(false);
 
 // 计算属性
 const displayValue = computed(() => {
-  if (selectedImage.value) {
-    return selectedImage.value.fileName;
-  }
-  return props.placeholder;
+	if (selectedImage.value) {
+		return selectedImage.value.fileName;
+	}
+	return props.placeholder;
 });
 
 // 方法
 const selectImage = (image: SelectImagesVo) => {
-  selectedImage.value = image;
-  emit("update:modelValue", image.id);
-  emit("select", getImageUrl(image.imageUrl), image);
-  showSelector.value = false;
+	selectedImage.value = image;
+	emit("update:modelValue", image.id);
+	emit("select", getImageUrl(image.imageUrl), image);
+	showSelector.value = false;
 };
 
 const removeSelection = () => {
-  selectedImage.value = null;
-  emit("update:modelValue", undefined);
+	selectedImage.value = null;
+	emit("update:modelValue", undefined);
 };
 
 // 模拟图片数据 - 实际使用时应从API获取
 const images = ref<SelectImagesVo[]>([
-  {
-    id: 1,
-    fileName: "product-1.jpg",
-    imageUrl: "/images/product-1.jpg",
-    category: "product",
-    fileSize: 102400,
-    mimeType: "image/jpeg",
-    alt: "Product 1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 2,
-    fileName: "product-2.jpg",
-    imageUrl: "/images/product-2.jpg",
-    category: "product",
-    fileSize: 204800,
-    mimeType: "image/jpeg",
-    alt: "Product 2",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 3,
-    fileName: "logo.png",
-    imageUrl: "/images/logo.png",
-    category: "logo",
-    fileSize: 51200,
-    mimeType: "image/png",
-    alt: "Logo",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
+	{
+		id: 1,
+		fileName: "product-1.jpg",
+		imageUrl: "/images/product-1.jpg",
+		category: "product",
+		fileSize: 102400,
+		mimeType: "image/jpeg",
+		alt: "Product 1",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	},
+	{
+		id: 2,
+		fileName: "product-2.jpg",
+		imageUrl: "/images/product-2.jpg",
+		category: "product",
+		fileSize: 204800,
+		mimeType: "image/jpeg",
+		alt: "Product 2",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	},
+	{
+		id: 3,
+		fileName: "logo.png",
+		imageUrl: "/images/logo.png",
+		category: "logo",
+		fileSize: 51200,
+		mimeType: "image/png",
+		alt: "Logo",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	},
 ]);
 
 const filteredImages = computed(() => {
-  if (props.category === "all") {
-    return images.value;
-  }
-  return images.value.filter(image => image.category === props.category);
+	if (props.category === "all") {
+		return images.value;
+	}
+	return images.value.filter((image) => image.category === props.category);
 });
 </script>
 

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { SelectAdvertisementsVo, SelectProductVo } from "@backend/types";
-import { computed, onUnmounted } from 'vue';
+import { computed, onUnmounted } from "vue";
 import { useCmsApi } from "../utils/handleApi";
-
 
 // 路由
 const router = useRouter();
@@ -12,13 +11,11 @@ const router = useRouter();
 const hotProducts = ref<SelectProductVo[]>([]);
 const loadingProducts = ref(false);
 
-
-
 const pageMeta = ref({
-  total: 0,
-  page: 1,
-  limit: 10,
-  totalPages: 0,
+	total: 0,
+	page: 1,
+	limit: 10,
+	totalPages: 0,
 });
 const api = useCmsApi();
 // 方法
@@ -26,68 +23,74 @@ const api = useCmsApi();
  * 加载热门商品
  */
 const loadHotProducts = async () => {
-  try {
-    loadingProducts.value = true;
-    const res = await api.products.list({
-      page: 1,
-      limit: 10,
-    });
-    console.log("response", res);
+	try {
+		loadingProducts.value = true;
+		const res = await api.products.list({
+			page: 1,
+			limit: 10,
+		});
+		console.log("response", res);
 
-    if (!res) {
-      return;
-    }
-    if (res.code === 200) {
-      // 处理商品数据，添加必要的字段
-      hotProducts.value = (res.data?.items as any[])?.map(item => ({
-        ...item,
-        // 确保价格是数字类型
-        price: parseFloat(item.price),
-        // 计算原价（如果没有comparePrice，则设为价格的1.2倍）
-        originalPrice: item.comparePrice && parseFloat(item.comparePrice) > 0
-          ? parseFloat(item.comparePrice)
-          : parseFloat(item.price) * 1.2,
-        // 处理图片URL，移除反引号
-        imageUrl: item.images && item.images.length > 0
-          ? item.images[0].url.replace(/`/g, '')
-          : 'https://via.placeholder.com/300x300?text=' + encodeURIComponent(item.name),
-        // 计算折扣百分比
-        discount: item.comparePrice && parseFloat(item.comparePrice) > 0
-          ? Math.round((1 - parseFloat(item.price) / parseFloat(item.comparePrice)) * 100)
-          : Math.floor(Math.random() * 20) + 10,
-        // 添加评分（模拟数据）
-        rating: (Math.random() * 2 + 3).toFixed(1), // 3.0-5.0之间的评分
-        reviewCount: Math.floor(Math.random() * 500) + 10 // 10-510之间的评论数
-      })) || [];
-      pageMeta.value = res.data?.meta as any;
-    }
-  } catch (error) {
-    console.error("加载热门商品失败:", error);
-  } finally {
-    loadingProducts.value = false;
-  }
+		if (!res) {
+			return;
+		}
+		if (res.code === 200) {
+			// 处理商品数据，添加必要的字段
+			hotProducts.value =
+				(res.data?.items as any[])?.map((item) => ({
+					...item,
+					// 确保价格是数字类型
+					price: parseFloat(item.price),
+					// 计算原价（如果没有comparePrice，则设为价格的1.2倍）
+					originalPrice:
+						item.comparePrice && parseFloat(item.comparePrice) > 0
+							? parseFloat(item.comparePrice)
+							: parseFloat(item.price) * 1.2,
+					// 处理图片URL，移除反引号
+					imageUrl:
+						item.images && item.images.length > 0
+							? item.images[0].url.replace(/`/g, "")
+							: "https://via.placeholder.com/300x300?text=" +
+								encodeURIComponent(item.name),
+					// 计算折扣百分比
+					discount:
+						item.comparePrice && parseFloat(item.comparePrice) > 0
+							? Math.round(
+									(1 - parseFloat(item.price) / parseFloat(item.comparePrice)) *
+										100,
+								)
+							: Math.floor(Math.random() * 20) + 10,
+					// 添加评分（模拟数据）
+					rating: (Math.random() * 2 + 3).toFixed(1), // 3.0-5.0之间的评分
+					reviewCount: Math.floor(Math.random() * 500) + 10, // 10-510之间的评论数
+				})) || [];
+			pageMeta.value = res.data?.meta as any;
+		}
+	} catch (error) {
+		console.error("加载热门商品失败:", error);
+	} finally {
+		loadingProducts.value = false;
+	}
 };
 
 const carouselAds = ref<SelectAdvertisementsVo[]>([]);
-
-
 
 /**
  * 加载轮播图广告
  */
 const loadCarouselAds = async () => {
-  try {
-    // 使用真实的广告API数据
-    const res = await api.advertisements.list({ type: "carousel" })
-    console.log('用真实的广告API数据:', res)
+	try {
+		// 使用真实的广告API数据
+		const res = await api.advertisements.list({ type: "carousel" });
+		console.log("用真实的广告API数据:", res);
 
-    // 处理API返回的数据
-    if (res.code === 200) {
-      carouselAds.value = res.data.items as any
-    }
-  } catch (error) {
-    console.error("加载轮播广告失败:", error);
-  }
+		// 处理API返回的数据
+		if (res.code === 200) {
+			carouselAds.value = res.data.items as any;
+		}
+	} catch (error) {
+		console.error("加载轮播广告失败:", error);
+	}
 };
 loadCarouselAds();
 
@@ -95,18 +98,15 @@ loadCarouselAds();
  * 查看商品详情
  */
 const viewProduct = (productId: number) => {
-  router.push(`/product/${productId}`);
+	router.push(`/product/${productId}`);
 };
 
 /**
  * 查看所有商品
  */
 const viewAllProducts = () => {
-  router.push("/products");
+	router.push("/products");
 };
-
-
-
 
 // 轮播图控制方法
 const currentSlide = ref(0); // 当前轮播图索引
@@ -114,68 +114,66 @@ const totalSlides = computed(() => carouselAds.value.length); // 总轮播图数
 let autoPlayTimer: NodeJS.Timeout | null = null;
 
 const prevSlide = () => {
-  if (currentSlide.value > 0) {
-    currentSlide.value--;
-  } else {
-    // 循环到最后一张
-    currentSlide.value = totalSlides.value - 1;
-  }
+	if (currentSlide.value > 0) {
+		currentSlide.value--;
+	} else {
+		// 循环到最后一张
+		currentSlide.value = totalSlides.value - 1;
+	}
 };
 
 const nextSlide = () => {
-  if (currentSlide.value < totalSlides.value - 1) {
-    currentSlide.value++;
-  } else {
-    // 循环到第一张
-    currentSlide.value = 0;
-  }
+	if (currentSlide.value < totalSlides.value - 1) {
+		currentSlide.value++;
+	} else {
+		// 循环到第一张
+		currentSlide.value = 0;
+	}
 };
 
 const goToSlide = (index: number) => {
-  currentSlide.value = index;
+	currentSlide.value = index;
 };
 
 const handleImageClick = (ad: SelectAdvertisementsVo) => {
-  if (ad.link) {
-    router.push(ad.link);
-  }
+	if (ad.link) {
+		router.push(ad.link);
+	}
 };
 
 // 获取商品图片URL
 const getProductImage = (product: any) => {
-  if (product.images && product.images.length > 0) {
-    // 移除URL中的反引号
-    return product.images[0].url.replace(/`/g, '').trim();
-  }
-  return `https://via.placeholder.com/300x300?text=${encodeURIComponent(product.name)}`;
+	if (product.images && product.images.length > 0) {
+		// 移除URL中的反引号
+		return product.images[0].url.replace(/`/g, "").trim();
+	}
+	return `https://via.placeholder.com/300x300?text=${encodeURIComponent(product.name)}`;
 };
 
 // 自动播放功能
 const startAutoPlay = () => {
-  if (autoPlayTimer) clearInterval(autoPlayTimer);
-  autoPlayTimer = setInterval(() => {
-    nextSlide();
-  }, 5000); // 每5秒切换一次
+	if (autoPlayTimer) clearInterval(autoPlayTimer);
+	autoPlayTimer = setInterval(() => {
+		nextSlide();
+	}, 5000); // 每5秒切换一次
 };
 
 const stopAutoPlay = () => {
-  if (autoPlayTimer) {
-    clearInterval(autoPlayTimer);
-    autoPlayTimer = null;
-  }
+	if (autoPlayTimer) {
+		clearInterval(autoPlayTimer);
+		autoPlayTimer = null;
+	}
 };
 
 // 生命周期
 onMounted(() => {
-  loadHotProducts();
-  startAutoPlay();
+	loadHotProducts();
+	startAutoPlay();
 });
 
 onUnmounted(() => {
-  stopAutoPlay();
+	stopAutoPlay();
 });
-
-
 </script>
 
 

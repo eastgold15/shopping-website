@@ -86,25 +86,25 @@
 </template>
 
 <script setup lang="ts">
-import type { SelectImagesVo } from '@backend/types';
-import { formatDate, getImageUrl } from '@frontend/utils/formatUtils';
-import { computed, ref } from 'vue';
+import type { SelectImagesVo } from "@backend/types";
+import { formatDate, getImageUrl } from "@frontend/utils/formatUtils";
+import { computed, ref } from "vue";
 
 interface Props {
-  images?: SelectImagesVo[];
-  maxDisplay?: number; // 最大显示数量，默认为1
-  size?: 'small' | 'medium' | 'large'; // 图片尺寸
-  showIndicator?: boolean; // 是否显示图片数量指示器
+	images?: SelectImagesVo[];
+	maxDisplay?: number; // 最大显示数量，默认为1
+	size?: "small" | "medium" | "large"; // 图片尺寸
+	showIndicator?: boolean; // 是否显示图片数量指示器
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  images: () => [],
-  maxDisplay: 1,
-  size: 'small',
-  showIndicator: true,
+	images: () => [],
+	maxDisplay: 1,
+	size: "small",
+	showIndicator: true,
 });
 
-console.log("preview", props.images)
+console.log("preview", props.images);
 
 // 响应式数据
 const previewVisible = ref(false);
@@ -112,94 +112,95 @@ const currentImageIndex = ref(0);
 
 // 计算属性
 const imageList = computed(() => {
-  return props.images || [];
+	return props.images || [];
 });
 
 const mainImage = computed(() => {
-  return imageList.value[0] || null;
+	return imageList.value[0] || null;
 });
 
 const currentImage = computed(() => {
-  return imageList.value[currentImageIndex.value] || null;
+	return imageList.value[currentImageIndex.value] || null;
 });
 
 // 方法
 const openPreview = () => {
-  if (imageList.value.length === 0) return;
+	if (imageList.value.length === 0) return;
 
-  currentImageIndex.value = 0;
-  previewVisible.value = true;
+	currentImageIndex.value = 0;
+	previewVisible.value = true;
 };
 
 const selectImage = (index: number) => {
-  currentImageIndex.value = index;
+	currentImageIndex.value = index;
 };
 
 const previousImage = () => {
-  if (currentImageIndex.value > 0) {
-    currentImageIndex.value--;
-  }
+	if (currentImageIndex.value > 0) {
+		currentImageIndex.value--;
+	}
 };
 
 const nextImage = () => {
-  if (currentImageIndex.value < imageList.value.length - 1) {
-    currentImageIndex.value++;
-  }
+	if (currentImageIndex.value < imageList.value.length - 1) {
+		currentImageIndex.value++;
+	}
 };
 
 const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement;
-  img.style.display = 'none';
-  const container = img.closest('.main-image-container');
-  if (container) {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'no-image-placeholder';
-    placeholder.innerHTML = '<i class="pi pi-image"></i>';
-    container.appendChild(placeholder);
-  }
+	const img = event.target as HTMLImageElement;
+	img.style.display = "none";
+	const container = img.closest(".main-image-container");
+	if (container) {
+		const placeholder = document.createElement("div");
+		placeholder.className = "no-image-placeholder";
+		placeholder.innerHTML = '<i class="pi pi-image"></i>';
+		container.appendChild(placeholder);
+	}
 };
 
 const handlePreviewImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement;
-  img.style.display = 'none';
-  const container = img.closest('.main-preview-area');
-  if (container) {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'no-preview-image';
-    placeholder.innerHTML = '<i class="pi pi-image"></i><span>图片加载失败</span>';
-    container.appendChild(placeholder);
-  }
+	const img = event.target as HTMLImageElement;
+	img.style.display = "none";
+	const container = img.closest(".main-preview-area");
+	if (container) {
+		const placeholder = document.createElement("div");
+		placeholder.className = "no-preview-image";
+		placeholder.innerHTML =
+			'<i class="pi pi-image"></i><span>图片加载失败</span>';
+		container.appendChild(placeholder);
+	}
 };
 
 const handleThumbnailError = (event: Event) => {
-  const img = event.target as HTMLImageElement;
-  img.style.display = 'none';
-  const thumbnailItem = img.closest('.thumbnail-item');
-  if (thumbnailItem) {
-    thumbnailItem.classList.add('thumbnail-error');
-  }
+	const img = event.target as HTMLImageElement;
+	img.style.display = "none";
+	const thumbnailItem = img.closest(".thumbnail-item");
+	if (thumbnailItem) {
+		thumbnailItem.classList.add("thumbnail-error");
+	}
 };
 
 const formatFileSize = (bytes?: number): string => {
-  if (!bytes) return '未知大小';
+	if (!bytes) return "未知大小";
 
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  if (bytes === 0) return '0 B';
+	const sizes = ["B", "KB", "MB", "GB"];
+	if (bytes === 0) return "0 B";
 
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+	const i = Math.floor(Math.log(bytes) / Math.log(1024));
+	return `${Math.round((bytes / 1024 ** i) * 100) / 100} ${sizes[i]}`;
 };
 
 // 图片尺寸类
 const getImageSizeClass = computed(() => {
-  switch (props.size) {
-    case 'medium':
-      return 'image-medium';
-    case 'large':
-      return 'image-large';
-    default:
-      return 'image-small';
-  }
+	switch (props.size) {
+		case "medium":
+			return "image-medium";
+		case "large":
+			return "image-large";
+		default:
+			return "image-small";
+	}
 });
 </script>
 

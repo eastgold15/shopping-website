@@ -1,216 +1,218 @@
 <script lang="ts"
   generic="T extends { id: number }, PageQuery extends BaseQueryParams, TForm extends Record<string, any> = T" setup>
-  import type { PageData } from "@backend/types";
-  import type {
-    BaseQueryParams,
-    FormResolver,
-    GenCmsTemplateData,
-  } from "@frontend/types/prime-cms";
-  import type { FormInstance, FormSubmitEvent } from "@primevue/forms";
-  import { Form } from "@primevue/forms";
-  import Button from "primevue/button";
-  import Column from "primevue/column";
-  import DataTable from "primevue/datatable";
-  import Drawer from "primevue/drawer";
-  import Paginator from "primevue/paginator";
-  import Panel from "primevue/panel";
-  import Tag from "primevue/tag";
-  import TreeTable from "primevue/treetable";
-  import { useToast } from "primevue/usetoast";
-  import { computed, onMounted, ref, toRaw } from "vue";
+import type { PageData } from "@backend/types";
+import type {
+	BaseQueryParams,
+	FormResolver,
+	GenCmsTemplateData,
+} from "@frontend/types/prime-cms";
+import type { FormInstance, FormSubmitEvent } from "@primevue/forms";
+import { Form } from "@primevue/forms";
+import Button from "primevue/button";
+import Column from "primevue/column";
+import DataTable from "primevue/datatable";
+import Drawer from "primevue/drawer";
+import Paginator from "primevue/paginator";
+import Panel from "primevue/panel";
+import Tag from "primevue/tag";
+import TreeTable from "primevue/treetable";
+import { useToast } from "primevue/usetoast";
+import { computed, onMounted, ref, toRaw } from "vue";
 
-  const props = defineProps<{
-    name: string;
-    identifier?: string;
-    /**
-     * 表单数据
-     */
-    queryForm: Partial<PageQuery>;
-    tableData: PageData<T[]>;
-    templateData: GenCmsTemplateData<T, PageQuery, TForm>;
-    resolver: FormResolver | any;
-    queryResolver: FormResolver | any;
-    crudController?: number;
-    /**
-     * 是否使用树形表格
-     */
-    useTreeTable?: boolean;
-    /**
-     * 树形表格的展开状态控制
-     */
-    expandedKeys?: Record<string, boolean>;
-    /**
-     * 树形表格数据
-     */
-    treeData?: any[];
-  }>();
+const props = defineProps<{
+	name: string;
+	identifier?: string;
+	/**
+	 * 表单数据
+	 */
+	queryForm: Partial<PageQuery>;
+	tableData: PageData<T[]>;
+	templateData: GenCmsTemplateData<T, PageQuery, TForm>;
+	resolver: FormResolver | any;
+	queryResolver: FormResolver | any;
+	crudController?: number;
+	/**
+	 * 是否使用树形表格
+	 */
+	useTreeTable?: boolean;
+	/**
+	 * 树形表格的展开状态控制
+	 */
+	expandedKeys?: Record<string, boolean>;
+	/**
+	 * 树形表格数据
+	 */
+	treeData?: any[];
+}>();
 
+const templateDataRef = computed(() => props.templateData);
+const {
+	FormSearch,
+	formLoading,
+	handleCrudDialog,
+	tableData: templateTableData,
+	fetchList,
+	fetchData, // 新增统一数据获取方法
+	crudDialogOptions,
+	resetForm,
+	submitForm,
+	handleDeletes,
+} = templateDataRef.value;
 
-  const templateDataRef = computed(() => props.templateData);
-  const {
-    FormSearch,
-    formLoading,
-    handleCrudDialog,
-    tableData: templateTableData,
-    fetchList,
-    fetchData, // 新增统一数据获取方法
-    crudDialogOptions,
-    resetForm,
-    submitForm,
-    handleDeletes,
-  } = templateDataRef.value;
+// 确保使用正确的表单数据
+const tableData = computed(() => templateTableData.value);
 
-  // 确保使用正确的表单数据
-  const tableData = computed(() => templateTableData.value);
+// 为 crudDialogOptions 添加类型注解
+const crudDialogOptionsRef = crudDialogOptions;
 
-  // 为 crudDialogOptions 添加类型注解
-  const crudDialogOptionsRef = crudDialogOptions;
+const _crudController = computed(() => props.crudController || 15);
+const toast = useToast();
 
-  const _crudController = computed(() => props.crudController || 15);
-  const toast = useToast();
+// 表单引用
+const queryFormRef = ref<FormInstance | null>(null);
+const drawerFormRef = ref<FormInstance | null>(null);
 
-  // 表单引用
-  const queryFormRef = ref<FormInstance | null>(null);
-  const drawerFormRef = ref<FormInstance | null>(null);
+// 分页配置
+const paginationOptions = computed(() => ({
+	first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
+	rows: tableData.value.meta.limit,
+	totalRecords: tableData.value.meta.total,
+	rowsPerPageOptions: [20, 30, 50, 100],
+}));
 
-  // 分页配置
-  const paginationOptions = computed(() => ({
-    first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
-    rows: tableData.value.meta.limit,
-    totalRecords: tableData.value.meta.total,
-    rowsPerPageOptions: [20, 30, 50, 100],
-  }));
+// 分页事件处理
+const onPageChange = (event: { first: number; rows: number }) => {
+	tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
+	tableData.value.meta.limit = event.rows;
+	// 根据表格类型调用对应的数据获取方法
+	fetchData(props.useTreeTable || false);
+};
 
-  // 分页事件处理
-  const onPageChange = (event: { first: number; rows: number }) => {
-    tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
-    tableData.value.meta.limit = event.rows;
-    // 根据表格类型调用对应的数据获取方法
-    fetchData(props.useTreeTable || false);
-  };
+// 组件挂载时自动加载数据
+onMounted(async () => {
+	// 根据useTreeTable属性自动选择数据获取方式
+	await fetchData(props.useTreeTable || false);
+});
 
-  // 组件挂载时自动加载数据
-  onMounted(async () => {
-    // 根据useTreeTable属性自动选择数据获取方式
-    await fetchData(props.useTreeTable || false);
-  });
+// 查询表单提交处理
+const onQueryFormSubmit = async (event: FormSubmitEvent) => {
+	if (event.valid) {
+		await FormSearch(queryFormRef.value);
+	} else {
+		toast.add({
+			severity: "error",
+			summary: "查询表单验证失败",
+			detail: "请检查输入内容",
+			life: 3000,
+		});
+	}
+};
 
-  // 查询表单提交处理
-  const onQueryFormSubmit = async (event: FormSubmitEvent) => {
-    if (event.valid) {
-      await FormSearch(queryFormRef.value);
-    } else {
-      toast.add({
-        severity: "error",
-        summary: "查询表单验证失败",
-        detail: "请检查输入内容",
-        life: 3000,
-      });
-    }
-  };
+// 表单提交处理
+const onFormSubmit = async (event: FormSubmitEvent) => {
+	if (event.valid) {
+		try {
+			crudDialogOptionsRef.value.loading = true;
 
-  // 表单提交处理
-  const onFormSubmit = async (event: FormSubmitEvent) => {
-    if (event.valid) {
-      try {
-        crudDialogOptionsRef.value.loading = true;
+			const formData = event.values as TForm;
 
-        const formData = event.values as TForm;
+			// 获取当前表单数据
+			const currentData = crudDialogOptionsRef.value.data || {};
+			const submitData = { ...currentData, ...formData } as TForm;
 
-        // 获取当前表单数据
-        const currentData = crudDialogOptionsRef.value.data || {};
-        const submitData = { ...currentData, ...formData } as TForm;
+			// 转换提交数据
+			if (templateDataRef.value.transformSubmitData) {
+				templateDataRef.value.transformSubmitData(
+					submitData,
+					crudDialogOptionsRef.value.mode,
+				);
+			}
 
-        // 转换提交数据
-        if (templateDataRef.value.transformSubmitData) {
-          templateDataRef.value.transformSubmitData(
-            submitData,
-            crudDialogOptionsRef.value.mode,
-          );
-        }
+			// 提交数据
+			const rawSubmitData = toRaw(submitData) as TForm;
+			let res;
 
-        // 提交数据
-        const rawSubmitData = toRaw(submitData) as TForm;
-        let res;
+			if (crudDialogOptionsRef.value.mode === "EDIT") {
+				// 对于编辑操作，需要从表格数据中获取ID
+				const tableItem = templateTableData.value.items
+					.flat()
+					.find((item) => item.id === (currentData as T).id);
+				res = await templateDataRef.value.update(
+					(tableItem as unknown as T).id!,
+					rawSubmitData,
+				);
+				console.log("res", res);
+				if (res.code === 200) {
+					toast.add({
+						severity: "success",
+						summary: "修改成功",
+						detail: "数据已成功修改",
+						life: 3000,
+					});
+				} else {
+					toast.add({
+						severity: "error",
+						summary: "修改失败",
+						detail: res.message ?? "修改失败！",
+						life: 3000,
+					});
+				}
+			} else {
+				// 对于新建操作，需要移除id字段（如果存在）
+				const { id, ...createData } = rawSubmitData;
+				res = await templateDataRef.value.create(
+					createData as Omit<TForm, "id">,
+				);
+				console.log("res", res);
+				if (res.code === 201) {
+					toast.add({
+						severity: "success",
+						summary: "添加成功",
+						detail: "数据已成功添加",
+						life: 3000,
+					});
+				} else {
+					toast.add({
+						severity: "error",
+						summary: "添加失败",
+						detail: res.message ?? "添加失败！",
+						life: 3000,
+					});
+				}
+			}
 
-        if (crudDialogOptionsRef.value.mode === "EDIT") {
-          // 对于编辑操作，需要从表格数据中获取ID
-          const tableItem = templateTableData.value.items.flat().find(item => item.id === (currentData as T).id);
-          res = await templateDataRef.value.update(
-            (tableItem as unknown as T).id!,
-            rawSubmitData,
-          );
-          console.log("res", res);
-          if (res.code === 200) {
-            toast.add({
-              severity: "success",
-              summary: "修改成功",
-              detail: "数据已成功修改",
-              life: 3000,
-            });
-          } else {
-            toast.add({
-              severity: "error",
-              summary: "修改失败",
-              detail: res.message ?? "修改失败！",
-              life: 3000,
-            });
-          }
-        } else {
-          // 对于新建操作，需要移除id字段（如果存在）
-          const { id, ...createData } = rawSubmitData;
-          res = await templateDataRef.value.create(createData as Omit<TForm, "id">);
-          console.log("res", res);
-          if (res.code === 201) {
-            toast.add({
-              severity: "success",
-              summary: "添加成功",
-              detail: "数据已成功添加",
-              life: 3000,
-            });
-          } else {
-            toast.add({
-              severity: "error",
-              summary: "添加失败",
-              detail: res.message ?? "添加失败！",
-              life: 3000,
-            });
-          }
-        }
+			// 统一处理成功后的逻辑
+			if (res?.code === 200) {
+				crudDialogOptionsRef.value.visible = false;
+				await fetchList();
+			}
+		} catch (error) {
+			console.error("表单提交失败:", error);
+			toast.add({
+				severity: "error",
+				summary: "提交失败",
+				detail: "表单提交失败，请稍后重试",
+				life: 3000,
+			});
+		} finally {
+			crudDialogOptionsRef.value.loading = false;
+		}
+	} else {
+		toast.add({
+			severity: "error",
+			summary: "表单验证失败",
+			detail: "请检查输入内容",
+			life: 3000,
+		});
+	}
+};
 
-        // 统一处理成功后的逻辑
-        if (res?.code === 200) {
-          crudDialogOptionsRef.value.visible = false;
-          await fetchList();
-        }
-      } catch (error) {
-        console.error("表单提交失败:", error);
-        toast.add({
-          severity: "error",
-          summary: "提交失败",
-          detail: "表单提交失败，请稍后重试",
-          life: 3000,
-        });
-      } finally {
-        crudDialogOptionsRef.value.loading = false;
-      }
-    } else {
-      toast.add({
-        severity: "error",
-        summary: "表单验证失败",
-        detail: "请检查输入内容",
-        life: 3000,
-      });
-    }
-  };
-
-
-  // 暴露表单引用给父组件使用
-  defineExpose({
-    drawerFormRef,
-    queryFormRef,
-    crudDialogOptions, // 暴露 crudDialogOptions 给父组件
-  });
+// 暴露表单引用给父组件使用
+defineExpose({
+	drawerFormRef,
+	queryFormRef,
+	crudDialogOptions, // 暴露 crudDialogOptions 给父组件
+});
 </script>
 
 <template>

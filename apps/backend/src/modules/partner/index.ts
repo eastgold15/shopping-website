@@ -2,4 +2,3 @@
 export { partnersController } from "./partners.controller";
 
 export { PartnersService } from "./partners.service";
-

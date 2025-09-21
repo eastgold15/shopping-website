@@ -21,21 +21,21 @@ const $crud = useCmsApi().advertisements;
 
 // 表单验证器
 const ADSchema = z.object({
-  title: z.string().min(1, { message: "广告标题不能为空" }),
-  type: z.string().min(1, { message: "请选择广告类型" }),
-  link: z.string().optional(),
-  position: z.string().optional(),
-  sortOrder: z.number().min(0, { message: "排序值不能小于0" }),
-  isActive: z.boolean(),
-  startDate: z.date().nullable().optional(),
-  endDate: z.date().nullable().optional(),
+	title: z.string().min(1, { message: "广告标题不能为空" }),
+	type: z.string().min(1, { message: "请选择广告类型" }),
+	link: z.string().optional(),
+	position: z.string().optional(),
+	sortOrder: z.number().min(0, { message: "排序值不能小于0" }),
+	isActive: z.boolean(),
+	startDate: z.date().nullable().optional(),
+	endDate: z.date().nullable().optional(),
 });
 
 // 查询表单验证schema
 const querySchema = z.object({
-  type: z.string().optional(),
-  position: z.string().optional(),
-  isActive: z.boolean().optional(),
+	type: z.string().optional(),
+	position: z.string().optional(),
+	isActive: z.boolean().optional(),
 });
 
 // 创建resolver
@@ -43,81 +43,76 @@ const resolver = zodResolver(ADSchema);
 const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
-const templateData = await genPrimeCmsTemplateData<
-  ADModel,
-  ADQueryDto
->(
-  {
-    // 1. 定义查询表单
-    // @ts-ignore
-    getList: $crud.list,
-    create: $crud.create,
-    update: $crud.update,
-    delete: $crud.delete,
+const templateData = await genPrimeCmsTemplateData<ADModel, ADQueryDto>(
+	{
+		// 1. 定义查询表单
+		// @ts-ignore
+		getList: $crud.list,
+		create: $crud.create,
+		update: $crud.update,
+		delete: $crud.delete,
 
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      id: 0,
-      title: "",
-      type: "carousel",
-      image_id: -1,
-      link: "",
-      position: "",
-      sortOrder: 0,
-      isActive: true,
-      startDate: null,
-      endDate: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }),
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			title: "",
+			type: "carousel",
+			image_id: -1,
+			link: "",
+			position: "",
+			sortOrder: 0,
+			isActive: true,
+			startDate: null,
+			endDate: null,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		}),
 
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除广告${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` 广告#${ids.join(",")} `;
-    },
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除广告${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` 广告#${ids.join(",")} `;
+		},
 
-    // 5. 数据转换
-    transformSubmitData: (data, type) => {
+		// 5. 数据转换
+		transformSubmitData: (data, _type) => {
+			// 确保数字类型正确
+			if (typeof data.sortOrder === "string") {
+				data.sortOrder = parseInt(data.sortOrder) || 0;
+			}
+			// @ts-ignore
+			delete data.image;
+			// @ts-ignore
+			delete data.createdAt;
+			// @ts-ignore
+			delete data.updatedAt;
 
-      // 确保数字类型正确
-      if (typeof data.sortOrder === "string") {
-        data.sortOrder = parseInt(data.sortOrder) || 0;
-      }
-      // @ts-ignore
-      delete data.image
-      // @ts-ignore
-      delete data.createdAt
-      // @ts-ignore
-      delete data.updatedAt
-
-      data.image_id = currentFormData.value?.image_id || data.image_id;
-
-    },
-  },
-  // 6. 定义查询表单
-  {
-    type: undefined,
-    position: undefined,
-    isActive: undefined,
-    page: 1,
-    limit: 20,
-  },
+			data.image_id = currentFormData.value?.image_id || data.image_id;
+		},
+	},
+	// 6. 定义查询表单
+	{
+		type: undefined,
+		position: undefined,
+		isActive: undefined,
+		page: 1,
+		limit: 20,
+	},
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-  await fetchList();
+	await fetchList();
 });
 
 // 状态选项
 const statusOptions = [
-  { label: "全部", value: undefined },
-  { label: "启用", value: true },
-  { label: "禁用", value: false },
+	{ label: "全部", value: undefined },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
 ];
 
 // 图片选择相关
@@ -125,17 +120,17 @@ const showImageSelector = ref(false);
 const currentFormData = ref<ADModel>();
 
 const onImageSelected = (imageUrl: string, imageData: any) => {
-  console.log("imageData:", imageData);
-  console.log("imageUrl:", imageUrl);
+	console.log("imageData:", imageData);
+	console.log("imageUrl:", imageUrl);
 
-  if (currentFormData.value) {
-    // 设置图片ID（数字类型）
-    currentFormData.value.image_id = imageData.id;
-    // 设置显示用的图片URL
-    // @ts-ignore
-    currentFormData.value.image = imageUrl;
-  }
-  showImageSelector.value = false;
+	if (currentFormData.value) {
+		// 设置图片ID（数字类型）
+		currentFormData.value.image_id = imageData.id;
+		// 设置显示用的图片URL
+		// @ts-ignore
+		currentFormData.value.image = imageUrl;
+	}
+	showImageSelector.value = false;
 };
 </script>
 

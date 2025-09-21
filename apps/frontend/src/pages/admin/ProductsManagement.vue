@@ -1,148 +1,145 @@
 <script setup lang="ts">
-import { zodResolver } from "@primevue/forms/resolvers/zod";
+import type { ProductModel } from "@backend/types";
 
 import ImageSelector from "@frontend/components/ImageSelector.vue";
-
-import type { ProductModel } from "@backend/types";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { useCmsApi } from "@frontend/utils/handleApi";
+import { zodResolver } from "@primevue/forms/resolvers/zod";
 import z from "zod";
-
 
 // 表单验证schema
 const productSchema = z.object({
-  id: z.number().optional(),
-  name: z.string().min(1, "商品名称不能为空"),
-  slug: z.string().min(1, "URL别名不能为空"),
-  description: z.string().optional(),
-  shortDescription: z.string().optional(),
-  price: z.number().min(0, "价格不能小于0"),
-  comparePrice: z.number().min(0, "对比价格不能小于0").optional(),
-  cost: z.number().min(0, "成本价不能小于0").optional(),
-  sku: z.string().optional(),
-  barcode: z.string().optional(),
-  weight: z.number().min(0, "重量不能小于0").optional(),
-  dimensions: z.object({
-    length: z.number().optional(),
-    width: z.number().optional(),
-    height: z.number().optional(),
-  }).optional(),
-  images: z.array(z.string()).optional(),
-  videos: z.array(z.string()).optional(),
-  colors: z.array(z.string()).optional(),
-  sizes: z.array(z.string()).optional(),
-  materials: z.array(z.string()).optional(),
-  careInstructions: z.string().optional(),
-  features: z.array(z.string()).optional(),
-  specifications: z.record(z.any()).optional(),
-  categoryId: z.number().optional(),
-  stock: z.number().min(0, "库存不能小于0"),
-  minStock: z.number().min(0, "最低库存不能小于0").optional(),
-  isActive: z.boolean().default(true),
-  isFeatured: z.boolean().default(false),
-  metaTitle: z.string().optional(),
-  metaDescription: z.string().optional(),
-  metaKeywords: z.string().optional(),
+	id: z.number().optional(),
+	name: z.string().min(1, "商品名称不能为空"),
+	slug: z.string().min(1, "URL别名不能为空"),
+	description: z.string().optional(),
+	shortDescription: z.string().optional(),
+	price: z.number().min(0, "价格不能小于0"),
+	comparePrice: z.number().min(0, "对比价格不能小于0").optional(),
+	cost: z.number().min(0, "成本价不能小于0").optional(),
+	sku: z.string().optional(),
+	barcode: z.string().optional(),
+	weight: z.number().min(0, "重量不能小于0").optional(),
+	dimensions: z
+		.object({
+			length: z.number().optional(),
+			width: z.number().optional(),
+			height: z.number().optional(),
+		})
+		.optional(),
+	images: z.array(z.string()).optional(),
+	videos: z.array(z.string()).optional(),
+	colors: z.array(z.string()).optional(),
+	sizes: z.array(z.string()).optional(),
+	materials: z.array(z.string()).optional(),
+	careInstructions: z.string().optional(),
+	features: z.array(z.string()).optional(),
+	specifications: z.record(z.any()).optional(),
+	categoryId: z.number().optional(),
+	stock: z.number().min(0, "库存不能小于0"),
+	minStock: z.number().min(0, "最低库存不能小于0").optional(),
+	isActive: z.boolean().default(true),
+	isFeatured: z.boolean().default(false),
+	metaTitle: z.string().optional(),
+	metaDescription: z.string().optional(),
+	metaKeywords: z.string().optional(),
 });
 
 const querySchema = z.object({
-  name: z.string().optional(),
-  categoryId: z.number().optional(),
-  isActive: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
+	name: z.string().optional(),
+	categoryId: z.number().optional(),
+	isActive: z.boolean().optional(),
+	isFeatured: z.boolean().optional(),
 });
 const $crud = useCmsApi().products;
 const resolver = zodResolver(productSchema);
 const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
-const templateData = await genPrimeCmsTemplateData<
-  ProductModel,
-  any
->(
-  {
-    // 1. 定义查询表单
-    getList: $crud.list,
-    create: $crud.create,
-    update: $crud.update,
-    delete: $crud.delete,
-    // 2. 定义初始表格列 初始值
-    getEmptyModel: () => ({
-      id: 0,
-      name: "",
-      slug: "",
-      description: "",
-      shortDescription: "",
-      price: 0,
-      comparePrice: 0,
-      cost: 0,
-      sku: "",
-      barcode: "",
-      weight: 0,
-      dimensions: { length: 0, width: 0, height: 0 },
-      images: [],
-      videos: [],
-      colors: [],
-      sizes: [],
-      materials: [],
-      careInstructions: "",
-      features: [],
-      specifications: {},
-      categoryId: null,
-      stock: 0,
-      minStock: 0,
-      isActive: true,
-      isFeatured: false,
-      metaTitle: "",
-      metaDescription: "",
-      metaKeywords: "",
-      createdAt: "",
-      updatedAt: "",
-    }),
+const templateData = await genPrimeCmsTemplateData<ProductModel, any>(
+	{
+		// 1. 定义查询表单
+		getList: $crud.list,
+		create: $crud.create,
+		update: $crud.update,
+		delete: $crud.delete,
+		// 2. 定义初始表格列 初始值
+		getEmptyModel: () => ({
+			id: 0,
+			name: "",
+			slug: "",
+			description: "",
+			shortDescription: "",
+			price: 0,
+			comparePrice: 0,
+			cost: 0,
+			sku: "",
+			barcode: "",
+			weight: 0,
+			dimensions: { length: 0, width: 0, height: 0 },
+			images: [],
+			videos: [],
+			colors: [],
+			sizes: [],
+			materials: [],
+			careInstructions: "",
+			features: [],
+			specifications: {},
+			categoryId: null,
+			stock: 0,
+			minStock: 0,
+			isActive: true,
+			isFeatured: false,
+			metaTitle: "",
+			metaDescription: "",
+			metaKeywords: "",
+			createdAt: "",
+			updatedAt: "",
+		}),
 
-    // 3. 定义删除框标题
-    getDeleteBoxTitle(id: number) {
-      return `删除商品${id}`;
-    },
-    getDeleteBoxTitles(ids: Array<number>) {
-      return ` 商品#${ids.join(",")} `;
-    },
+		// 3. 定义删除框标题
+		getDeleteBoxTitle(id: number) {
+			return `删除商品${id}`;
+		},
+		getDeleteBoxTitles(ids: Array<number>) {
+			return ` 商品#${ids.join(",")} `;
+		},
 
-    // 5. 数据转换
-    transformSubmitData: (data, type) => {
-      // 确保数组字段不为null
-      return {
-        ...data,
-        images: data.images || [],
-        videos: data.videos || [],
-        colors: data.colors || [],
-        sizes: data.sizes || [],
-        materials: data.materials || [],
-      };
-    },
-  },
-  // 6. 定义查询表单
-  {
-    name: "",
-    categoryId: undefined,
-    isActive: undefined,
-    isFeatured: undefined,
-    page: 1,
-    limit: 20,
-  },
+		// 5. 数据转换
+		transformSubmitData: (data, _type) => {
+			// 确保数组字段不为null
+			return {
+				...data,
+				images: data.images || [],
+				videos: data.videos || [],
+				colors: data.colors || [],
+				sizes: data.sizes || [],
+				materials: data.materials || [],
+			};
+		},
+	},
+	// 6. 定义查询表单
+	{
+		name: "",
+		categoryId: undefined,
+		isActive: undefined,
+		isFeatured: undefined,
+		page: 1,
+		limit: 20,
+	},
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-  await fetchList();
+	await fetchList();
 });
 
 // 状态选项
 const statusOptions = [
-  { label: "全部", value: undefined },
-  { label: "启用", value: true },
-  { label: "禁用", value: false },
+	{ label: "全部", value: undefined },
+	{ label: "启用", value: true },
+	{ label: "禁用", value: false },
 ];
 
 // 图片选择相关
@@ -150,82 +147,82 @@ const showImageSelector = ref(false);
 const currentFormData = ref<ProductModel>();
 
 const onImageSelected = (imageUrl: string, imageData: any) => {
-  console.log("imageData:", imageData);
-  console.log("imageUrl:", imageUrl);
+	console.log("imageData:", imageData);
+	console.log("imageUrl:", imageUrl);
 
-  if (currentFormData.value) {
-    // 确保images数组存在
-    if (!currentFormData.value.images) {
-      currentFormData.value.images = [];
-    }
-    // 添加图片URL到数组中
-    if (!currentFormData.value.images.includes(imageUrl)) {
-      currentFormData.value.images.push(imageUrl);
-    }
-  }
-  showImageSelector.value = false;
+	if (currentFormData.value) {
+		// 确保images数组存在
+		if (!currentFormData.value.images) {
+			currentFormData.value.images = [];
+		}
+		// 添加图片URL到数组中
+		if (!currentFormData.value.images.includes(imageUrl)) {
+			currentFormData.value.images.push(imageUrl);
+		}
+	}
+	showImageSelector.value = false;
 };
 
 // 规格管理相关
-const newColor = ref('');
-const newSize = ref('');
-const newMaterial = ref('');
-const newFeature = ref('');
+const newColor = ref("");
+const newSize = ref("");
+const newMaterial = ref("");
+const newFeature = ref("");
 
 // 添加颜色
 const addColor = () => {
-  if (newColor.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.colors) {
-      data.colors = [];
-    }
-    if (!data.colors.includes(newColor.value.trim())) {
-      data.colors.push(newColor.value.trim());
-    }
-    newColor.value = '';
-  }
+	if (newColor.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.colors) {
+			data.colors = [];
+		}
+		if (!data.colors.includes(newColor.value.trim())) {
+			data.colors.push(newColor.value.trim());
+		}
+		newColor.value = "";
+	}
 };
 
 // 添加尺寸
 const addSize = () => {
-  if (newSize.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.sizes) {
-      data.sizes = [];
-    }
-    if (!data.sizes.includes(newSize.value.trim())) {
-      data.sizes.push(newSize.value.trim());
-    }
-    newSize.value = '';
-  }
+	if (newSize.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.sizes) {
+			data.sizes = [];
+		}
+		if (!data.sizes.includes(newSize.value.trim())) {
+			data.sizes.push(newSize.value.trim());
+		}
+		newSize.value = "";
+	}
 };
 
 // 添加材质
 const addMaterial = () => {
-  if (newMaterial.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.materials) {
-      data.materials = [];
-    }
-    if (!data.materials.includes(newMaterial.value.trim())) {
-      data.materials.push(newMaterial.value.trim());
-    }
-    newMaterial.value = '';
-  }
+	if (newMaterial.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.materials) {
+			data.materials = [];
+		}
+		if (!data.materials.includes(newMaterial.value.trim())) {
+			data.materials.push(newMaterial.value.trim());
+		}
+		newMaterial.value = "";
+	}
 };
 
 // 添加特性
 const addFeature = () => {
-  if (newFeature.value.trim()) {
-    const data = templateData.crudFormData.value;
-    if (!data.features) {
-      data.features = [];
-    }
-    if (!data.features.includes(newFeature.value.trim())) {
-      data.features.push(newFeature.value.trim());
-    }
-    newFeature.value = '';
-  }
+	if (newFeature.value.trim()) {
+		const data = templateData.crudFormData.value;
+		if (!data.features) {
+			data.features = [];
+		}
+		if (!data.features.includes(newFeature.value.trim())) {
+			data.features.push(newFeature.value.trim());
+		}
+		newFeature.value = "";
+	}
 };
 </script>
 

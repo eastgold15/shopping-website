@@ -48,8 +48,6 @@ const initialValues = reactive({
 	endDate: null as Date | null,
 });
 
-
-
 // // 单独的字段验证器
 // const titleResolver = zodResolver(
 // 	z.string().min(1, { message: "广告标题不能为空" }),
@@ -232,7 +230,9 @@ const editAdvertisement = (advertisement: Advertisement) => {
 const toggleStatus = async (advertisement: Advertisement) => {
 	try {
 		const api = useCmsApi();
-		const res = await api.advertisements.toggle(advertisement.id.toString(), { isActive: !advertisement.isActive });
+		const res = await api.advertisements.toggle(advertisement.id.toString(), {
+			isActive: !advertisement.isActive,
+		});
 
 		if (res && res.code === 200) {
 			toast.add({
@@ -270,7 +270,9 @@ const deleteAdvertisement = (advertisement: Advertisement) => {
 		accept: async () => {
 			try {
 				const api = useCmsApi();
-				const res = await api.advertisements.delete(advertisement.id.toString());
+				const res = await api.advertisements.delete(
+					advertisement.id.toString(),
+				);
 
 				if (res && res.code === 200) {
 					toast.add({
@@ -357,7 +359,10 @@ const onFormSubmit = async ({
 		const api = useCmsApi();
 		if (editingAdvertisement.value) {
 			// 更新广告
-			result = await api.advertisements.update(editingAdvertisement.value.id.toString(), requestData);
+			result = await api.advertisements.update(
+				editingAdvertisement.value.id.toString(),
+				requestData,
+			);
 		} else {
 			// 创建广告
 			result = await api.advertisements.create(requestData);

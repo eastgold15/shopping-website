@@ -2,6 +2,7 @@
 import type { footerLink } from "@frontend/pages/admin/SiteConfigForm.vue";
 import { useRouter } from "vue-router";
 import CategoryNav from "../components/CategoryNav.vue";
+
 const router = useRouter();
 const isMobileMenuOpen = ref(false);
 const currentLanguage = ref("中文");
@@ -14,48 +15,48 @@ const cartCount = ref(0);
 
 // 底部配置数据
 const footerConfig = reactive<{
-  sections: footerLink[];
-  copyright: string;
-  loading: boolean;
+	sections: footerLink[];
+	copyright: string;
+	loading: boolean;
 }>({
-  sections: [],
-  copyright: "",
-  loading: true,
+	sections: [],
+	copyright: "",
+	loading: true,
 });
 
 // 语言选项
 const languageOptions = ref([
-  {
-    label: "中文",
-    icon: "pi pi-flag",
-    command: () => switchLanguage("中文"),
-  },
-  {
-    label: "English",
-    icon: "pi pi-flag",
-    command: () => switchLanguage("English"),
-  },
+	{
+		label: "中文",
+		icon: "pi pi-flag",
+		command: () => switchLanguage("中文"),
+	},
+	{
+		label: "English",
+		icon: "pi pi-flag",
+		command: () => switchLanguage("English"),
+	},
 ]);
 
 const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+	isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 
 const closeMobileMenu = () => {
-  isMobileMenuOpen.value = false;
+	isMobileMenuOpen.value = false;
 };
 
 const switchLanguage = (language: string) => {
-  currentLanguage.value = language;
-  // 菜单会自动关闭
+	currentLanguage.value = language;
+	// 菜单会自动关闭
 };
 
 const toggleLanguageMenu = (event: any) => {
-  languageMenu.value.toggle(event);
+	languageMenu.value.toggle(event);
 };
 
 const toggleMobileLanguageMenu = (event: any) => {
-  mobileLanguageMenu.value.toggle(event);
+	mobileLanguageMenu.value.toggle(event);
 };
 
 // const toggleTheme = () => {
@@ -75,82 +76,82 @@ const toggleMobileLanguageMenu = (event: any) => {
 // };
 
 const handleLogin = () => {
-  // 检查用户是否已登录
-  if (isUserLoggedIn.value) {
-    // 已登录，跳转到用户中心或显示用户菜单
-    console.log("跳转到用户中心");
-  } else {
-    // 未登录，跳转到登录页面
-    router.push("/login");
-  }
+	// 检查用户是否已登录
+	if (isUserLoggedIn.value) {
+		// 已登录，跳转到用户中心或显示用户菜单
+		console.log("跳转到用户中心");
+	} else {
+		// 未登录，跳转到登录页面
+		router.push("/login");
+	}
 };
 
 // 获取底部配置数据
 const loadFooterConfig = async () => {
-  try {
-    footerConfig.loading = true;
+	try {
+		footerConfig.loading = true;
 
-    // 获取底部相关配置
+		// 获取底部相关配置
 
-    // @ts-ignore
-    const footerResponse: any = await api.siteConfigs.getByCategory("footer");
+		// @ts-ignore
+		const footerResponse: any = await api.siteConfigs.getByCategory("footer");
 
-    if (footerResponse.data && footerResponse.code === 200) {
-      // 处理底部栏目数据
-      const footerData = footerResponse.data || [];
+		if (footerResponse.data && footerResponse.code === 200) {
+			// 处理底部栏目数据
+			const footerData = footerResponse.data || [];
 
-      // 查找底部栏目配置
-      const sectionsConfig = footerData.find(
-        (config) => config.key === "footer_sections",
-      );
-      if (sectionsConfig) {
-        try {
-          const sections = JSON.parse(sectionsConfig.value);
-          if (Array.isArray(sections)) {
-            footerConfig.sections = sections;
-          }
-        } catch (e) {
-          console.warn("解析底部栏目数据失败:", e);
-        }
-      }
+			// 查找底部栏目配置
+			const sectionsConfig = footerData.find(
+				(config) => config.key === "footer_sections",
+			);
+			if (sectionsConfig) {
+				try {
+					const sections = JSON.parse(sectionsConfig.value);
+					if (Array.isArray(sections)) {
+						footerConfig.sections = sections;
+					}
+				} catch (e) {
+					console.warn("解析底部栏目数据失败:", e);
+				}
+			}
 
-      // 查找版权信息
-      const copyrightConfig = footerData.find(
-        (config) => config.key === "footer_copyright",
-      );
-      if (copyrightConfig) {
-        footerConfig.copyright = copyrightConfig.value;
-      }
-    }
-  } catch (error) {
-    console.error("加载底部配置失败:", error);
-  } finally {
-    footerConfig.loading = false;
-  }
+			// 查找版权信息
+			const copyrightConfig = footerData.find(
+				(config) => config.key === "footer_copyright",
+			);
+			if (copyrightConfig) {
+				footerConfig.copyright = copyrightConfig.value;
+			}
+		}
+	} catch (error) {
+		console.error("加载底部配置失败:", error);
+	} finally {
+		footerConfig.loading = false;
+	}
 };
 
 const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    router.push({
-      path: "/search",
-      query: { q: searchQuery.value.trim() },
-    });
-  }
+	if (searchQuery.value.trim()) {
+		router.push({
+			path: "/search",
+			query: { q: searchQuery.value.trim() },
+		});
+	}
 };
 
 // 初始化主题和加载配置
 onMounted(() => {
-  const savedTheme = localStorage.getItem("theme");
-  if (
-    savedTheme === "dark" ||
-    (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)
-  ) {
-    isDarkMode.value = true;
-    document.documentElement.classList.add("dark");
-  }
+	const savedTheme = localStorage.getItem("theme");
+	if (
+		savedTheme === "dark" ||
+		(!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)
+	) {
+		isDarkMode.value = true;
+		document.documentElement.classList.add("dark");
+	}
 
-  // 加载底部配置
-  loadFooterConfig();
+	// 加载底部配置
+	loadFooterConfig();
 });
 </script>
 

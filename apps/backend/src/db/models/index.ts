@@ -1,4 +1,3 @@
-
 export * from "./advertisements.model";
 
 export * from "./category.model";
@@ -13,7 +12,3 @@ export * from "./siteConfig.model";
 export * from "./statistics.model";
 export * from "./users.model";
 export * from "./utils";
-
-
-
-

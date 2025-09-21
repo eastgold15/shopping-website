@@ -228,7 +228,7 @@ const onFormSubmit = async ({
 
 			// 调用API创建商品
 			const api = useCmsApi();
-		const data = await (api.products.create(values));
+			const data = await api.products.create(values);
 
 			if (data) {
 				toast.add({
@@ -289,7 +289,7 @@ const saveDraft = async ({
 
 		// 调用API创建商品
 		const api = useCmsApi();
-		const data = await api.products.create(productData)
+		const data = await api.products.create(productData);
 
 		if (data) {
 			toast.add({
@@ -346,7 +346,7 @@ const publishProduct = async ({
 
 		// 调用API创建商品
 		const api = useCmsApi();
-		const data = await api.products.create(productData)
+		const data = await api.products.create(productData);
 
 		if (data) {
 			toast.add({
@@ -461,7 +461,7 @@ const removeImage = (index: number) => {
 const loadCategories = async () => {
 	try {
 		const api = useCmsApi();
-		const data = await api.categories.tree()
+		const data = await api.categories.tree();
 		if (data && data.code === 200) {
 			categories.value = data.data || [];
 		} else {
