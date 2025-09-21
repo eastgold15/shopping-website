@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run check-types"
+          },
+          {
+            "type": "command",
+            "command": "bun run lint:fix"
+          }
+        ]
+      }
+    ]
+  }
+}
