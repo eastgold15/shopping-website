@@ -211,7 +211,7 @@ const scrollToNext = () => {
   const currentScrollTop = container.scrollTop;
   let currentIndex = 0;
 
-  for (let i = 0; i < sections.length; i++) {
+  for (let i = 0;i < sections.length;i++) {
     const section = sections[i] as HTMLElement;
     const sectionTop = section.offsetTop;
     if (Math.abs(currentScrollTop - sectionTop) < 100) {
@@ -393,7 +393,7 @@ const initWaveBackground = () => {
 
   // 创建多个波动元素
   const waves = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0;i < 8;i++) {
     const delay = i * 2000;
     const duration = 4000 + Math.random() * 2000;
     const size = 100 + Math.random() * 200;
@@ -439,7 +439,7 @@ const initWaveBackground = () => {
   };
 
   // 创建浮动光点
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0;i < 5;i++) {
     createFloatingOrb(i * 1600);
   }
 };
@@ -708,13 +708,14 @@ onUnmounted(() => {
               <!-- 浮空的文字内容 -->
               <div class="absolute inset-0 bg-black bg-opacity-60 flex flex-col justify-center p-12">
                 <div class="text-white max-w-lg">
-                  <h3 class="text-4xl lg:text-5xl font-bold mb-6 drop-shadow-lg">{{ partner.name }}</h3>
-                  <p class="text-lg lg:text-xl opacity-90 mb-8 leading-relaxed drop-shadow-md">{{ partner.description }}
-                  </p>
+
                   <a :href="partner.url" target="_blank" rel="noopener noreferrer"
                     class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 text-lg shadow-lg">
                     Visit the official website
                   </a>
+                  <p class="text-lg lg:text-xl opacity-90 mt-8 leading-relaxed drop-shadow-md">{{ partner.description }}
+                  <h3 class="text-2xl lg:text-3xl font-bold mt-6 drop-shadow-lg">{{ partner.name }}</h3>
+                  </p>
                 </div>
               </div>
             </div>
