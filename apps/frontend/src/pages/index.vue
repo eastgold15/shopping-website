@@ -48,14 +48,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
+  <div class="container mx-auto px-4 py-8">
     <!-- 加载状态 -->
-    <div v-if="loading" class="flex justify-center items-center min-h-screen">
+    <div v-if="loading" class="flex justify-center items-center min-h-96">
       <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
     </div>
 
     <!-- 主要内容区域 -->
-    <div v-else class="container mx-auto px-4 py-8">
+    <div v-else>
       <!-- 页面标题 -->
       <div class="text-center mb-12">
         <h1 class="text-4xl font-light tracking-wider text-gray-900 mb-4">GINA COLLECTION</h1>
@@ -116,42 +116,6 @@ onMounted(() => {
         </button>
       </div>
     </div>
-
-    <!-- 品牌介绍区域 -->
-    <section class="bg-gray-50 py-20">
-      <div class="container mx-auto px-4">
-        <div class="max-w-4xl mx-auto text-center">
-          <h2 class="text-3xl font-light tracking-wider text-gray-900 mb-8">关于 GINA</h2>
-          <p class="text-gray-600 text-lg leading-relaxed mb-8">
-            自1954年以来，GINA一直致力于创造世界上最精美的女鞋。我们的每一双鞋都在意大利手工制作，
-            融合了传统工艺与现代设计理念，为追求品质与优雅的女性提供完美的选择。
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <div class="text-center">
-              <div class="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="pi pi-star text-white text-xl"></i>
-              </div>
-              <h3 class="font-semibold text-gray-900 mb-2">精湛工艺</h3>
-              <p class="text-gray-600 text-sm">每双鞋都由经验丰富的意大利工匠手工制作</p>
-            </div>
-            <div class="text-center">
-              <div class="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="pi pi-heart text-white text-xl"></i>
-              </div>
-              <h3 class="font-semibold text-gray-900 mb-2">优质材料</h3>
-              <p class="text-gray-600 text-sm">精选世界各地最优质的皮革和面料</p>
-            </div>
-            <div class="text-center">
-              <div class="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="pi pi-shield text-white text-xl"></i>
-              </div>
-              <h3 class="font-semibold text-gray-900 mb-2">品质保证</h3>
-              <p class="text-gray-600 text-sm">提供全面的售后服务和品质保障</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
   </div>
 </template>
 

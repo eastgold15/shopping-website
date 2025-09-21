@@ -13,7 +13,9 @@
       "Read(//c/Users/boer/**)",
       "Bash(bun run build)",
       "Bash(bun run type-check)",
-      "Bash(bun:*)"
+      "Bash(bun:*)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

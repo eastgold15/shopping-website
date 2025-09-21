@@ -81,7 +81,7 @@
 
 <script setup lang="ts">
 import { useFrontApi } from "@frontend/utils/handleApi";
-import type { CategoryTree } from "../types/layout";
+import { useRouter } from "vue-router";
 
 // Props
 interface Props {
@@ -130,12 +130,11 @@ const keepDropdownOpen = () => {
 	}
 };
 
+const router = useRouter();
+
 // 导航到分类页面
 const navigateToCategory = (category: CategoryTree) => {
-	// TODO: 实现分类页面导航
-	console.log("导航到分类:", category.name, category.id);
-	// 这里可以使用 Vue Router 进行页面跳转
-	// router.push(`/category/${category.id}`);
+	router.push({ name: "category", params: { id: category.id.toString() } });
 
 	// 在移动端模式下，触发分类选择事件
 	if (props.isMobile) {
@@ -170,7 +169,7 @@ const fetchCategories = async () => {
 
 		const res = await api.categories.tree();
 
-		if (res.code === 200 && res.data) {
+		if (res && res.data) {
 			categories.value = res.data;
 		} else {
 			// 使用模拟数据作为后备

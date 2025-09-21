@@ -1,378 +1,149 @@
 <script setup lang="ts">
-import type { footerLink } from "@frontend/pages/admin/SiteConfigForm.vue";
-import { useRouter } from "vue-router";
-import CategoryNav from "../components/CategoryNav.vue";
-
-const router = useRouter();
-const isMobileMenuOpen = ref(false);
-const currentLanguage = ref("中文");
-const isUserLoggedIn = ref(false);
-const isDarkMode = ref(false);
-const languageMenu = ref();
-const mobileLanguageMenu = ref();
-const searchQuery = ref("");
-const cartCount = ref(0);
-
-// 底部配置数据
-const footerConfig = reactive<{
-	sections: footerLink[];
-	copyright: string;
-	loading: boolean;
-}>({
-	sections: [],
-	copyright: "",
-	loading: true,
-});
-
-// 语言选项
-const languageOptions = ref([
-	{
-		label: "中文",
-		icon: "pi pi-flag",
-		command: () => switchLanguage("中文"),
-	},
-	{
-		label: "English",
-		icon: "pi pi-flag",
-		command: () => switchLanguage("English"),
-	},
-]);
-
-const toggleMobileMenu = () => {
-	isMobileMenuOpen.value = !isMobileMenuOpen.value;
-};
-
-const closeMobileMenu = () => {
-	isMobileMenuOpen.value = false;
-};
-
-const switchLanguage = (language: string) => {
-	currentLanguage.value = language;
-	// 菜单会自动关闭
-};
-
-const toggleLanguageMenu = (event: any) => {
-	languageMenu.value.toggle(event);
-};
-
-const toggleMobileLanguageMenu = (event: any) => {
-	mobileLanguageMenu.value.toggle(event);
-};
-
-// const toggleTheme = () => {
-//   isDarkMode.value = !isDarkMode.value;
-//   if (isDarkMode.value) {
-//     document.documentElement.classList.add("dark");
-//     localStorage.setItem("theme", "dark");
-//   } else {
-//     document.documentElement.classList.remove("dark");
-//     localStorage.setItem("theme", "light");
-//   }
-// };
-
-// const toggleFavorites = () => {
-//   // TODO: 实现收藏功能
-//   console.log("切换收藏");
-// };
-
-const handleLogin = () => {
-	// 检查用户是否已登录
-	if (isUserLoggedIn.value) {
-		// 已登录，跳转到用户中心或显示用户菜单
-		console.log("跳转到用户中心");
-	} else {
-		// 未登录，跳转到登录页面
-		router.push("/login");
-	}
-};
-
-// 获取底部配置数据
-const loadFooterConfig = async () => {
-	try {
-		footerConfig.loading = true;
-
-		// 获取底部相关配置
-
-		// @ts-ignore
-		const footerResponse: any = await api.siteConfigs.getByCategory("footer");
-
-		if (footerResponse.data && footerResponse.code === 200) {
-			// 处理底部栏目数据
-			const footerData = footerResponse.data || [];
-
-			// 查找底部栏目配置
-			const sectionsConfig = footerData.find(
-				(config) => config.key === "footer_sections",
-			);
-			if (sectionsConfig) {
-				try {
-					const sections = JSON.parse(sectionsConfig.value);
-					if (Array.isArray(sections)) {
-						footerConfig.sections = sections;
-					}
-				} catch (e) {
-					console.warn("解析底部栏目数据失败:", e);
-				}
-			}
-
-			// 查找版权信息
-			const copyrightConfig = footerData.find(
-				(config) => config.key === "footer_copyright",
-			);
-			if (copyrightConfig) {
-				footerConfig.copyright = copyrightConfig.value;
-			}
-		}
-	} catch (error) {
-		console.error("加载底部配置失败:", error);
-	} finally {
-		footerConfig.loading = false;
-	}
-};
-
-const handleSearch = () => {
-	if (searchQuery.value.trim()) {
-		router.push({
-			path: "/search",
-			query: { q: searchQuery.value.trim() },
-		});
-	}
-};
-
-// 初始化主题和加载配置
-onMounted(() => {
-	const savedTheme = localStorage.getItem("theme");
-	if (
-		savedTheme === "dark" ||
-		(!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)
-	) {
-		isDarkMode.value = true;
-		document.documentElement.classList.add("dark");
-	}
-
-	// 加载底部配置
-	loadFooterConfig();
-});
+// 简化的客户端布局
 </script>
 
 <template>
-  <div class="layout-container">
-    <!-- 网站头部 -->
-    <header class="w-full">
-      <!-- 顶部信息栏 -->
-      <div class=" w-full flex  flex-justify-between">
-        <div class="px-4">
-          <span class="shipping-info">FREE SHIPPING on orders over $59* details</span>
-        </div>
-        <div class="px-4">
-          <a href="#" class="px-2">Track Order</a>
-          <a href="#" class="px-2	">Help</a>
-        </div>
-      </div>
-
-
-      <div class="">
-        <!-- 桌面端布局 -->
-        <div class="hidden md:flex flex-justify-start items-center py-4">
-          <!-- 左侧：语言切换和主题切换 -->
-
-
-
-          <!-- logo -->
-          <div class="inline-flex max-w-[100%]">
-            <RouterLink to="/" class="logo-link px-4">
-              <h1 class="logo-text">外贸商城</h1>
-            </RouterLink>
+  <div class="min-h-screen bg-white flex flex-col">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b border-gray-100">
+      <nav class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <!-- Logo -->
+          <div class="flex items-center">
+            <router-link to="/" class="text-2xl font-light tracking-wider text-gray-900">
+              GINA
+            </router-link>
           </div>
 
-
-
-
-
-
-          <!-- 搜索框 -->
-          <div class=" flex-1 mx-8">
-            <!-- <input type="text" placeholder="搜索商品..." class="search-input" v-model="searchQuery"
-								@keyup.enter="handleSearch">
-
-							<InputText type="text" v-model="value" variant="filled" />
-							<button class="search-btn" @click="handleSearch">
-								<div class=""></div>
-							</button> -->
-
-            <InputGroup>
-              <InputText v-model="searchQuery" placeholder="搜索商品..." @update:modelValue="handleSearch" />
-              <InputGroupAddon>
-                <Button icon="pi pi-search" severity="secondary" variant="text" @click="handleSearch" />
-              </InputGroupAddon>
-            </InputGroup>
+          <!-- 导航菜单 -->
+          <div class="hidden md:flex items-center space-x-8">
+            <router-link 
+              to="/" 
+              class="text-gray-700 hover:text-gray-900 transition-colors duration-200"
+              :class="{ 'text-gray-900 font-medium': $route.name === 'home' }"
+            >
+              首页
+            </router-link>
+            <router-link 
+              to="/products" 
+              class="text-gray-700 hover:text-gray-900 transition-colors duration-200"
+              :class="{ 'text-gray-900 font-medium': $route.name === 'products' }"
+            >
+              商品
+            </router-link>
+            <router-link 
+              to="/about" 
+              class="text-gray-700 hover:text-gray-900 transition-colors duration-200"
+              :class="{ 'text-gray-900 font-medium': $route.name === 'about' }"
+            >
+              关于我们
+            </router-link>
+            <router-link 
+              to="/contact" 
+              class="text-gray-700 hover:text-gray-900 transition-colors duration-200"
+              :class="{ 'text-gray-900 font-medium': $route.name === 'contact' }"
+            >
+              联系我们
+            </router-link>
           </div>
 
-
-
-
-          <!-- 语言切换下拉菜单 -->
-          <div class="relative">
-            <button @click="toggleLanguageMenu" class="language-btn">
-              <div class="i-ic:baseline-g-translate"></div>
-              <span>{{ currentLanguage }}</span>
-              <div class="i-ic:baseline-keyboard-arrow-down"></div>
+          <!-- 右侧操作 -->
+          <div class="flex items-center space-x-4">
+            <button class="text-gray-600 hover:text-gray-900 transition-colors">
+              <i class="pi pi-search text-xl"></i>
             </button>
-            <Menu ref="languageMenu" :model="languageOptions" :popup="true" class="language-menu" />
-          </div>
-
-          <!-- 主题切换按钮
-          <button @click="toggleTheme" class="theme-btn" :title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
-            <div :class="isDarkMode ? 'i-ic:baseline-light-mode' : 'i-ic:baseline-dark-mode'"></div>
-          </button> -->
-
-
-
-
-          <!-- 收藏 -->
-          <!-- <button @click="toggleFavorites" class="theme-btn" title="收藏">
-						<div class="i-ic:baseline-favorite-border"></div>
-					</button> -->
-
-
-
-          <!-- 购物袋 -->
-          <button class="theme-btn">
-            <div class="i-ic:outline-shopping-cart"></div>
-            <span class="cart-count">0</span>
-          </button>
-
-          <!-- 登录/用户信息 -->
-          <button @click="handleLogin" class="login-btn " :title="isUserLoggedIn ? '用户中心' : '登录'">
-            <div :class="isUserLoggedIn ? 'i-ic:baseline-person' : 'i-ic:baseline-login'" class="w-5 h-5 mr-2"></div>
-            <span class="login-text">{{ isUserLoggedIn ? '用户中心' : '登录' }}</span>
-          </button>
-
-        </div>
-
-        <!-- 移动端布局 -->
-        <div class=" mobile-header md:hidden">
-          <!-- 第一行：菜单、Logo、购物袋 -->
-          <div class="container mobile-top-row flex">
-            <!-- 左侧：菜单按钮 -->
-            <div class="mobile-left">
-              <button @click="toggleMobileMenu" class="mobile-menu-btn">
-                <div class="i-ic:baseline-menu"></div>
-              </button>
-
-              <!-- 移动端主题切换 -->
-              <!-- <button @click="toggleTheme" class="mobile-theme-btn" :title="isDarkMode ? '切换到白天模式' : '切换到夜间模式'">
-                <div :class="isDarkMode ? 'i-ic:baseline-light-mode' : 'i-ic:baseline-dark-mode'">
-                </div>
-              </button> -->
-
-
-              <!-- 移动端语言切换 -->
-              <div class="relative">
-                <button @click="toggleMobileLanguageMenu" class="mobile-language-btn">
-                  <div class="i-ic:baseline-g-translate"></div>
-                </button>
-                <Menu ref="mobileLanguageMenu" :model="languageOptions" :popup="true" />
-              </div>
-            </div>
-
-            <!-- 中间：Logo -->
-            <div class="mobile-center-logo">
-              <RouterLink to="/" class="mobile-logo-link">
-                <h1 class="mobile-logo-text">外贸商城</h1>
-              </RouterLink>
-            </div>
-
-            <!-- 右侧：购物袋 -->
-            <div class="mobile-right">
-              <button class="mobile-cart-btn">
-                <div class="i-ic:outline-shopping-cart"></div>
-                <span class="mobile-cart-count">{{ cartCount }}</span>
-              </button>
-            </div>
-
-
-            <!-- 登录/用户信息 -->
-            <button @click="handleLogin" class="mobile-theme-btn " :title="isUserLoggedIn ? '用户中心' : '登录'">
-              <div :class="isUserLoggedIn ? 'i-ic:baseline-person' : 'i-ic:baseline-login'" class="w-5 h-5 mr-2">
-              </div>
-              <span class="login-text">{{ isUserLoggedIn ? '用户中心' : '登录' }}</span>
+            <button class="text-gray-600 hover:text-gray-900 transition-colors">
+              <i class="pi pi-user text-xl"></i>
             </button>
           </div>
-
-          <!-- 第二行：搜索框 -->
-          <div class="mobile-search-row">
-            <InputGroup>
-              <InputText v-model="searchQuery" placeholder="搜索商品..." @update:modelValue="handleSearch" />
-              <InputGroupAddon>
-                <Button icon="pi pi-search" severity="secondary" variant="text" @click="handleSearch" />
-              </InputGroupAddon>
-            </InputGroup>
-          </div>
-
         </div>
-      </div>
-
-
+      </nav>
     </header>
 
-    <!-- 分类导航 - 桌面版 -->
-    <div class="hidden md:block min-h-[50px]">
+    <!-- 分类导航栏 -->
+    <div class="hidden md:block">
       <CategoryNav />
     </div>
 
-    <!-- 移动端分类菜单抽屉 -->
-    <Drawer v-model:visible="isMobileMenuOpen">
-      <template #header>
-        <div class="flex items-center gap-2">
-          <h3 class="text-lg font-semibold text-gray-800">商品分类</h3>
-        </div>
-      </template>
-      <!-- 移动端分类菜单 -->
-      <div class="overflow-y-auto h-full pb-20">
-        <CategoryNav :is-mobile="true" @category-selected="closeMobileMenu" />
-      </div>
-      <template #footer>
-        <div class="flex items-center gap-2">
-          <Button label="Account" icon="pi pi-user" class="flex-auto" variant="outlined"></Button>
-          <Button label="Logout" icon="pi pi-sign-out" class="flex-auto" severity="danger" text></Button>
-        </div>
-      </template>
-    </Drawer>
-
-    <!-- 主要内容区域 -->
-    <main class="main-content">
-      <router-view></router-view>
+    <!-- 中间内容区域 -->
+    <main class="flex-1">
+      <router-view />
     </main>
 
-    <!-- 网站底部 -->
-    <footer class="site-footer">
-      <div class="container">
-        <!-- 加载状态 -->
-        <div v-if="footerConfig.loading" class="footer-loading">
-          <div class="text-center py-8">
-            <i class="pi pi-spin pi-spinner text-2xl"></i>
-            <p class="mt-2 text-gray-500">加载中...</p>
+    <!-- 底部 -->
+    <footer class="bg-gray-50 border-t border-gray-200">
+      <div class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <!-- 品牌介绍 -->
+          <div class="md:col-span-2">
+            <h3 class="text-2xl font-light tracking-wider text-gray-900 mb-4">GINA</h3>
+            <p class="text-gray-600 mb-4">
+              自1954年以来，GINA一直致力于创造世界上最精美的女鞋。我们的每一双鞋都在意大利手工制作，
+              融合了传统工艺与现代设计理念，为追求品质与优雅的女性提供完美的选择。
+            </p>
+            <div class="flex space-x-4">
+              <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="pi pi-facebook text-xl"></i>
+              </a>
+              <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="pi pi-instagram text-xl"></i>
+              </a>
+              <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="pi pi-twitter text-xl"></i>
+              </a>
+            </div>
           </div>
-        </div>
 
-        <!-- 底部内容 -->
-        <div v-else class="footer-content text-center ">
-          <div v-for="section in footerConfig.sections" :key="section.title" class="footer-section">
-            <h4>{{ section.title || 111 }}</h4>
-            <ul v-if="section.links && section.links.length > 0">
-              <li v-for="link in section.links" :key="link.text">
-                <a :href="link.url || '#'" :target="link.url && link.url.startsWith('http') ? '_blank' : '_self'"
-                  :rel="link.url && link.url.startsWith('http') ? 'noopener noreferrer' : ''">
-                  {{ link.text }}
-                </a>
+          <!-- 快速链接 -->
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-4">快速链接</h4>
+            <ul class="space-y-2">
+              <li>
+                <router-link to="/" class="text-gray-600 hover:text-gray-900 transition-colors">
+                  首页
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/products" class="text-gray-600 hover:text-gray-900 transition-colors">
+                  商品系列
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/about" class="text-gray-600 hover:text-gray-900 transition-colors">
+                  关于我们
+                </router-link>
+              </li>
+              <li>
+                <router-link to="/contact" class="text-gray-600 hover:text-gray-900 transition-colors">
+                  联系我们
+                </router-link>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 联系信息 -->
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-4">联系我们</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li class="flex items-center space-x-2">
+                <i class="pi pi-map-marker text-sm"></i>
+                <span>北京市朝阳区建国路88号</span>
+              </li>
+              <li class="flex items-center space-x-2">
+                <i class="pi pi-phone text-sm"></i>
+                <span>+86 400-123-4567</span>
+              </li>
+              <li class="flex items-center space-x-2">
+                <i class="pi pi-envelope text-sm"></i>
+                <span>contact@gina.com</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div v-if="!footerConfig.loading" class="footer-bottom">
-          <p>{{ footerConfig.copyright || '© 2024 WWW.APPARELCITY.COM.CN All Rights Reserved' }}</p>
+        <!-- 版权信息 -->
+        <div class="border-t border-gray-200 mt-8 pt-8 text-center text-gray-600">
+          <p>&copy; 2024 GINA. 版权所有。</p>
         </div>
       </div>
     </footer>
@@ -380,269 +151,26 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 顶部信息栏样式 */
-.shipping-info {
-  @apply text-sm text-gray-600;
+/* 导航链接激活状态 */
+.router-link-active {
+  color: #111827 !important;
+  font-weight: 500;
 }
 
-
-
-
-/* 桌面端头部布局 */
-.desktop-header {
-  @apply justify-between;
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
 }
 
-.header-left {
-  @apply flex items-center space-x-3;
-}
-
-.language-btn {
-  @apply flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.language-btn div {
-  @apply w-4 h-4;
-}
-
-.language-btn span {
-  @apply text-sm font-medium;
-}
-
-.theme-btn {
-  @apply relative flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.login-btn {
-  @apply flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.theme-btn div {
-  @apply w-5 h-5;
-}
-
-/* 语言菜单样式 */
-.language-menu {
-  @apply mt-2;
-}
-
-/* 深色模式下的样式调整 */
-.dark .language-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-.dark .theme-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-.dark .header-main {
-  @apply bg-gray-900 border-gray-700;
-}
-
-.dark .search-input {
-  @apply bg-gray-800 border-gray-600 text-gray-200 placeholder-gray-400;
-}
-
-.dark .search-btn {
-  @apply bg-gray-700 hover:bg-gray-600 text-gray-300;
-}
-
-.dark .action-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-.dark .cart-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-/* 移动端深色模式样式 */
-.dark .mobile-header {
-  @apply bg-gray-900;
-}
-
-.dark .mobile-menu-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-.dark .mobile-theme-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-.dark .mobile-language-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-.dark .mobile-logo-text {
-  @apply text-blue-400;
-}
-
-.dark .mobile-search-input {
-  @apply bg-gray-800 border-gray-600 text-gray-200 placeholder-gray-400;
-}
-
-.dark .mobile-search-btn {
-  @apply bg-gray-700 hover:bg-gray-600 text-gray-300;
-}
-
-.dark .mobile-cart-btn {
-  @apply text-gray-300 hover:text-blue-400 hover:bg-gray-800;
-}
-
-/* 中间Logo区域 */
-
-.logo-link {
-  @apply text-decoration-none;
-}
-
-.logo-text {
-  @apply text-2xl font-bold text-blue-600 m-0;
-}
-
-/* 右侧功能区域 */
-.function-area .search-box {
-  @apply flex items-center;
-}
-
-.search-input {
-  @apply px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-}
-
-.search-btn {
-  @apply px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-r-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
-}
-
-.search-btn div {
-  @apply w-4 h-4;
-}
-
-.action-buttons {
-  @apply flex items-center space-x-2;
-}
-
-.action-btn {
-  @apply p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.action-btn div {
-  @apply w-5 h-5;
-}
-
-.cart-btn {
-  @apply relative p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.cart-btn div {
-  @apply w-5 h-5;
-}
-
-.cart-count {
-  @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center;
-}
-
-/* 移动端头部布局 */
-.mobile-header {
-  @apply py-2 space-y-2;
-}
-
-.mobile-top-row {
-  @apply items-center justify-between;
-}
-
-.mobile-left {
-  @apply flex items-center;
-}
-
-.mobile-menu-btn {
-  @apply p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.mobile-menu-btn div {
-  @apply w-5 h-5;
-}
-
-.mobile-theme-btn {
-  @apply p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.mobile-theme-btn div {
-  @apply w-5 h-5;
-}
-
-.mobile-center-logo {
-  @apply flex-1 flex justify-center;
-}
-
-.mobile-logo-link {
-  @apply text-decoration-none;
-}
-
-.mobile-logo-text {
-  @apply text-xl font-bold text-blue-600 m-0;
-}
-
-.mobile-search-row {
-  @apply px-4;
-}
-
-.mobile-search-box {
-  @apply flex items-center w-full;
-}
-
-.mobile-search-input {
-  @apply flex-1 px-3 py-1.5 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm;
-}
-
-.mobile-search-btn {
-  @apply px-3 py-1.5 bg-blue-600 text-white border border-blue-600 rounded-r-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200;
-}
-
-.mobile-search-btn div {
-  @apply w-4 h-4;
-}
-
-.mobile-right {
-  @apply flex items-center space-x-2;
-}
-
-.mobile-language-btn {
-  @apply p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.mobile-language-btn div {
-  @apply w-5 h-5;
-}
-
-.mobile-language-menu {
-  @apply mt-2;
-}
-
-.mobile-cart-btn {
-  @apply relative p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-full transition-all duration-200 bg-transparent border-none cursor-pointer;
-}
-
-.mobile-cart-btn div {
-  @apply w-5 h-5;
-}
-
-.mobile-cart-count {
-  @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center;
-}
-
-/* 布局容器 */
-.layout-container {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen;
-}
-
-/* 主要内容区域 */
-.main-content {
-  @apply flex-1;
-}
-
-.loading-container {
-  @apply flex items-center justify-center min-h-96;
-}
-
-.loading-spinner {
-  @apply flex flex-col items-center space-y-2 text-gray-600;
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .grid {
+    gap: 2rem;
+  }
 }
 </style>

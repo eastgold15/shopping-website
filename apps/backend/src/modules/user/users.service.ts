@@ -1,6 +1,6 @@
 import { db } from "@backend/db/connection";
 import {
-	CustomeError,
+	CustomError,
 	handleDatabaseError,
 	NotFoundError,
 	ValidationError,
@@ -91,7 +91,7 @@ export class UsersService extends BaseService<
 
 			return result[0];
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);
@@ -108,7 +108,7 @@ export class UsersService extends BaseService<
 
 			return result;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);
@@ -132,7 +132,7 @@ export class UsersService extends BaseService<
 
 			return result[0];
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);
@@ -165,7 +165,7 @@ export class UsersService extends BaseService<
 
 			return result;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);
@@ -217,7 +217,7 @@ export class UsersService extends BaseService<
 
 			return stats;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);
@@ -248,7 +248,7 @@ export class UsersService extends BaseService<
 
 			return result.length;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);
@@ -284,7 +284,7 @@ export class UsersService extends BaseService<
 
 			return true;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);

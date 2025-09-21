@@ -131,7 +131,7 @@ export const useCmsApi = () => {
 				return data;
 			},
 
-			getById: async (id: string) => {
+			getById: async (id: number) => {
 				const { data, error } = await client.api.categories({ id }).get();
 				if (error) {
 					console.error("Categories getById error:", error);

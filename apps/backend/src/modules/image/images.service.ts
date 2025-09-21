@@ -13,7 +13,7 @@ import type {
 	UpdateImagesDto,
 } from "../../types";
 import {
-	CustomeError,
+	CustomError,
 	handleDatabaseError,
 	NotFoundError,
 } from "../../utils/error/customError";
@@ -252,7 +252,7 @@ export class ImageService extends BaseService<
 
 			return commonRes(images);
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);

@@ -94,35 +94,14 @@
               <p v-if="selectedSize" class="text-sm text-gray-600 mt-2">已选择: {{ selectedSize.name }}</p>
             </div>
 
-            <!-- 操作按钮 -->
-            <div class="action-buttons mb-6">
-              <div class="flex gap-3 mb-3">
-                <button
-                  class="flex-1 bg-gray-900 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  :disabled="!canAddToCart" @click="addToCart">
-                  加入购物车
-                </button>
-                <button
-                  class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  :disabled="!canAddToCart" @click="buyNow">
-                  立即购买
-                </button>
-              </div>
-
-              <div class="flex gap-3">
-                <button
-                  class="flex-1 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                  @click="toggleFavorite">
-                  <i :class="isFavorited ? 'i-ic:baseline-favorite text-red-500' : 'i-ic:baseline-favorite-border'"></i>
-                  {{ isFavorited ? '已收藏' : '收藏' }}
-                </button>
-                <button
-                  class="flex-1 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                  @click="shareProduct">
-                  <i class="i-ic:baseline-share"></i>
-                  分享
-                </button>
-              </div>
+            <!-- 咨询按钮 -->
+            <div class="consultation-section mb-6">
+              <button
+                class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                @click="openConsultationModal">
+                <i class="i-ic:baseline-email"></i>
+                咨询商品
+              </button>
             </div>
 
             <!-- 商品描述 -->
@@ -165,6 +144,52 @@
         <i class="i-ic:baseline-close"></i>
       </button>
     </div>
+
+    <!-- 咨询模态框 -->
+    <div v-if="showConsultationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6" @click.stop>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-gray-900">商品咨询</h3>
+          <button @click="closeConsultationModal" class="text-gray-400 hover:text-gray-600">
+            <i class="i-ic:baseline-close text-2xl"></i>
+          </button>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">商品名称</label>
+          <input type="text" :value="product?.name" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+        </div>
+        
+        <div class="mb-4" v-if="selectedColor">
+          <label class="block text-sm font-medium text-gray-700 mb-2">颜色</label>
+          <input type="text" :value="selectedColor.name" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+        </div>
+        
+        <div class="mb-4" v-if="selectedSize">
+          <label class="block text-sm font-medium text-gray-700 mb-2">尺寸</label>
+          <input type="text" :value="selectedSize.name" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">数量</label>
+          <input type="number" v-model="consultationQuantity" min="1" max="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">备注</label>
+          <textarea v-model="consultationNote" rows="3" placeholder="请输入您的特殊要求或问题..." class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none"></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+          <button @click="closeConsultationModal" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            取消
+          </button>
+          <button @click="sendConsultation" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            发送咨询
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -191,7 +216,9 @@ const sizeTypes = ["uk", "eu", "us"] as const;
 // UI状态
 const showFullDescription = ref(false);
 const showImageModal = ref(false);
-const isFavorited = ref(false);
+const showConsultationModal = ref(false);
+const consultationQuantity = ref(1);
+const consultationNote = ref("");
 
 // 计算属性
 const availableColors = computed(() => {
@@ -301,20 +328,8 @@ const currentStock = computed(() => {
 	return product.value?.stock || 0;
 });
 
-const canAddToCart = computed(() => {
+const canConsult = computed(() => {
 	if (!product.value) return false;
-
-	// 检查库存
-	if (currentStock.value <= 0) {
-		return false;
-	}
-
-	// 如果商品有多规格，必须选择颜色和尺寸
-	if (product.value.hasVariants) {
-		if (availableColors.value.length > 0 && !selectedColor.value) return false;
-		if (availableSizes.value.length > 0 && !selectedSize.value) return false;
-	}
-
 	return true;
 });
 
@@ -407,73 +422,49 @@ const getSizeByType = (size: any, type: string) => {
 	}
 };
 
-const addToCart = () => {
-	if (!canAddToCart.value) {
-		return;
-	}
+const openConsultationModal = () => {
+	showConsultationModal.value = true;
+};
 
-	// 构建购物车项目
-	const cartItem = {
-		productId: product.value?.id,
-		name: product.value?.name,
-		price: currentPrice.value,
-		image: currentImage.value,
-		color: selectedColor.value?.name,
-		size: selectedSize.value?.name,
-		skuId: selectedSku.value?.id,
-		quantity: 1,
+const closeConsultationModal = () => {
+	showConsultationModal.value = false;
+	consultationQuantity.value = 1;
+	consultationNote.value = "";
+};
+
+const sendConsultation = () => {
+	// 构建咨询信息
+	const consultationInfo = {
+		product: product.value?.name,
+		color: selectedColor.value?.name || "未指定",
+		size: selectedSize.value?.name || "未指定",
+		quantity: consultationQuantity.value,
+		note: consultationNote.value,
+		productUrl: window.location.href,
 	};
 
-	// 这里应该调用购物车API或状态管理
-	console.log("添加到购物车:", cartItem);
+	// 构建邮件内容
+	const subject = encodeURIComponent(`商品咨询 - ${product.value?.name}`);
+	const body = encodeURIComponent(
+		`您好，我对以下商品感兴趣：
 
-	// 显示成功提示
-	alert("商品已添加到购物车！");
-};
+商品名称：${consultationInfo.product}
+颜色：${consultationInfo.color}
+尺寸：${consultationInfo.size}
+数量：${consultationInfo.quantity}
+${consultationInfo.note ? `\n备注：${consultationInfo.note}` : ""}
 
-const buyNow = () => {
-	if (!canAddToCart.value) {
-		return;
-	}
+商品链接：${consultationInfo.productUrl}
 
-	// 构建订单项目
-	const orderItem = {
-		productId: product.value?.id,
-		name: product.value?.name,
-		price: currentPrice.value,
-		image: currentImage.value,
-		color: selectedColor.value?.name,
-		size: selectedSize.value?.name,
-		skuId: selectedSku.value?.id,
-		quantity: 1,
-	};
+请回复邮件以便进一步沟通。`,
+	);
 
-	// 这里应该跳转到结算页面
-	console.log("立即购买:", orderItem);
-	alert("跳转到结算页面...");
-};
+	// 打开邮件客户端
+	const mailtoLink = `mailto:contact@gina.com?subject=${subject}&body=${body}`;
+	window.location.href = mailtoLink;
 
-const toggleFavorite = () => {
-	isFavorited.value = !isFavorited.value;
-
-	// 这里应该调用收藏API
-	console.log(isFavorited.value ? "添加到收藏" : "取消收藏", product.value?.id);
-	alert(isFavorited.value ? "已添加到收藏！" : "已取消收藏！");
-};
-
-const shareProduct = () => {
-	// 分享功能
-	if (navigator.share) {
-		navigator.share({
-			title: product.value?.name,
-			text: product.value?.shortDescription,
-			url: window.location.href,
-		});
-	} else {
-		// 复制链接到剪贴板
-		navigator.clipboard.writeText(window.location.href);
-		alert("商品链接已复制到剪贴板！");
-	}
+	// 关闭模态框
+	closeConsultationModal();
 };
 
 const openImageModal = () => {

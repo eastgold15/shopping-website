@@ -2,7 +2,7 @@
 
 import type { UploadImagesDto } from "@backend/db/models";
 import {
-	CustomeError,
+	CustomError,
 	handleDatabaseError,
 	InternalServerError,
 	UploadError,
@@ -69,7 +69,7 @@ export class UploadService {
 
 			return uploadResults;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 		}
@@ -133,7 +133,7 @@ export class UploadService {
 
 			return uploadResults;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			console.error("批量图片上传失败:", error);
@@ -164,7 +164,7 @@ export class UploadService {
 
 			return await ossService.deleteFile(key);
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			console.error("文件删除失败:", error);
@@ -197,7 +197,7 @@ export class UploadService {
 
 			return exists;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			console.error("检查文件存在性失败:", error);
@@ -234,7 +234,7 @@ export class UploadService {
 			};
 			return fileInfo;
 		} catch (error) {
-			if (error instanceof CustomeError) {
+			if (error instanceof CustomError) {
 				throw error;
 			}
 			console.error("获取文件信息失败:", error);

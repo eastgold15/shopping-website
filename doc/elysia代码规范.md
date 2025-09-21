@@ -382,7 +382,7 @@ export const err_handler = new Elysia()
   })
   .onError(({ error, code, set, status, path }) => {
     // 业务错误
-    if (error instanceof CustomError.CustomeError) {
+    if (error instanceof CustomError.CustomError) {
       error.toResponse()
     }
 
@@ -397,7 +397,7 @@ export const err_handler = new Elysia()
 
 // backend/src/utils/error/customError.ts
 // 自定义错误
-export class CustomeError extends Error {
+export class CustomError extends Error {
   status = 10010
   constructor(public message: string) {
     super(message)
@@ -413,7 +413,7 @@ export class CustomeError extends Error {
 }
 
 // 处理数据库错误 - 转换为自定义错误类
-export function handleDatabaseError(error: any): CustomeError {
+export function handleDatabaseError(error: any): CustomError {
   // PostgreSQL错误代码
   const errorCode = error?.code;
   const errorMessage = error?.message;
@@ -449,7 +449,7 @@ export function handleDatabaseError(error: any): CustomeError {
 }
 
 // 注释
-export class DatabaseError extends CustomeError {   //定义业务码
+export class DatabaseError extends CustomError {   //定义业务码
   status = 20001
   constructor(message: string = "数据库操作失败") {
     super(message)
@@ -461,7 +461,7 @@ export class DatabaseError extends CustomeError {   //定义业务码
 try {
   xxx业务代码
 } catch (error) {
-  if (error instanceof CustomeError) {
+  if (error instanceof CustomError) {
     throw error;
   }
   throw handleDatabaseError(error);

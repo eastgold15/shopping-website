@@ -1,14 +1,34 @@
-import HomeLayout from "@frontend/layouts/IndexLayout.vue";
+import ClientLayout from "@frontend/layouts/ClientLayout.vue";
 
 const IndexRoutes = [
 	{
 		path: "/",
-		component: HomeLayout,
+		component: ClientLayout,
 		children: [
 			{
 				path: "/",
-				name: "index",
+				name: "home",
 				component: () => import("@frontend/pages/index.vue"),
+			},
+			{
+				path: "products",
+				name: "products",
+				component: () => import("@frontend/pages/ProductDetail.vue"),
+			},
+			{
+				path: "about",
+				name: "about",
+				component: () => import("@frontend/pages/About.vue"),
+			},
+			{
+				path: "contact",
+				name: "contact",
+				component: () => import("@frontend/pages/Contact.vue"),
+			},
+			{
+				path: "category/:id",
+				name: "category",
+				component: () => import("@frontend/pages/Category.vue"),
 			},
 		],
 	},
