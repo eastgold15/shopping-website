@@ -11,15 +11,14 @@
 		"./server": "./src/index.ts"
 	},
 	"scripts": {
-		"build": " NODE_ENV=production bun build --target bun --minify-whitespace --minify-syntax --outfile ./dist/index.js src/index.ts",
+		"build": "rimraf dist && NODE_ENV=production bun build --target bun --minify-whitespace --minify-syntax --outfile ./dist/index.js src/index.ts",
 		"start": " bun --env-file=.env --env-file=.env.production  ./dist/index.js ",
 		"dev": "bun --watch src/index.ts",
 		"clean": "rimraf dist node_modules  ",
 		"type-check": "bun --bun tsc --noEmit",
 		"lint": "biome check ",
 		"lint:fix": "biome check --write",
-		"deploy": "node deploy-backend.cjs",
-		"deploy:prod": "node deploy-backend.cjs",
+		"deploy:prod": "bun run build && node deploy-backend.cjs",
 		"db:generate": "drizzle-kit generate --config=container/dev/drizzle-dev.config.ts",
 		"db:generate:prod": "drizzle-kit generate --config=container/prod/drizzle-prod.config.ts",
 		"db:migrate": "drizzle-kit migrate --config=container/dev/drizzle-dev.config.ts",

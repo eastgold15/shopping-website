@@ -229,7 +229,9 @@ export abstract class BaseService<
 			throw new NotFoundError(`Record with id ${id} not found`);
 		}
 
-		const result = await db
+		const dbInstance = options.transaction || db;
+
+		const result = await dbInstance
 			.delete(this.table)
 			.where(eq(this.table.id, id))
 			.returning({ id: this.table.id });

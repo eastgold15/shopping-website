@@ -72,15 +72,7 @@ const templateData = await genPrimeCmsTemplateData<
 			isActive: true,
 			createdAt: "",
 			updatedAt: "",
-			images: [
-				{
-					id: 1,
-					fileName: "dongqi.jpeg",
-					imageUrl: "http://img.cykycyky.top/logo/dongqi_2v1uxb.jpeg",
-					category: "logo",
-					isMain: false,
-				},
-			],
+			images: [],
 		}),
 
 		// 3. 定义删除框标题
@@ -93,6 +85,10 @@ const templateData = await genPrimeCmsTemplateData<
 
 		// 5. 数据转换
 		transformSubmitData: (data: any, _mode: CrudMode) => {
+			if (_mode === "NEW") {
+				delete data.createdAt;
+				delete data.updatedAt;
+			}
 			// @ts-ignore
 			data.images = data.images.map((img) => img.id);
 			console.log("data11122", data);

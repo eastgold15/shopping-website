@@ -74,6 +74,7 @@ export const partnersController = new Elysia({
 	.post(
 		"/",
 		async ({ body, partnersService }) => {
+			console.log("body:", body);
 			try {
 				const newPartner = await partnersService.createPartner(body);
 				return commonRes(newPartner, 201, "创建合作伙伴成功");

@@ -1,9 +1,10 @@
 // import { createRouter, createWebHistory } from 'vue-router' // 未使用的导入
+
+// import PaymentSettings from "@frontend/pages/admin/PaymentSettings.vue";
 import AdminLayout from "@frontend/layouts/AdminLayout.vue";
 import AddProduct from "@frontend/pages/admin/AddProduct.vue";
 import AdvertisementManagement from "@frontend/pages/admin/AdvertisementManagement.vue";
 import CategoryManagement from "@frontend/pages/admin/CategoryManagement.vue";
-// import PaymentSettings from "@frontend/pages/admin/PaymentSettings.vue";
 import ImageManager from "@frontend/pages/admin/ImageManager.vue";
 import PrimePartnersManagement from "@frontend/pages/admin/PrimePartnersManagement.vue";
 import ProductsManagement from "@frontend/pages/admin/ProductsManagement.vue";

@@ -55,16 +55,11 @@ const {
 	fetchData, // 新增统一数据获取方法
 	crudDialogOptions,
 	resetForm,
-	submitForm,
 	handleDeletes,
 } = templateDataRef.value;
 
 // 确保使用正确的表单数据
 const tableData = computed(() => templateTableData.value);
-
-// 为 crudDialogOptions 添加类型注解
-const crudDialogOptionsRef = crudDialogOptions;
-
 const _crudController = computed(() => props.crudController || 15);
 const toast = useToast();
 
@@ -72,20 +67,37 @@ const toast = useToast();
 const queryFormRef = ref<FormInstance | null>(null);
 const drawerFormRef = ref<FormInstance | null>(null);
 
-// 分页配置
+// 分页配置 - 使用 crudDialogOptions 中的分页信息
 const paginationOptions = computed(() => ({
-	first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
-	rows: tableData.value.meta.limit,
-	totalRecords: tableData.value.meta.total,
+	first: crudDialogOptions.value.meta
+		? (crudDialogOptions.value.meta.page - 1) *
+			crudDialogOptions.value.meta.limit
+		: 0,
+	rows: crudDialogOptions.value.meta?.limit || 10,
+	totalRecords: crudDialogOptions.value.meta?.total || 0,
 	rowsPerPageOptions: [20, 30, 50, 100],
 }));
 
 // 分页事件处理
-const onPageChange = (event: { first: number; rows: number }) => {
-	tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
-	tableData.value.meta.limit = event.rows;
-	// 根据表格类型调用对应的数据获取方法
-	fetchData(props.useTreeTable || false);
+const onPageChange = async (event: { first: number; rows: number }) => {
+	const newPage = Math.floor(event.first / event.rows) + 1;
+	const newLimit = event.rows;
+
+	// 更新 crudDialogOptions 中的分页信息
+	if (crudDialogOptions.value.meta) {
+		crudDialogOptions.value.meta.page = newPage;
+		crudDialogOptions.value.meta.limit = newLimit;
+	} else {
+		crudDialogOptions.value.meta = {
+			page: newPage,
+			limit: newLimit,
+			total: tableData.value.meta.total || 0,
+			totalPages: tableData.value.meta.totalPages || 0,
+		};
+	}
+
+	// 调用 fetchList，会自动使用 crudDialogOptions 中的分页信息
+	await fetchList();
 };
 
 // 组件挂载时自动加载数据
@@ -112,19 +124,19 @@ const onQueryFormSubmit = async (event: FormSubmitEvent) => {
 const onFormSubmit = async (event: FormSubmitEvent) => {
 	if (event.valid) {
 		try {
-			crudDialogOptionsRef.value.loading = true;
+			crudDialogOptions.value.loading = true;
 
 			const formData = event.values as TForm;
 
 			// 获取当前表单数据
-			const currentData = crudDialogOptionsRef.value.data || {};
+			const currentData = crudDialogOptions.value.data || {};
 			const submitData = { ...currentData, ...formData } as TForm;
 
 			// 转换提交数据
 			if (templateDataRef.value.transformSubmitData) {
 				templateDataRef.value.transformSubmitData(
 					submitData,
-					crudDialogOptionsRef.value.mode,
+					crudDialogOptions.value.mode,
 				);
 			}
 
@@ -132,7 +144,7 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
 			const rawSubmitData = toRaw(submitData) as TForm;
 			let res;
 
-			if (crudDialogOptionsRef.value.mode === "EDIT") {
+			if (crudDialogOptions.value.mode === "EDIT") {
 				// 对于编辑操作，需要从表格数据中获取ID
 				const tableItem = templateTableData.value.items
 					.flat()
@@ -183,7 +195,7 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
 
 			// 统一处理成功后的逻辑
 			if (res?.code === 200) {
-				crudDialogOptionsRef.value.visible = false;
+				crudDialogOptions.value.visible = false;
 				await fetchList();
 			}
 		} catch (error) {
@@ -195,7 +207,7 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
 				life: 3000,
 			});
 		} finally {
-			crudDialogOptionsRef.value.loading = false;
+			crudDialogOptions.value.loading = false;
 		}
 	} else {
 		toast.add({
@@ -299,29 +311,28 @@ defineExpose({
     </Panel>
 
     <!-- 侧边栏对话框 -->
-    <Drawer v-model:visible="crudDialogOptionsRef.visible" position="right" class="w-full !md:w-30rem  h-screen"
+    <Drawer v-model:visible="crudDialogOptions.visible" position="right" class="w-full !md:w-30rem  h-screen"
       :modal="true">
       <template #header>
         <div class="flex align-items-center gap-2">
           <i class="pi pi-user"></i>
           <span class="font-bold">
-            <span v-if="crudDialogOptionsRef.mode === 'NEW'">新建</span>
-            <span v-else-if="crudDialogOptionsRef.mode === 'EDIT'">编辑</span>
-            <span v-else-if="crudDialogOptionsRef.mode === 'READ'">查看</span>
+            <span v-if="crudDialogOptions.mode === 'NEW'">新建</span>
+            <span v-else-if="crudDialogOptions.mode === 'EDIT'">编辑</span>
+            <span v-else-if="crudDialogOptions.mode === 'READ'">查看</span>
             {{ name }}信息
           </span>
-          <Tag v-if="crudDialogOptionsRef.data" :value="`#${(crudDialogOptionsRef.data as T).id}`" severity="secondary"
+          <Tag v-if="crudDialogOptions.data" :value="`#${(crudDialogOptions.data as T).id}`" severity="secondary"
             class="ml-2" />
         </div>
       </template>
 
       <div class="flex justify-center">
-        <Form v-slot="$form" unstyled v-if="crudDialogOptionsRef.data" ref="drawerFormRef"
-          :initialValues="crudDialogOptionsRef.data" :resolver="props.resolver" @submit="onFormSubmit"
+        <Form v-slot="$form" unstyled v-if="crudDialogOptions.data" ref="drawerFormRef"
+          :initialValues="crudDialogOptions.data" :resolver="props.resolver" @submit="onFormSubmit"
           class="w-full flex flex-col gap-4 ">
-          <slot :data="(crudDialogOptionsRef.data as T)" :mode="crudDialogOptionsRef.mode"
-            :disabled="crudDialogOptionsRef.loading || crudDialogOptionsRef.mode === 'READ'" name="CrudForm"
-            :$form="$form" />
+          <slot :data="(crudDialogOptions.data as T)" :mode="crudDialogOptions.mode"
+            :disabled="crudDialogOptions.loading || crudDialogOptions.mode === 'READ'" name="CrudForm" :$form="$form" />
         </Form>
       </div>
 
@@ -329,16 +340,14 @@ defineExpose({
         <div class="flex gap-2 justify-content-end">
           <div class="flex gap-2 justify-content-end">
             <slot name="CrudFormAction">
-              <template v-if="crudDialogOptionsRef.mode === 'READ'">
-                <Button label="关闭" icon="pi pi-times" severity="secondary"
-                  @click="crudDialogOptionsRef.visible = false" />
+              <template v-if="crudDialogOptions.mode === 'READ'">
+                <Button label="关闭" icon="pi pi-times" severity="secondary" @click="crudDialogOptions.visible = false" />
               </template>
               <template v-else>
-                <Button label="取消" icon="pi pi-times" severity="secondary"
-                  @click="crudDialogOptionsRef.visible = false" />
+                <Button label="取消" icon="pi pi-times" severity="secondary" @click="crudDialogOptions.visible = false" />
                 <Button label="重置" icon="pi pi-refresh" severity="secondary" @click="resetForm(drawerFormRef)" />
-                <Button type="submit" :label="crudDialogOptionsRef.mode !== 'NEW' ? '修改' : '新增'" icon="pi pi-check"
-                  :loading="crudDialogOptionsRef.loading" @click="drawerFormRef?.submit?.()" />
+                <Button type="submit" :label="crudDialogOptions.mode !== 'NEW' ? '修改' : '新增'" icon="pi pi-check"
+                  :loading="crudDialogOptions.loading" @click="drawerFormRef?.submit?.()" />
               </template>
             </slot>
           </div>

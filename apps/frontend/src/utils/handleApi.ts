@@ -705,6 +705,3 @@ export const useFrontApi = () => {
 	};
 };
 export type UnPromisify<T> = T extends Promise<infer U> ? U : T;
-
-const res = await useCmsApi().products.list();
-console.log(res);

@@ -102,11 +102,24 @@ export async function genPrimeCmsTemplateData<
 	}
 
 	// 获取数据方法
-	const fetchList = async (params: Partial<PageQuery> = queryParams.value) => {
+	const fetchList = async (params?: Partial<PageQuery>) => {
 		try {
 			formLoading.value = true;
+
+			// 构建查询参数，优先使用 crudDialogOptions 中的分页信息
+			const finalParams = {
+				...queryParams.value,
+				...(crudDialogOptions.value.meta
+					? {
+							page: crudDialogOptions.value.meta.page,
+							limit: crudDialogOptions.value.meta.limit,
+						}
+					: {}),
+				...params,
+			};
+
 			const safeParams = omitBy(
-				params,
+				finalParams,
 				(v) => v == null || v === "",
 			) as Partial<PageQuery>;
 
@@ -118,6 +131,9 @@ export async function genPrimeCmsTemplateData<
 			const { code, data, message } = await dataCrudHandler.getList(safeParams);
 
 			if (code === 200) {
+				// 更新 crudDialogOptions 中的分页信息
+				crudDialogOptions.value.meta = data.meta;
+
 				if (dataCrudHandler.onFetchSuccess) {
 					await dataCrudHandler.onFetchSuccess(data);
 					tableData.value = data;

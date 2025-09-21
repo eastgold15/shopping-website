@@ -26,6 +26,12 @@ export interface CrudDialogOptions<T = unknown> {
 	mode: CrudMode;
 	data: T | null;
 	loading: boolean;
+	meta?: {
+		page: number;
+		limit: number;
+		total: number;
+		totalPages: number;
+	};
 }
 
 /**

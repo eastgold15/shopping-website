@@ -13,22 +13,22 @@ import { computed, ref, watch } from "vue";
 import { z } from "zod";
 
 interface Color {
-  name: string;
-  value?: string;
+	name: string;
+	value?: string;
 }
 
 interface Size {
-  name: string;
-  value?: string;
+	name: string;
+	value?: string;
 }
 
 const props = defineProps<{
-  productId: number;
-  productName: string;
+	productId: number;
+	productName: string;
 }>();
 
 const emit = defineEmits<{
-  success: [result: any];
+	success: [result: any];
 }>();
 
 const toast = useToast();
@@ -37,14 +37,14 @@ const visible = defineModel<boolean>("visible", { default: false });
 
 // 表单数据
 const form = ref({
-  colors: [] as Color[],
-  sizes: [] as Size[],
-  defaultPrice: "",
-  defaultComparePrice: "",
-  defaultCost: "",
-  defaultStock: 100,
-  defaultWeight: "",
-  skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
+	colors: [] as Color[],
+	sizes: [] as Size[],
+	defaultPrice: "",
+	defaultComparePrice: "",
+	defaultCost: "",
+	defaultStock: 100,
+	defaultWeight: "",
+	skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
 });
 
 // 临时输入
@@ -56,174 +56,174 @@ const previewSkus = ref<any[]>([]);
 
 // 表单验证schema
 const formSchema = z.object({
-  colors: z
-    .array(
-      z.object({
-        name: z.string().min(1, "颜色名称不能为空"),
-        value: z.string().optional(),
-      }),
-    )
-    .min(1, "至少需要一个颜色"),
-  sizes: z
-    .array(
-      z.object({
-        name: z.string().min(1, "尺寸名称不能为空"),
-        value: z.string().optional(),
-      }),
-    )
-    .min(1, "至少需要一个尺寸"),
-  defaultPrice: z.string().min(1, "价格不能为空"),
-  defaultComparePrice: z.string().optional(),
-  defaultCost: z.string().optional(),
-  defaultStock: z.number().min(0, "库存不能小于0"),
-  defaultWeight: z.string().optional(),
-  skuCodePattern: z.string().min(1, "SKU编码模式不能为空"),
+	colors: z
+		.array(
+			z.object({
+				name: z.string().min(1, "颜色名称不能为空"),
+				value: z.string().optional(),
+			}),
+		)
+		.min(1, "至少需要一个颜色"),
+	sizes: z
+		.array(
+			z.object({
+				name: z.string().min(1, "尺寸名称不能为空"),
+				value: z.string().optional(),
+			}),
+		)
+		.min(1, "至少需要一个尺寸"),
+	defaultPrice: z.string().min(1, "价格不能为空"),
+	defaultComparePrice: z.string().optional(),
+	defaultCost: z.string().optional(),
+	defaultStock: z.number().min(0, "库存不能小于0"),
+	defaultWeight: z.string().optional(),
+	skuCodePattern: z.string().min(1, "SKU编码模式不能为空"),
 });
 
 const resolver = zodResolver(formSchema);
 
 // 计算总组合数
 const totalCombinations = computed(() => {
-  return form.value.colors.length * form.value.sizes.length;
+	return form.value.colors.length * form.value.sizes.length;
 });
 
 // 添加颜色
 const addColor = () => {
-  if (newColor.value.name.trim()) {
-    form.value.colors.push({
-      name: newColor.value.name.trim(),
-      value: newColor.value.value.trim() || newColor.value.name.trim(),
-    });
-    newColor.value = { name: "", value: "" };
-  }
+	if (newColor.value.name.trim()) {
+		form.value.colors.push({
+			name: newColor.value.name.trim(),
+			value: newColor.value.value.trim() || newColor.value.name.trim(),
+		});
+		newColor.value = { name: "", value: "" };
+	}
 };
 
 // 删除颜色
 const removeColor = (index: number) => {
-  form.value.colors.splice(index, 1);
+	form.value.colors.splice(index, 1);
 };
 
 // 添加尺寸
 const addSize = () => {
-  if (newSize.value.name.trim()) {
-    form.value.sizes.push({
-      name: newSize.value.name.trim(),
-      value: newSize.value.value.trim() || newSize.value.name.trim(),
-    });
-    newSize.value = { name: "", value: "" };
-  }
+	if (newSize.value.name.trim()) {
+		form.value.sizes.push({
+			name: newSize.value.name.trim(),
+			value: newSize.value.value.trim() || newSize.value.name.trim(),
+		});
+		newSize.value = { name: "", value: "" };
+	}
 };
 
 // 删除尺寸
 const removeSize = (index: number) => {
-  form.value.sizes.splice(index, 1);
+	form.value.sizes.splice(index, 1);
 };
 
 // 生成预览
 const generatePreview = () => {
-  previewSkus.value = [];
+	previewSkus.value = [];
 
-  form.value.colors.forEach((color) => {
-    form.value.sizes.forEach((size) => {
-      const skuCode = form.value.skuCodePattern
-        .replace("{productId}", props.productId.toString())
-        .replace("{colorName}", color.name)
-        .replace("{colorValue}", color.value || color.name)
-        .replace("{sizeName}", size.name)
-        .replace("{sizeValue}", size.value || size.name);
+	form.value.colors.forEach((color) => {
+		form.value.sizes.forEach((size) => {
+			const skuCode = form.value.skuCodePattern
+				.replace("{productId}", props.productId.toString())
+				.replace("{colorName}", color.name)
+				.replace("{colorValue}", color.value || color.name)
+				.replace("{sizeName}", size.name)
+				.replace("{sizeValue}", size.value || size.name);
 
-      previewSkus.value.push({
-        skuCode,
-        name: `${props.productName} ${color.name} ${size.name}`,
-        colorName: color.name,
-        sizeName: size.name,
-        price: form.value.defaultPrice,
-        stock: form.value.defaultStock,
-      });
-    });
-  });
+			previewSkus.value.push({
+				skuCode,
+				name: `${props.productName} ${color.name} ${size.name}`,
+				colorName: color.name,
+				sizeName: size.name,
+				price: form.value.defaultPrice,
+				stock: form.value.defaultStock,
+			});
+		});
+	});
 };
 
 // 确认创建
 const confirmCreate = async () => {
-  try {
-    // 验证表单
-    const validatedData = formSchema.parse(form.value);
+	try {
+		// 验证表单
+		const validatedData = formSchema.parse(form.value);
 
-    // 调用API创建SKU
-    const response = await fetch(
-      `/api/products/${props.productId}/batch-skus`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(validatedData),
-      },
-    );
+		// 调用API创建SKU
+		const response = await fetch(
+			`/api/products/${props.productId}/batch-skus`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(validatedData),
+			},
+		);
 
-    const result = await response.json();
+		const result = await response.json();
 
-    if (result.code === 200) {
-      toast.add({
-        severity: "success",
-        summary: "创建成功",
-        detail: `成功创建 ${result.data.createdCount} 个SKU`,
-        life: 3000,
-      });
+		if (result.code === 200) {
+			toast.add({
+				severity: "success",
+				summary: "创建成功",
+				detail: `成功创建 ${result.data.createdCount} 个SKU`,
+				life: 3000,
+			});
 
-      emit("success", result.data);
+			emit("success", result.data);
 
-      visible.value = false;
+			visible.value = false;
 
-      // 重置表单
-      form.value = {
-        colors: [],
-        sizes: [],
-        defaultPrice: "",
-        defaultComparePrice: "",
-        defaultCost: "",
-        defaultStock: 100,
-        defaultWeight: "",
-        skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
-      };
-      previewSkus.value = [];
-    } else {
-      throw new Error(result.message || "创建失败");
-    }
-  } catch (error) {
-    toast.add({
-      severity: "error",
-      summary: "创建失败",
-      detail: error instanceof Error ? error.message : "创建SKU失败",
-      life: 3000,
-    });
-  }
+			// 重置表单
+			form.value = {
+				colors: [],
+				sizes: [],
+				defaultPrice: "",
+				defaultComparePrice: "",
+				defaultCost: "",
+				defaultStock: 100,
+				defaultWeight: "",
+				skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
+			};
+			previewSkus.value = [];
+		} else {
+			throw new Error(result.message || "创建失败");
+		}
+	} catch (error) {
+		toast.add({
+			severity: "error",
+			summary: "创建失败",
+			detail: error instanceof Error ? error.message : "创建SKU失败",
+			life: 3000,
+		});
+	}
 };
 
 // 关闭对话框
 const closeDialog = () => {
-  visible.value = false;
-  previewSkus.value = [];
+	visible.value = false;
+	previewSkus.value = [];
 };
 
 // 监听可见性变化，重置表单
 watch(visible, (newval) => {
-  if (!newval) {
-    form.value = {
-      colors: [],
-      sizes: [],
-      defaultPrice: "",
-      defaultComparePrice: "",
-      defaultCost: "",
-      defaultStock: 100,
-      defaultWeight: "",
-      skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
-    };
-    previewSkus.value = [];
-    newColor.value = { name: "", value: "" };
-    newSize.value = { name: "", value: "" };
-  }
+	if (!newval) {
+		form.value = {
+			colors: [],
+			sizes: [],
+			defaultPrice: "",
+			defaultComparePrice: "",
+			defaultCost: "",
+			defaultStock: 100,
+			defaultWeight: "",
+			skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
+		};
+		previewSkus.value = [];
+		newColor.value = { name: "", value: "" };
+		newSize.value = { name: "", value: "" };
+	}
 });
 </script>
 
