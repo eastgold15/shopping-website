@@ -36,11 +36,11 @@ export const partnersModel = {
   partnersTable: selectPartnersSchema,
   // 创建合作伙伴参数
   insertPartners: insertPartnersSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
-    image_ids: z.array(z.coerce.number()).optional()
+    images: z.array(z.coerce.number()).optional()
   }),
   // 更新
   updatePartners: updatePartnersSchema.omit({ id: true, createdAt: true, updatedAt: true }).extend({
-    image_ids: z.array(z.coerce.number()).optional()
+    images: z.array(z.coerce.number()).optional()
   }),
   // 合作伙伴列表查询参数
   queryPartnersList: UnoQueryZod.extend({

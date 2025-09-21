@@ -179,6 +179,7 @@ const mainImageForDisplay = computed(() => {
   const images = currentFormImages.value;
   if (images.length === 0) return null;
   // 找到主图或第一张图
+  // @ts-ignore
   return images.find(img => img.isMain) || images[0];
 });
 
@@ -243,6 +244,7 @@ const onFormSubmit = async (event: FormSubmitEvent) => {
 
       if (crudDialogOptionsRef.value.mode === "EDIT") {
         // 对于编辑操作，需要从表格数据中获取ID
+        // @ts-ignore
         const tableItem = tableData.value.items.flat().find(item => item.id === (currentData as any).id);
         res = await templateData.update(
           (tableItem as unknown as any).id!,

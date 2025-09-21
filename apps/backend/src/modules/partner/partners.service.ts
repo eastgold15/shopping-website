@@ -212,88 +212,112 @@ export class PartnersService {
    * @returns 创建的合作伙伴
    */
   async createPartner(data: InsertPartners) {
-
-    const { image_ids, ...partner } = data
-
-    let newPartner;
-    await db.transaction(async (tx) => {
-      const [inserted] = await tx
-        .insert(partnersTable)
-        .values(partner)
-        .returning();
-      newPartner = inserted
-      if (!inserted) throw new InternalServerError("创建失败")
-
-      if (image_ids && image_ids.length > 0) {
-        const existingImages = await tx.query.imagesTable.findMany({
-          where: inArray(imagesTable.id, image_ids)
-        });
-        const foundIds = existingImages.map(img => img.id)
-        const notFound = image_ids.filter(id => !foundIds.includes(id))
-
-        if (notFound.length > 0) {
-          throw new NotFoundError(`图片 ID ${notFound.join(', ')} 不存在`);
+    console.log(data)
+  try {
+      const { images, ...partner } = data
+      let newPartner;
+      await db.transaction(async (tx) => {
+        const [inserted] = await tx
+        
+          .insert(partnersTable)
+          .values(partner)
+          .returning();
+        newPartner = inserted
+  
+        console.log('inserted:', inserted)
+        if (!inserted) throw new InternalServerError("创建失败")
+  
+        if (images && images.length > 0) {
+          const existingImages = await tx.query.imagesTable.findMany({
+            where: inArray(imagesTable.id, images)
+          });
+          const foundIds = existingImages.map(img => img.id)
+          console.log('foundIds:', foundIds)
+          const notFound = images.filter(id => !foundIds.includes(id))
+          console.log('notFound:', notFound)
+  
+          if (notFound.length > 0) {
+            throw new NotFoundError(`图片 ID ${notFound.join(', ')} 不存在`);
+          }
+  
+          // 批量插入关联关系
+       
+          const refsToInsert = images.map((imageId, index) => ({
+            partnerId: inserted.id,
+            imageId,
+            isMain: index == 0 ? true : false // 默认都不是主图，您也可以扩展逻辑
+          }));
+             console.log('refsToInsert:', refsToInsert)
+           const res =   await tx.insert(partnerImagesTable).values(refsToInsert)
+           console.log('res:', res)
         }
-
-        // 批量插入关联关系
-        const refsToInsert = image_ids.map((imageId, index) => ({
-          partnerId: inserted.id,
-          imageId,
-          isMain: index == 0 ? true : false // 默认都不是主图，您也可以扩展逻辑
-        }));
-        await tx.insert(partnerImagesTable).values(refsToInsert)
-      }
-    })
-    return newPartner;
+      })
+      return newPartner;
+  } catch (error) {
+    console.log(error)
+    throw new InternalServerError("xxx",error)
+  }
   }
 
-  /**
-   * 更新合作伙伴
-   * @param id 合作伙伴ID
-   * @param data 更新数据
-   * @returns 更新后的合作伙伴
-   */
-  async updatePartner(id: number, data: UpdatePartnersDto) {
+/**
+ * 更新合作伙伴
+ * @param id 合作伙伴ID
+ * @param data 更新数据
+ * @returns 更新后的合作伙伴
+ */
+async updatePartner(id: number, data: UpdatePartnersDto) {
+  const { images, ...partner } = data;
 
-    const { image_ids, ...partner } = data
-
-    let updatedPartner;
-    await db.transaction(async (tx) => {
-      const [updated] = await tx.update(partnersTable).set({
+  let updatedPartner;
+  await db.transaction(async (tx) => {
+    // 更新合作伙伴基本信息
+    const [updated] = await tx.update(partnersTable)
+      .set({
         ...partner,
-        updatedAt: new Date()
-      }).where(eq(partnersTable.id, id))
-        .returning()
-      updatedPartner = updated
+        updatedAt: new Date(),
+      })
+      .where(eq(partnersTable.id, id))
+      .returning();
 
-      if (!updated) throw new InternalServerError("更新合作伙伴状态失败")
-      if (image_ids && image_ids.length > 0) {
-        const existingImages = await tx.query.imagesTable.findMany({
-          where: inArray(imagesTable.id, image_ids)
-        })
-        const foundIds = existingImages.map(img => img.id)
-        const notFound = image_ids.filter((id) => !foundIds.includes(id));
-        if (notFound.length > 0) {
-          throw new NotFoundError(`图片 ID ${notFound.join(', ')} 不存在`);
-        }
+    if (!updated) {
+      throw new InternalServerError("更新合作伙伴失败");
+    }
+    updatedPartner = updated;
 
-        // 🧹 2.2 删除旧的关联（关键！否则会残留旧数据）
-        await tx
-          .delete(partnerImagesTable)
-          .where(eq(partnerImagesTable.partnerId, updated.id));
+    // 处理图片关联
+    if (images && images.length > 0) {
+      const existingImages = await tx.query.imagesTable.findMany({
+        where: inArray(imagesTable.id, images),
+      });
 
-        // ➕ 2.3 插入新的关联
-        const refsToInsert = image_ids.map((imageId, index) => ({
-          partnerId: updated.id,
-          imageId,
-          isMain: index === 0, // 第一张图设为主图（可自定义逻辑）
-        }));
-        await tx.insert(partnerImagesTable).values(refsToInsert);
+      const foundIds = existingImages.map(img => img.id);
+      const notFound = images.filter(id => !foundIds.includes(id));
+
+      if (notFound.length > 0) {
+        throw new NotFoundError(`图片 ID ${notFound.join(', ')} 不存在`);
       }
-    })
-    return updatedPartner;
-  }
 
+      // 删除旧的关联
+      await tx.delete(partnerImagesTable).where(eq(partnerImagesTable.partnerId, updated.id));
+
+      // 插入新的关联
+      const refsToInsert = images.map((imageId, index) => ({
+        partnerId: updated.id,
+        imageId,
+        isMain: index === 0, // 第一张图设为主图（可自定义逻辑）
+      }));
+      await tx.insert(partnerImagesTable).values(refsToInsert);
+    } else {
+      // 如果没有提供新的 images，则清除所有关联
+      await tx.delete(partnerImagesTable).where(eq(partnerImagesTable.partnerId, updated.id));
+    }
+  }).catch((error) => {
+    console.error('事务执行过程中发生错误:', error);
+    throw error; // 确保异常向外传播
+  });
+
+  return updatedPartner;
+}
 
   async exists(ids: number | number[]): Promise<boolean> {
     const whereCondition = Array.isArray(ids)
