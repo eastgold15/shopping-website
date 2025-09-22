@@ -7,7 +7,7 @@ import type {
 } from "@backend/types";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import type { CrudMode } from "@frontend/types/prime-cms";
-import { formatDate, getImageUrl } from "@frontend/utils/formatUtils";
+import { formatDate } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
@@ -20,16 +20,10 @@ import Select from "primevue/select";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import { useToast } from "primevue/usetoast";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { z } from "zod";
 
-// 定义表单数据类型（用于提交）
-type PartnerFormType = Omit<SelectPartnersDto, "image_id"> & {
-	image_id: number;
-};
-
 const $crud = useCmsApi().partner;
-
 // 使用zod定义表单验证schema
 const partnerSchema = z.object({
   name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
@@ -128,9 +122,9 @@ const crudTemplateRef = ref();
 
 // 图片选择相关
 const toast = useToast();
-const selectedImage = ref<SelectImagesVo>();
 const images = ref<SelectImagesVo[]>([]);
 const loadingImages = ref(false);
+const imageSelectorVisible = ref(false);
 
 // 加载图片列表
 const loadImages = async () => {
@@ -163,24 +157,6 @@ const loadImages = async () => {
   } finally {
     loadingImages.value = false;
   }
-};
-
-// 计算当前选中的图片
-const currentImage = computed(() => {
-	if (selectedImage.value) {
-		return selectedImage.value;
-	}
-	// 如果有image_id，从images列表中找到对应的图片
-	const formData = crudTemplateRef.value?.currentFormData;
-	if (formData?.image_id && images.value.length > 0) {
-		return images.value.find((img) => img.id === formData.image_id);
-	}
-	return null;
-});
-
-// 获取图片显示名称
-const getImageDisplayName = (image: SelectImagesVo) => {
-	return image.fileName || `图片 ${image.id}`;
 };
 </script>
 
@@ -216,14 +192,10 @@ const getImageDisplayName = (image: SelectImagesVo) => {
     <template #TableColumn>
       <Column field="id" header="ID" style="width: 80px" />
 
-      <Column field="imageRef" header="图片" style="width: 120px">
+      <Column field="images" header="图片" style="width:120px">
         <template #body="{ data }">
           <div class="flex justify-center">
-            <img v-if="data.imageRef?.imageUrl" :src="getImageUrl(data.imageRef.imageUrl)" :alt="data.name"
-              class="w-12 h-12 object-cover rounded-lg border border-gray-200" />
-            <div v-else class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <i class="pi pi-image text-gray-400 text-sm"></i>
-            </div>
+            <ImagePreview :images="data.images" size="small" :show-indicator="true" />
           </div>
         </template>
       </Column>
@@ -289,7 +261,7 @@ const getImageDisplayName = (image: SelectImagesVo) => {
 
     <!-- 表单 -->
     <template
-      #CrudForm="{ data, mode, disabled, $form }: { data: SelectPartnersVo, mode: CrudMode, disabled: boolean, $form: any }">
+      #CrudForm="{ data, mode, disabled, $form }: { data: PartnersListVo, mode: CrudMode, disabled: boolean, $form: any }">
       <div class="h-full">
         <!-- 合作伙伴名称 -->
         <FormField v-slot="$field" name="name" class="flex flex-col gap-2 mb-4">
@@ -309,52 +281,24 @@ const getImageDisplayName = (image: SelectImagesVo) => {
         </FormField>
 
         <!-- 合作伙伴图片 -->
-        <FormField v-slot="$field" name="image_id" class="flex flex-col gap-2 mb-4">
+        <FormField v-slot="$field" name="images" class="flex flex-col gap-2 mb-4">
           <label class="text-sm font-medium">合作伙伴图片 *</label>
-          <div class="card flex justify-center">
-            <Select v-model="data.imageRef" :options="images" optionLabel="fileName" placeholder="选择图片"
-              class="w-full md:w-56" :loading="loadingImages">
-              <template #value="slotProps">
-                <div v-if="slotProps.value" class="flex items-center">
-                  <img :alt="slotProps.value.fileName" :src="getImageUrl(slotProps.value.imageUrl)" class="mr-2"
-                    style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px" />
-                  <div>{{ getImageDisplayName(slotProps.value) }}</div>
-                </div>
-                <span v-else>
-                  {{ slotProps.placeholder }}
-                </span>
-              </template>
-              <template #option="slotProps">
-                <div class="flex items-center">
-                  <img :alt="slotProps.option.fileName" :src="getImageUrl(slotProps.option.imageUrl)" class="mr-2"
-                    style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px" />
-                  <div class="flex flex-col">
-                    <span>{{ getImageDisplayName(slotProps.option) }}</span>
-                    <small class="text-gray-500">{{ slotProps.option.category || 'general' }}</small>
-                  </div>
-                </div>
-              </template>
-              <template #dropdownicon>
-                <i class="pi pi-images" />
-              </template>
-              <template #header>
-                <div class="font-medium p-3">可用图片</div>
-              </template>
-              <template #footer>
-                <div class="p-3">
-                  <Button label="刷新图片" fluid severity="secondary" variant="text" size="small" icon="pi pi-refresh"
-                    @click="loadImages" :loading="loadingImages" />
-                </div>
-              </template>
-            </Select>
+
+          <!-- ✅ 预览当前选中的图片 -->
+          <div v-if="$field.value && $field.value.length > 0" class="flex flex-col gap-2 mb-4">
+            <ImagePreview :images="$field.value" size="small" :show-indicator="true" />
+            <small class="text-gray-600" v-for="(img, index) in $field.value" :key="img.id || index">
+              {{ img.fileName }} ({{ img.category || 'general' }})
+            </small>
           </div>
-          <!-- 显示选中的图片 -->
-          <div v-if="currentImage" class="flex flex-col gap-2 mb-4">
-            <img :src="getImageUrl(currentImage.imageUrl)" :alt="currentImage.fileName"
-              class="w-24 h-24 object-cover rounded-lg border border-gray-200" />
-            <small class="text-gray-600">{{ currentImage.fileName }} ({{ currentImage.category || 'general' }})</small>
-          </div>
-          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
+          <!-- ✅ 图片选择器组件 -->
+          <ImageSelector v-model="$field.value" v-model:visible="imageSelectorVisible" :multiple="true"
+            :max-select="2" />
+          <!-- 图片选择按钮 -->
+          <Button label="选择图片" icon="pi pi-images" severity="secondary" outlined @click="imageSelectorVisible = true" />
+
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+            {{ $field.error?.message }}
           </Message>
         </FormField>
 

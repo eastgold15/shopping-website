@@ -78,7 +78,7 @@ export class ProductsService extends BaseService<
 			// 处理查询参数
 			const {
 				page = 1,
-				pageSize = 10,
+				limit = 10,
 				sortBy = "createdAt",
 				sortOrder = "desc",
 				search,
@@ -145,8 +145,8 @@ export class ProductsService extends BaseService<
 					const sortField = sortFieldMap[sortBy] || products.id;
 					return sortOrder === "desc" ? desc(sortField) : asc(sortField);
 				},
-				limit: pageSize,
-				offset: (page - 1) * pageSize,
+				limit: limit,
+				offset: (page - 1) * limit,
 			});
 
 			// 构建计算总数的查询，考虑搜索条件
@@ -181,7 +181,7 @@ export class ProductsService extends BaseService<
 				countQuery.where(and(...whereConditions));
 			}
 
-			// @ts-ignore
+			// @ts-expect-error
 			const totalResult = await countQuery;
 			const total = Number(totalResult[0].count);
 
@@ -222,8 +222,8 @@ export class ProductsService extends BaseService<
 				meta: {
 					total,
 					page,
-					pageSize,
-					totalPages: Math.ceil(total / pageSize),
+					limit,
+					totalPages: Math.ceil(total / limit),
 				},
 			};
 		} catch (error) {

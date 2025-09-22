@@ -17,7 +17,7 @@ const categories = ref<Category[]>([]);
 const initMeta = ref({
 	total: 0,
 	page: 1,
-	pageSize: 10,
+	limit: 10,
 	totalPages: 1,
 });
 const sortField = ref("createdAt");
@@ -108,8 +108,8 @@ const loadProducts = async () => {
 		loading.value = true;
 		const params = {
 			page: initMeta.value.page,
-			pageSize: initMeta.value.pageSize,
-			sortBy: sortField.value,
+			limit: initMeta.value.limit,
+			sort: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			categoryId: filterCategory.value || undefined,
 			isActive: filterStatus.value !== "all" ? filterStatus.value : undefined,
@@ -174,7 +174,7 @@ onMounted(() => {
 // 分页处理
 const onPage = (event: any) => {
 	initMeta.value.page = event.page + 1;
-	initMeta.value.pageSize = event.rows;
+	initMeta.value.limit = event.rows;
 	loadProducts();
 };
 
@@ -555,7 +555,7 @@ const goToAddProduct = () => {
 
         <!-- 商品数据表格 -->
         <div class="table-section">
-            <DataTable :value="products" :loading="loading" :paginator="true" :rows="initMeta.pageSize"
+            <DataTable :value="products" :loading="loading" :paginator="true" :rows="initMeta.limit"
                 :totalRecords="initMeta.total" :lazy="true" @page="onPage" @sort="onSort" :sortField="sortField"
                 :sortOrder="sortOrder" v-model:selection="selectedProducts" selectionMode="multiple" dataKey="id"
                 tableStyle="min-width: 50rem" class="p-datatable-sm">

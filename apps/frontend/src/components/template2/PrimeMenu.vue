@@ -213,7 +213,7 @@ const tableData = computed(
 			items: [],
 			meta: {
 				page: 1,
-				pageSize: 0,
+				limit: 0,
 				total: 0,
 				totalPages: 0,
 			},

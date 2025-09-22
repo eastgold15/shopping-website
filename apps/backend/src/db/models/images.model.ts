@@ -16,7 +16,8 @@ import {
 import { t } from "elysia";
 import { z } from "zod/v4";
 import { advertisementsTable } from "./advertisements.model";
-import { partnersTable } from "./partners.model";
+import { orderItemsTable } from "./orderItems.model";
+import { partnerImagesTable, partnersTable } from "./partners.model";
 import { productImagesTable } from "./product.model";
 import { UnoQueryZod } from "./utils";
 
@@ -83,6 +84,8 @@ export type ListImagesQueryDto = z.infer<typeof imagesModel.queryImagesListDto>;
 export type BatchDeleteImagesDto = z.infer<
 	typeof imagesModel.batchDeleteImagesDto
 >;
+// 导出选择的图片类型（从 images 模型）
+export type SelectImageType = z.infer<typeof imagesModel.selectImagesTable>;
 // 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰）
 export type SelectImagesVo = SelectImagesType;
 
@@ -92,8 +95,11 @@ export const imagesRelations = relations(imagesTable, ({ many }) => ({
 	advertisements: many(advertisementsTable),
 	// 图片可以被多个合作伙伴使用 - 外键在partners表中
 	partners: many(partnersTable),
+	// 图片可以被多个订单项使用(作为商品图片快照) - 外键在order_items表中
+	orderItems: many(orderItemsTable),
 	// 图片可以被多个商品使用(通过中间表)
 	productImages: many(productImagesTable),
+	partnerImagesRef: many(partnerImagesTable),
 }));
 
 // Zod 模型定义

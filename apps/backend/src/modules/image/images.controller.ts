@@ -78,34 +78,8 @@ export const imagesController = new Elysia({
 		"/:id",
 		async ({ params: { id } }) => {
 			try {
-				// 先获取图片信息
-				const imageResult = await ImageService.getById(id);
-
-				if (!imageResult) {
-					throw new NotFoundError("图片不存在");
-				}
-
-				const imageUrl = imageResult.imageUrl;
-
-				// 从OSS删除文件
-				try {
-					const ossKey = imageUrl.split("/").pop(); // 从URL提取key
-					if (ossKey) {
-						await ossService.deleteFile(ossKey);
-					}
-				} catch (ossError) {
-					console.warn("OSS文件删除失败:", ossError);
-					// 继续删除数据库记录，即使OSS删除失败
-				}
-
-				// 删除数据库记录
-				const deleteResult = await ImageService.delete(id);
-
-				if (!deleteResult) {
-					throw new InternalServerError("删除图片记录失败");
-				}
-
-				return commonRes(null, 410, "删除成功");
+				const result = await ImageService.deleteWithFile(id);
+				return commonRes(null, 204, "删除成功");
 			} catch (error) {
 				console.error("删除图片失败:", error);
 				throw error;
@@ -128,43 +102,8 @@ export const imagesController = new Elysia({
 		async ({ body }) => {
 			try {
 				const { imageIds } = body as any;
-
-				if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
-					return {
-						success: false,
-						error: "请提供有效的图片ID列表",
-					};
-				}
-
-				// 获取所有图片信息
-				const images = [];
-				for (const id of imageIds) {
-					const result = await ImageService.getById(id);
-					if (result) {
-						images.push(result);
-					}
-				}
-
-				// 从OSS批量删除文件
-				const ossKeys = images
-					.map((img) => img.imageUrl.split("/").pop())
-					.filter(Boolean);
-
-				if (ossKeys.length > 0) {
-					try {
-						await Promise.all(
-							ossKeys.map((key) => ossService.deleteFile(key!)),
-						);
-					} catch (ossError) {
-						console.warn("OSS批量删除失败:", ossError);
-						// 继续删除数据库记录
-					}
-				}
-
-				// 批量删除数据库记录
-				const deleteResult = await ImageService.deleteBatch(imageIds);
-
-				return commonRes(null, 410, `成功删除 ${deleteResult} 张图片`);
+				const result = await ImageService.deleteBatchWithFiles(imageIds);
+				return commonRes(null, 204, `成功删除 ${result} 张图片`);
 			} catch (error) {
 				console.error("批量删除图片失败:", error);
 				throw error;

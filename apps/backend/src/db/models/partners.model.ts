@@ -14,7 +14,7 @@ import {
 	createUpdateSchema,
 } from "drizzle-zod";
 import { z } from "zod/v4";
-import { imagesTable, type SelectImagesType } from "./images.model";
+import { imagesTable } from "./images.model";
 import { UnoQueryZod } from "./utils";
 
 /**
@@ -27,9 +27,6 @@ export const partnersTable = pgTable("partners", {
 	name: varchar("name", { length: 255 }).notNull(), // 合作伙伴名称
 	description: text("description").notNull(), // 合作伙伴描述
 	url: varchar("url", { length: 255 }).notNull(), // 合作伙伴官网链接
-	image_id: integer("image_id")
-		.notNull()
-		.references(() => imagesTable.id), // 合作伙伴Logo图片URL - 引用imagesSchema.url
 	sortOrder: integer("sort_order").default(0), // 排序权重
 	isActive: boolean("is_active").default(true), // 是否显示
 	createdAt: timestamp("created_at").defaultNow(), // 创建时间
@@ -54,97 +51,91 @@ export const selectPartnersSchema = createSelectSchema(partnersTable);
 
 // 合作伙伴模型定义
 export const partnersModel = {
-	selectPartnersTable: selectPartnersSchema,
+	// 基本
+	partnersTable: selectPartnersSchema,
 	// 创建合作伙伴参数
-	insertPartnersDto: insertPartnersSchema.omit({
-		id: true,
-		createdAt: true,
-		updatedAt: true,
+	insertPartners: insertPartnersSchema
+		.omit({ id: true, createdAt: true, updatedAt: true })
+		.extend({
+			images: z.array(z.coerce.number()).optional(),
 	}),
-
-	updatePartnersDto: updatePartnersSchema.omit({
-		id: true,
-		createdAt: true,
-		updatedAt: true,
+	// 更新
+	updatePartners: updatePartnersSchema
+		.omit({ id: true, createdAt: true, updatedAt: true })
+		.extend({
+			images: z.array(z.coerce.number()).optional(),
 	}),
-
 	// 合作伙伴列表查询参数
-	queryPartnersListDto: UnoQueryZod.extend({
-		name: z.string().optional(),
-		partnershipType: z.string().optional(),
-		partnershipLevel: z.string().optional(),
+	queryPartnersList: UnoQueryZod.extend({
 		isActive: z.boolean().optional(),
-		isVerified: z.boolean().optional(),
-		showOnHomepage: z.boolean().optional(),
-		showInFooter: z.boolean().optional(),
-		tags: z.string().optional(),
 	}),
-
-	// 公开展示的合作伙伴查询参数
-	queryPublicPartnersDto: z.object({
-		type: z.enum(["homepage", "footer", "all"]).default("all"),
-		level: z
-			.enum(["bronze", "silver", "gold", "platinum", "diamond"])
-			.optional(),
-		limit: z.number().int().positive().max(50).default(20),
-	}),
-
 	// 更新合作伙伴状态DTO
-	updatePartnerStatusDto: z.object({
+	updatePartnerStatus: z.object({
 		isActive: z.boolean().optional(),
-		isVerified: z.boolean().optional(),
-		showOnHomepage: z.boolean().optional(),
-		showInFooter: z.boolean().optional(),
-	}),
-
-	// 记录点击DTO
-	recordClickDto: z.object({
-		partnerId: z.number().int().positive(),
-		userAgent: z.string().optional(),
-		referer: z.string().optional(),
-	}),
-
-	// 批量更新显示顺序DTO
-	batchUpdateOrderDto: z.object({
-		partners: z.array(
-			z.object({
-				id: z.number().int().positive(),
-				displayOrder: z.string().regex(/^\d+$/),
-			}),
-		),
 	}),
 };
 
 // 3. 类型定义（可选，但推荐） 导出 TypeScript 类型（方便路由、service 等使用）
 // 类型来源于 Zod 推断，但用更语义化的名字导出
-export type InsertPartnersDto = z.infer<typeof partnersModel.insertPartnersDto>; // 请求用
-export type UpdatePartnersDto = z.infer<typeof partnersModel.updatePartnersDto>; // 请求用
-export type SelectPartnersDto = z.infer<
-	typeof partnersModel.selectPartnersTable
->; // 查询返回原始类型
+
+export type UpdatePartnersDto = z.infer<typeof partnersModel.updatePartners>; // 请求用
 export type PartnersListQueryDto = z.infer<
-	typeof partnersModel.queryPartnersListDto
->;
-export type PublicPartnersQueryDto = z.infer<
-	typeof partnersModel.queryPublicPartnersDto
+	typeof partnersModel.queryPartnersList
 >;
 export type UpdatePartnerStatusDto = z.infer<
-	typeof partnersModel.updatePartnerStatusDto
+	typeof partnersModel.updatePartnerStatus
 >;
-export type RecordClickDto = z.infer<typeof partnersModel.recordClickDto>;
-export type BatchUpdateOrderDto = z.infer<
-	typeof partnersModel.batchUpdateOrderDto
->;
+export type InsertPartners = z.infer<typeof partnersModel.insertPartners>;
 
-// 4. 推荐再包装一层，用于前端展示（加 Vo 后缀，大驼峰） 左连接一般都有null
-export type SelectPartnersVo = Omit<SelectPartnersDto, "image_id"> & {
-	imageRef: SelectImagesType;
+//4. 前端 表单类型和返回类型
+export type PartnerlFormDto = z.infer<typeof partnersModel.insertPartners>;
+// 返回类型，使用apifox生成
+export type PartnersListVo = {
+	id: number;
+	name: string;
+	description: string;
+	url: string;
+	sortOrder: number;
+	isActive: boolean;
+	createdAt: string;
+	updatedAt: string;
+	images: {
+		id: number;
+		imageUrl: string;
+		fileName: string;
+		category: string;
+		isMain: boolean;
+	}[];
 };
 
-export const partnersRelations = relations(partnersTable, ({ one }) => ({
+export const partnersRelations = relations(partnersTable, ({ one, many }) => ({
 	// 合作伙伴Logo关联到图片管理表 - 外键在partners表中
+	partnerImageRef: many(partnerImagesTable),
+}));
+
+/**
+ * 伙伴图片关联表 - 处理伙伴与图片的多对多关系
+ */
+export const partnerImagesTable = pgTable("partner_images", {
+	partnerId: integer("partner_id")
+		.references(() => partnersTable.id)
+		.notNull(),
+	imageId: integer("image_id")
+		.references(() => imagesTable.id)
+		.notNull(),
+	isMain: boolean("is_main").default(false),
+});
+
+export const partnerImagesRelations = relations(
+	partnerImagesTable,
+	({ one }) => ({
+		partnerRef: one(partnersTable, {
+			fields: [partnerImagesTable.partnerId],
+			references: [partnersTable.id],
+		}),
 	imageRef: one(imagesTable, {
-		fields: [partnersTable.image_id],
+			fields: [partnerImagesTable.imageId],
 		references: [imagesTable.id],
 	}),
-}));
+	}),
+);

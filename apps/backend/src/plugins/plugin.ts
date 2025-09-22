@@ -7,7 +7,7 @@
 // export const PaginationQuery = t.Partial(
 // 	t.Object({
 // 		page: t.Numeric({ minimum: 1 }),
-// 		pageSize: t.Numeric({ minimum: 1, maximum: 100 }),
+// 		limit: t.Numeric({ minimum: 1, maximum: 100 }),
 // 	}),
 // );
 // /**
@@ -20,7 +20,7 @@
 // 		data: t.Array(dataSchema),
 // 		total: t.Number(),
 // 		page: t.Number(),
-// 		pageSize: t.Number(),
+// 		limit: t.Number(),
 // 		totalPages: t.Number(),
 // 		hasNext: t.Boolean(),
 // 		hasPrev: t.Boolean(),

@@ -106,9 +106,9 @@
       </div>
 
       <!-- 分页 -->
-      <div v-if="searchResults && searchResults.total > searchResults.pageSize" class="pagination">
-        <Paginator :rows="searchResults.pageSize" :total-records="searchResults.total"
-          :first="(searchResults.page - 1) * searchResults.pageSize" @page="handlePageChange" />
+      <div v-if="searchResults && searchResults.total > searchResults.limit" class="pagination">
+        <Paginator :rows="searchResults.limit" :total-records="searchResults.total"
+          :first="(searchResults.page - 1) * searchResults.limit" @page="handlePageChange" />
       </div>
     </div>
 
@@ -131,7 +131,7 @@ interface SearchResult {
 	products: Product[];
 	total: number;
 	page: number;
-	pageSize: number;
+	limit: number;
 	hasMore: boolean;
 }
 
@@ -197,7 +197,7 @@ const handleSearch = async () => {
 			sortBy,
 			sortOrder,
 			page: 1,
-			pageSize: 20,
+			limit: 20,
 		};
 
 		// 添加筛选条件
@@ -248,7 +248,7 @@ const searchWithPage = async (page: number) => {
 			sortBy,
 			sortOrder,
 			page,
-			pageSize: 20,
+			limit: 20,
 		};
 
 		// 添加筛选条件

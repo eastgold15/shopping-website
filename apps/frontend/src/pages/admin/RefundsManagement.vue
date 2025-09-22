@@ -90,7 +90,7 @@
 					:value="refunds" 
 					:loading="loading"
 					:paginator="true"
-					:rows="pageSize"
+					:rows="limit"
 					:totalRecords="total"
 					:lazy="true"
 					@page="onPage"
@@ -395,7 +395,7 @@ const selectedRefund = ref<Refund | null>(null);
 const loading = ref(false);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("createdAt");
 const sortOrder = ref(-1);
 
@@ -566,8 +566,8 @@ const loadRefunds = async () => {
 		total.value = filteredRefunds.length;
 
 		// 分页
-		const start = (page.value - 1) * pageSize.value;
-		const end = start + pageSize.value;
+		const start = (page.value - 1) * limit.value;
+		const end = start + limit.value;
 		refunds.value = filteredRefunds.slice(start, end);
 	} catch (error) {
 		console.error("加载退款数据失败:", error);
@@ -587,7 +587,7 @@ const loadRefunds = async () => {
 // 分页处理
 const onPage = (event: any) => {
 	page.value = event.page + 1;
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadRefunds();
 };
 

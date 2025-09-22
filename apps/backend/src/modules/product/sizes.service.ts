@@ -57,7 +57,7 @@ export class SizesService extends BaseService<
 		try {
 			const {
 				page = 1,
-				pageSize = 10,
+				limit = 10,
 				sortBy = "createdAt",
 				sortOrder = "desc",
 				name,
@@ -116,8 +116,8 @@ export class SizesService extends BaseService<
 			queryBuilder.orderBy(_orderBy);
 
 			// 分页
-			const offset = (parseInt(page) - 1) * parseInt(pageSize);
-			queryBuilder.limit(parseInt(pageSize)).offset(offset);
+			const offset = (parseInt(page) - 1) * parseInt(limit);
+			queryBuilder.limit(parseInt(limit)).offset(offset);
 
 			// 查询数据和总数
 			const [rawSizes, totalResult] = await Promise.all([
@@ -132,8 +132,8 @@ export class SizesService extends BaseService<
 				meta: {
 					total,
 					page: parseInt(page),
-					pageSize: parseInt(pageSize),
-					totalPages: Math.ceil(total / parseInt(pageSize)),
+					limit: parseInt(limit),
+					totalPages: Math.ceil(total / parseInt(limit)),
 				},
 			};
 		} catch (error) {

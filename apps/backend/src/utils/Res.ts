@@ -37,7 +37,7 @@ export function commonRes<T>(
  */
 export const PaginationQueryZod = z.object({
 	page: z.coerce.number().min(1).optional(),
-	pageSize: z.coerce.number().min(1).max(100).optional(),
+	limit: z.coerce.number().min(1).max(100).optional(),
 });
 
 export type PaginationQueryType = z.infer<typeof PaginationQueryZod>;
@@ -47,7 +47,7 @@ export type PaginationQueryType = z.infer<typeof PaginationQueryZod>;
 export const PageMetaZod = z.object({
 	total: z.coerce.number(),
 	page: z.coerce.number(),
-	pageSize: z.coerce.number(),
+	limit: z.coerce.number(),
 	totalPages: z.coerce.number(),
 });
 export type PageMeta = z.infer<typeof PageMetaZod>;
@@ -70,7 +70,7 @@ export type PageRes<T> = {
  */
 export const PaginationOptionsZod = z.object({
 	page: z.coerce.number(),
-	pageSize: z.coerce.number(),
+	limit: z.coerce.number(),
 	orderBy: z.any().optional(), // Column | SQL | SQL.Aliased 类型复杂，使用 any
 	orderDirection: z.enum(["asc", "desc"]).optional(),
 	scope: z.any().optional(), // QueryScope 类型
@@ -182,7 +182,7 @@ export const elysiaToZod = {
  * @param data 数据数组
  * @param total 总数
  * @param page 当前页码
- * @param pageSize 每页大小
+ * @param limit 每页大小
  * @param message 响应消息
  * @returns 符合项目规范的分页响应
  */
@@ -190,7 +190,7 @@ export function pageRes<T>(
 	data: T[],
 	total: number,
 	page = 1,
-	pageSize = 10,
+	limit = 10,
 	message = "获取成功",
 ) {
 	return commonRes(
@@ -199,8 +199,8 @@ export function pageRes<T>(
 			meta: {
 				total,
 				page,
-				pageSize,
-				totalPages: Math.ceil(total / pageSize),
+				limit,
+				totalPages: Math.ceil(total / limit),
 			},
 		},
 		200,

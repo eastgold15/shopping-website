@@ -126,7 +126,7 @@ const templateData = await genPrimeCmsTemplateData<ProductModel, any>(
 		isActive: undefined,
 		isFeatured: undefined,
 		page: 1,
-		pageSize: 20,
+		limit: 20,
 	},
 );
 

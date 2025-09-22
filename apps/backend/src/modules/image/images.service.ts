@@ -1,6 +1,15 @@
 // 图片管理服务
 
-import { eq, getTableColumns } from "drizzle-orm";
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	getTableColumns,
+	inArray,
+	like,
+	sql,
+} from "drizzle-orm";
 import { db } from "../../db/connection";
 import { imagesTable, productImagesTable } from "../../db/models";
 
@@ -8,42 +17,37 @@ import { imagesTable, productImagesTable } from "../../db/models";
 import type {
 	InsertImagesDto,
 	ListImagesQueryDto,
-	QueryOptions,
 	SelectImagesType,
 	UpdateImagesDto,
 } from "../../types";
 import {
-	CustomError,
+	CustomeError,
 	handleDatabaseError,
+	InternalServerError,
 	NotFoundError,
 } from "../../utils/error/customError";
 import { commonRes } from "../../utils/Res";
-import BaseService from "../../utils/services";
+import { ossService } from "../oss";
 
-export class ImageService extends BaseService<
-	SelectImagesType,
-	InsertImagesDto,
-	UpdateImagesDto
-> {
-	protected readonly table = imagesTable;
-	protected readonly tableName = "images";
-
-	constructor() {
-		super();
-	}
+export class ImageService {
+	static readonly table = imagesTable;
 
 	/**
 	 * 创建图片记录
 	 */
-	static async create(data: InsertImagesDto): Promise<SelectImagesType> {
+	async create(data: InsertImagesDto): Promise<SelectImagesType> {
 		try {
 			const imageData = {
 				...data,
 				createdAt: new Date(),
 			};
 
-			// 使用 BaseService 的 create 方法
-			return await new ImageService().create(imageData);
+			const result = await db
+				.insert(ImageService.table)
+				.values(imageData)
+				.returning();
+
+			return result[0];
 		} catch (error) {
 			throw handleDatabaseError(error);
 		}
@@ -59,8 +63,8 @@ export class ImageService extends BaseService<
 			// 处理查询参数
 			const {
 				page = 1,
-				pageSize = 12,
-				sortBy = "createdAt",
+				limit = 12,
+				sort = "createdAt",
 				sortOrder = "desc",
 				search,
 				category,
@@ -68,71 +72,78 @@ export class ImageService extends BaseService<
 				filename,
 			} = query;
 
-			// 构建查询选项
-			const queryOptions: QueryOptions = {
-				filters: [],
-				sort: [],
-			};
+			// 构建查询条件数组
+			const conditions: any[] = [];
 
 			// 处理搜索条件
 			if (search) {
-				queryOptions.filters?.push({
-					field: "fileName",
-					operator: "like",
-					value: `%${search}%`,
-				});
+				conditions.push(like(ImageService.table.fileName, `%${search}%`));
 			}
 
 			// 处理分类过滤
 			if (category) {
-				queryOptions.filters?.push({
-					field: "category",
-					operator: "eq",
-					value: category,
-				});
+				conditions.push(eq(ImageService.table.category, category));
 			}
 
 			// 处理文件类型过滤
 			if (mimeType) {
-				queryOptions.filters?.push({
-					field: "mimeType",
-					operator: "eq",
-					value: mimeType,
-				});
+				conditions.push(eq(ImageService.table.mimeType, mimeType));
 			}
 
 			// 处理文件名过滤
 			if (filename) {
-				queryOptions.filters?.push({
-					field: "fileName",
-					operator: "like",
-					value: `%${filename}%`,
-				});
+				conditions.push(like(ImageService.table.fileName, `%${filename}%`));
 			}
 
+			// 合并所有条件
+			const whereCondition =
+				conditions.length > 0 ? and(...conditions) : undefined;
+
 			// 处理排序
-			const sortFieldMap: Record<string, string> = {
-				id: "id",
-				fileName: "fileName",
-				category: "category",
-				fileSize: "fileSize",
-				mimeType: "mimeType",
-				createdAt: "createdAt",
-				updatedAt: "updatedAt",
+			const sortFieldMap: Record<string, any> = {
+				id: ImageService.table.id,
+				fileName: ImageService.table.fileName,
+				category: ImageService.table.category,
+				fileSize: ImageService.table.fileSize,
+				mimeType: ImageService.table.mimeType,
+				createdAt: ImageService.table.createdAt,
+				updatedAt: ImageService.table.updatedAt,
 			};
 
-			const sortField = sortFieldMap[sortBy] || "createdAt";
+			const sortField = sortFieldMap[sort] || ImageService.table.createdAt;
+			const orderDirection = sortOrder === "desc" ? desc : asc;
 
-			queryOptions.sort?.push({
-				field: sortField,
-				direction: sortOrder || "desc",
-			});
+			// 计算偏移量
+			const offset = (page - 1) * limit;
 
-			// 调用 BaseService 的 findPaginated 方法
-			return await new ImageService().findPaginated(
-				{ page, pageSize },
-				queryOptions,
-			);
+			// 并行执行数据查询和计数查询
+			const [data, totalResult] = await Promise.all([
+				db
+					.select()
+					.from(ImageService.table)
+					.where(whereCondition)
+					.orderBy(orderDirection(sortField))
+					.limit(limit)
+					.offset(offset),
+
+				db
+					.select({ count: sql`count(*)` })
+					.from(ImageService.table)
+					.where(whereCondition),
+			]);
+
+			const total = Number(totalResult[0]?.count || 0);
+			const totalPages = Math.ceil(total / limit);
+
+			return {
+				items: data,
+				meta: {
+					total,
+					page,
+					limit,
+					totalPages,
+				},
+			};
 		} catch (error) {
 			console.error("获取图片列表失败:", error);
 			throw handleDatabaseError(error);
@@ -144,8 +155,13 @@ export class ImageService extends BaseService<
 	 */
 	static async getById(id: number) {
 		try {
-			// 使用 BaseService 的 findById 方法
-			return await new ImageService().findById(id);
+			const [result] = await db
+				.select()
+				.from(ImageService.table)
+				.where(eq(ImageService.table.id, id))
+				.limit(1);
+
+			return result || null;
 		} catch (error) {
 			throw handleDatabaseError(error);
 		}
@@ -156,8 +172,13 @@ export class ImageService extends BaseService<
 	 */
 	static async update(id: number, data: UpdateImagesDto) {
 		try {
-			// 使用 BaseService 的 update 方法
-			return await new ImageService().update(id, data);
+			const [result] = await db
+				.update(ImageService.table)
+				.set(data)
+				.where(eq(ImageService.table.id, id))
+				.returning();
+
+			return result;
 		} catch (error) {
 			throw handleDatabaseError(error);
 		}
@@ -166,12 +187,59 @@ export class ImageService extends BaseService<
 	/**
 	 * 删除图片
 	 */
-	static async delete(id: number): Promise<boolean> {
+	static async delete(id: number, tx?: typeof db): Promise<boolean> {
 		try {
-			// 使用 BaseService 的 delete 方法
-			return await new ImageService().delete(id);
+			const dbInstance = tx || db;
+
+			const result = await dbInstance
+				.delete(ImageService.table)
+				.where(eq(ImageService.table.id, id))
+				.returning({ id: ImageService.table.id });
+
+			return result.length > 0;
 		} catch (error) {
 			throw handleDatabaseError(error);
+		}
+	}
+
+	/**
+	 * 删除图片（包括OSS文件）
+	 */
+	static async deleteWithFile(id: number): Promise<boolean> {
+		try {
+			// 使用事务确保数据一致性
+			return await db.transaction(async (tx) => {
+				// 先获取图片信息
+				const imageResult = await ImageService.getById(id);
+
+				if (!imageResult) {
+					throw new NotFoundError("图片不存在");
+				}
+
+				const imageUrl = imageResult.imageUrl;
+				console.log("imageUrl:", imageUrl);
+
+				// 从OSS删除文件
+				const ossKey = imageUrl.replace(/^https?:\/\/[^/]+\//, ""); // 移除域名部分，保留完整路径
+				console.log("ossKey:", ossKey);
+
+				if (ossKey) {
+					await ossService.deleteFile(ossKey);
+				}
+
+				// 删除数据库记录
+				// @ts-ignore
+				const deleteResult = await ImageService.delete(id, tx);
+
+				if (!deleteResult) {
+					throw new InternalServerError("删除图片记录失败");
+				}
+
+				return true;
+			});
+		} catch (error) {
+			console.error("删除图片失败:", error);
+			throw error;
 		}
 	}
 
@@ -180,10 +248,56 @@ export class ImageService extends BaseService<
 	 */
 	static async deleteBatch(imageIds: number[]): Promise<number> {
 		try {
-			// 使用 BaseService 的 deleteBatch 方法
-			return await new ImageService().deleteBatch(imageIds);
+			const result = await db
+				.delete(ImageService.table)
+				.where(inArray(ImageService.table.id, imageIds))
+				.returning({ id: ImageService.table.id });
+
+			return result.length;
 		} catch (error) {
 			throw handleDatabaseError(error);
+		}
+	}
+
+	/**
+	 * 批量删除图片（包括OSS文件）
+	 */
+	static async deleteBatchWithFiles(imageIds: number[]): Promise<number> {
+		try {
+			if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+				throw new CustomeError("请提供有效的图片ID列表", 400);
+			}
+
+			// 获取所有图片信息
+			const images = [];
+			for (const id of imageIds) {
+				const result = await ImageService.getById(id);
+				if (result) {
+					images.push(result);
+				}
+			}
+
+			// 从OSS批量删除文件
+			const ossKeys = images
+				.map((img) => img.imageUrl.replace(/^https?:\/\/[^/]+\//, ""))
+				.filter(Boolean);
+
+			if (ossKeys.length > 0) {
+				try {
+					await Promise.all(ossKeys.map((key) => ossService.deleteFile(key!)));
+				} catch (ossError) {
+					console.warn("OSS批量删除失败:", ossError);
+					// 继续删除数据库记录
+				}
+			}
+
+			// 批量删除数据库记录
+			const deleteResult = await ImageService.deleteBatch(imageIds);
+
+			return deleteResult;
+		} catch (error) {
+			console.error("批量删除图片失败:", error);
+			throw error;
 		}
 	}
 
@@ -192,18 +306,12 @@ export class ImageService extends BaseService<
 	 */
 	static async findByCategory(category: string) {
 		try {
-			const queryOptions: QueryOptions = {
-				filters: [
-					{
-						field: "category",
-						operator: "eq",
-						value: category,
-					},
-				],
-			};
+			const result = await db
+				.select()
+				.from(ImageService.table)
+				.where(eq(ImageService.table.category, category));
 
-			// 使用 BaseService 的 findMany 方法
-			return await new ImageService().findMany(queryOptions);
+			return result;
 		} catch (error) {
 			throw handleDatabaseError(error);
 		}
@@ -214,18 +322,12 @@ export class ImageService extends BaseService<
 	 */
 	static async searchImages(searchTerm: string) {
 		try {
-			const queryOptions: QueryOptions = {
-				filters: [
-					{
-						field: "fileName",
-						operator: "like",
-						value: `%${searchTerm}%`,
-					},
-				],
-			};
+			const result = await db
+				.select()
+				.from(ImageService.table)
+				.where(like(ImageService.table.fileName, `%${searchTerm}%`));
 
-			// 使用 BaseService 的 findMany 方法
-			return await new ImageService().findMany(queryOptions);
+			return result;
 		} catch (error) {
 			throw handleDatabaseError(error);
 		}
@@ -252,7 +354,7 @@ export class ImageService extends BaseService<
 
 			return commonRes(images);
 		} catch (error) {
-			if (error instanceof CustomError) {
+			if (error instanceof CustomeError) {
 				throw error;
 			}
 			throw handleDatabaseError(error);

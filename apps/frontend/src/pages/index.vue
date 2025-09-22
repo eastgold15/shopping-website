@@ -13,7 +13,7 @@ const fetchProducts = async () => {
 		loading.value = true;
 		const result = await frontApi.products.list({
 			page: 1,
-			pageSize: 8,
+			limit: 8,
 			isActive: "true",
 			isFeatured: "true",
 		});

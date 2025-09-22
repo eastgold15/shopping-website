@@ -1,69 +1,61 @@
 #!/bin/bash
-
-# 后端服务停止脚本
-# 使用方式: ./stop.sh 或 bash stop.sh
-
-# 设置颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-echo -e "${YELLOW}🛑 停止后端服务...${NC}"
+echo -e "${BLUE}🛑 停止服务...${NC}"
 
-# 检查pid文件是否存在
-if [ -f "app.pid" ]; then
-    PID=$(cat app.pid)
+# ========== 检查 PID 文件是否存在 ==========
+if [ ! -f "app.pid" ]; then
+    echo -e "${YELLOW}⚠️  app.pid 不存在，服务可能未运行${NC}"
     
-    # 检查进程是否存在
-    if kill -0 $PID 2>/dev/null; then
-        echo -e "${BLUE}📊 找到进程: $PID${NC}"
-        
-        # 优雅停止
-        kill $PID
-        
-        # 等待进程停止
-        for i in {1..10}; do
-            if ! kill -0 $PID 2>/dev/null; then
-                echo -e "${GREEN}✅ 服务已优雅停止${NC}"
-                break
-            fi
-            echo -e "${YELLOW}⏳ 等待服务停止... ($i/10)${NC}"
-            sleep 1
-        done
-        
-        # 强制停止
-        if kill -0 $PID 2>/dev/null; then
-            echo -e "${YELLOW}⚠️ 强制停止服务...${NC}"
-            kill -9 $PID
-        fi
-        
-        # 删除pid文件
-        rm -f app.pid
-        echo -e "${GREEN}✅ 服务已完全停止${NC}"
-        
+    # 尝试查找并停止所有相关进程
+    echo -e "${BLUE}🔍 查找相关进程...${NC}"
+    PIDS=$(pgrep -f "bun.*index.js" 2>/dev/null || true)
+    
+    if [ -n "$PIDS" ]; then
+        echo -e "${YELLOW}⚠️  发现运行中的进程: $PIDS${NC}"
+        echo -e "${BLUE}⏳ 正在停止所有相关进程...${NC}"
+        pkill -f "bun.*index.js" 2>/dev/null || true
+        sleep 2
+        echo -e "${GREEN}✅ 已尝试停止所有相关进程${NC}"
     else
-        echo -e "${YELLOW}⚠️ 进程不存在，清理pid文件${NC}"
-        rm -f app.pid
+        echo -e "${GREEN}✅ 未发现运行中的进程${NC}"
     fi
-else
-    echo -e "${YELLOW}⚠️ 未找到pid文件，尝试通过端口查找进程${NC}"
     
-    # 通过端口查找进程
-    PORT=9004
-    PID=$(lsof -ti:$PORT 2>/dev/null)
-    
-    if [ ! -z "$PID" ]; then
-        echo -e "${BLUE}📊 找到占用端口 $PORT 的进程: $PID${NC}"
-        kill $PID
-        echo -e "${GREEN}✅ 进程已停止${NC}"
-    else
-        echo -e "${YELLOW}⚠️ 未找到运行中的服务${NC}"
-    fi
+    exit 0
 fi
 
-# 记录停止时间
-echo "停止时间: $(date)" >> logs/stop.log
+# ========== 读取 PID ==========
+    PID=$(cat app.pid)
+echo -e "${BLUE}📝 读取到 PID: $PID${NC}"
 
-echo -e "${BLUE}📋 服务停止日志: logs/stop.log${NC}"
+# ========== 检查进程是否存在 ==========
+if kill -0 $PID 2>/dev/null; then
+    echo -e "${BLUE}⏳ 正在停止进程 $PID...${NC}"
+    kill $PID
+    sleep 2
+    
+    # 检查是否成功停止
+    if kill -0 $PID 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  优雅停止失败，强制终止...${NC}"
+            kill -9 $PID
+        sleep 1
+        fi
+        
+    # 再次检查
+    if kill -0 $PID 2>/dev/null; then
+        echo -e "${RED}❌ 进程停止失败${NC}"
+        exit 1
+    else
+        echo -e "${GREEN}✅ 服务已停止${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  进程 $PID 不存在，可能已停止${NC}"
+fi
+
+# ========== 清理 PID 文件 ==========
+rm -f app.pid
+echo -e "${GREEN}🧹 已清理 PID 文件${NC}"

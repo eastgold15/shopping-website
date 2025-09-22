@@ -14,7 +14,7 @@ const loadingProducts = ref(false);
 const pageMeta = ref({
 	total: 0,
 	page: 1,
-	pageSize: 10,
+	limit: 10,
 	totalPages: 0,
 });
 const api = useCmsApi();
@@ -27,7 +27,7 @@ const loadHotProducts = async () => {
 		loadingProducts.value = true;
 		const res = await api.products.list({
 			page: 1,
-			pageSize: 10,
+			limit: 10,
 		});
 		console.log("response", res);
 

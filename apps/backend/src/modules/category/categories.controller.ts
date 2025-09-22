@@ -16,6 +16,25 @@ export const categoriesController = new Elysia({
 })
   .model(categoriesModel)
   .decorate("categoriesService", new CategoriesService())
+	.onBeforeHandle(({ body }: { body: any }) => {
+		// 只对有 body 的请求进行处理
+		if (!body) return;
+
+		// 处理parentId：支持字符串转整数和对象格式{"key":true}
+		if (body?.parentId !== undefined) {
+			if (typeof body.parentId === "string") {
+				// 字符串转整数
+				const parsed = parseInt(body.parentId);
+				body.parentId = isNaN(parsed) ? null : parsed;
+			} else if (typeof body.parentId === "object" && body.parentId !== null) {
+				// 从对象中提取第一个key作为parentId
+				const keys = Object.keys(body.parentId);
+				if (keys.length > 0) {
+					body.parentId = parseInt(keys[0]);
+				}
+			}
+		}
+	})
   // 创建分类 - RESTful标准设计
   .post(
     "/",

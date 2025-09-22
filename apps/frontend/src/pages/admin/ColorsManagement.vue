@@ -52,7 +52,7 @@ const templateData = await genPrimeCmsTemplateData<
 >(
 	{
 		// 1. 定义查询表单
-		// @ts-ignore
+		// @ts-expect-error
 		getList: $crud.list,
 		create: $crud.create,
 		update: $crud.update,
@@ -84,9 +84,9 @@ const templateData = await genPrimeCmsTemplateData<
 			if (typeof data.sortOrder === "string") {
 				data.sortOrder = parseInt(data.sortOrder) || 0;
 			}
-			// @ts-ignore
+			// @ts-expect-error
 			delete data.createdAt;
-			// @ts-ignore
+			// @ts-expect-error
 			delete data.updatedAt;
 		},
 	},
@@ -95,7 +95,7 @@ const templateData = await genPrimeCmsTemplateData<
 		name: "",
 		isActive: undefined,
 		page: 1,
-		pageSize: 20,
+		limit: 20,
 	},
 );
 

@@ -24,8 +24,8 @@ export class AdvertisementsService {
 		try {
 			const {
 				page = 1,
-				pageSize = 10,
-				sortBy = "sortOrder",
+				limit = 10,
+				sort = "sortOrder",
 				sortOrder = "asc",
 				search,
 				type,
@@ -81,14 +81,14 @@ export class AdvertisementsService {
 
 			// 确定排序字段和方向
 			const orderBy =
-				allowedSortFields[sortBy as keyof typeof allowedSortFields] ||
+				allowedSortFields[sort as keyof typeof allowedSortFields] ||
 				advertisementsTable.sortOrder;
 			const orderDirection = sortOrder as "asc" | "desc";
 
 			// 使用统一的分页函数
 			return await paginate(db, baseQuery, {
 				page,
-				pageSize,
+				limit,
 				orderBy,
 				orderDirection,
 			});

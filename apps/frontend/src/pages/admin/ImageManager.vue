@@ -50,10 +50,13 @@ const templateData = await genPrimeCmsTemplateData<
 		getList: async (params) => {
 			// 调用API获取图片列表
 			const result = await $crud.list(params as ListImagesQueryDto);
+			// 调试：打印分页数据
+			console.log("ImageManager - API Response:", result);
+			console.log("ImageManager - Meta data:", result?.data?.meta);
 			// 确保返回正确的类型
 			return result as any;
 		},
-		create: async (data) => {
+		create: async (_data) => {
 			// 图片创建通过上传实现，这里返回成功
 			return { code: 200, message: "操作成功", data: null };
 		},
@@ -98,7 +101,7 @@ const templateData = await genPrimeCmsTemplateData<
 		},
 
 		// 5. 数据转换
-		transformSubmitData: (data, type) => {
+		transformSubmitData: (data, _type) => {
 			// 移除只读字段
 			// @ts-ignore
 			delete data.imageUrl;
@@ -117,7 +120,7 @@ const templateData = await genPrimeCmsTemplateData<
 		filename: "",
 		category: undefined,
 		page: 1,
-		pageSize: 12,
+		limit: 10,
 	},
 );
 
@@ -309,6 +312,7 @@ const onUploadSuccess = async () => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

@@ -54,7 +54,7 @@ const users = ref<User[]>([]);
 const selectedUsers = ref<User[]>([]);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("registeredAt");
 const sortOrder = ref(-1);
 const searchKeyword = ref("");
@@ -173,7 +173,7 @@ const loadUsers = async () => {
 		loading.value = true;
 		const params = {
 			page: page.value,
-			pageSize: pageSize.value,
+			limit: limit.value,
 			sortBy: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			search: searchKeyword.value || undefined,
@@ -287,7 +287,7 @@ const loadUsers = async () => {
 // 分页处理
 const onPage = (event: any) => {
 	page.value = event.page + 1;
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadUsers();
 };
 
@@ -672,9 +672,9 @@ onMounted(() => {
         <!-- 用户数据表格 -->
         <div class="table-section">
             <DataTable :value="users" tableStyle="min-width: 50rem" :loading="loading"
-                v-model:selection="selectedUsers" dataKey="id" paginator :rows="pageSize"
+                v-model:selection="selectedUsers" dataKey="id" paginator :rows="limit"
                 :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true" @page="onPage" @sort="onSort"
-                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * pageSize" class="p-datatable-sm"
+                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * limit" class="p-datatable-sm"
                 showGridlines responsiveLayout="scroll" selectionMode="multiple" :metaKeySelection="false">
 
                 <template #header>

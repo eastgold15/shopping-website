@@ -160,10 +160,10 @@ export abstract class BaseService<
 		pagination: PaginationParams,
 		queryOptions: QueryOptions = {},
 	): Promise<PageData<T>> {
-		const { page = 1, pageSize = 10 } = pagination;
+		const { page = 1, limit = 10 } = pagination;
 
 		const whereClause = this.buildWhereClause(queryOptions.filters || []);
-		const orderByClause = this.buildOrderByClause(queryOptions.sort || []);
+		const _orderByClause = this.buildOrderByClause(queryOptions.sort || []);
 
 		// 构建基础查询
 		let baseQuery = db.select().from(this.table).$dynamic();
@@ -186,7 +186,7 @@ export abstract class BaseService<
 		// 使用统一的分页函数
 		return await paginate<T>(db, baseQuery, {
 			page,
-			pageSize,
+			limit,
 			orderBy,
 			orderDirection,
 		});
@@ -229,7 +229,9 @@ export abstract class BaseService<
 			throw new NotFoundError(`Record with id ${id} not found`);
 		}
 
-		const result = await db
+		const dbInstance = options.transaction || db;
+
+		const result = await dbInstance
 			.delete(this.table)
 			.where(eq(this.table.id, id))
 			.returning({ id: this.table.id });

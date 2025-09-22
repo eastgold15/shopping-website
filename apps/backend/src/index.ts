@@ -51,6 +51,7 @@ export const app = new Elysia()
 					? "dist/index.d.ts"
 					: "src/index.ts",
 				{
+					debug: true,
 					projectRoot: path.join(import.meta.dirname, "../"),
 					tsconfigPath: path.join(import.meta.dirname, "../tsconfig.json"),
 				},

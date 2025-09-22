@@ -27,7 +27,7 @@ export interface QueryOptions {
 // 分页参数
 export interface PaginationParams {
 	page?: number;
-	pageSize?: number;
+	limit?: number;
 }
 
 // 查询过滤器 - 用于构建数据库查询的过滤条件

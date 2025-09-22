@@ -1,11 +1,11 @@
 import { db } from "@backend/db/connection";
-import type { UpdateSortDtoType } from "@backend/types";
+import { imagesTable } from "@backend/types";
 import {
   handleDatabaseError,
   InternalServerError,
   NotFoundError,
 } from "@backend/utils/error/customError";
-import { and, eq, getTableColumns, like, or, sql } from "drizzle-orm";
+import { and, count, eq, inArray, like, or } from "drizzle-orm";
 import {
   partnerImagesTable,
   partnersTable,
@@ -13,7 +13,6 @@ import {
   type PartnersListQueryDto,
   type UpdatePartnersDto,
 } from "../../db/models/partners.model";
-
 /**
  * 合作伙伴服务类
  * 处理合作伙伴相关的业务逻辑

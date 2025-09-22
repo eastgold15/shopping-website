@@ -1,8 +1,6 @@
-import { partnersTable, UpdateSortDto } from "@backend/db/models";
 import { paramIdZod } from "@backend/types";
 import { NotFoundError } from "@backend/utils/error/customError";
 import { commonRes } from "@backend/utils/Res";
-import { getTableColumns } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { partnersModel } from "../../db/models/partners.model";
 import { PartnersService } from "./partners.service";
@@ -20,13 +18,8 @@ export const partnersController = new Elysia({
 	.get(
 		"/all",
 		async ({ partnersService }) => {
-			try {
 				const partners = await partnersService.getActivePartnersList();
-
 				return commonRes(partners, 200, "获取合作伙伴列表成功");
-			} catch (_error) {
-				throw new NotFoundError("获取合作伙伴列表失败");
-			}
 		},
 		{
 			detail: {
@@ -36,21 +29,15 @@ export const partnersController = new Elysia({
 			},
 		},
 	)
-
 	// 获取所有合作伙伴（管理后台用）
 	.get(
 		"/list",
 		async ({ query, partnersService }) => {
-			try {
 				const result = await partnersService.getPartnersList(query);
 				return commonRes(result, 200, "获取合作伙伴列表成功");
-			} catch (error) {
-				console.log(error);
-				throw new NotFoundError("获取合作伙伴列表失败");
-			}
 		},
 		{
-			query: "queryPartnersListDto",
+			query: "queryPartnersList",
 			detail: {
 				tags: ["Partners"],
 				summary: "获取合作伙伴列表（管理后台）",
@@ -87,6 +74,7 @@ export const partnersController = new Elysia({
 	.post(
 		"/",
 		async ({ body, partnersService }) => {
+			console.log("body:", body);
 			try {
 				const newPartner = await partnersService.createPartner(body);
 				return commonRes(newPartner, 201, "创建合作伙伴成功");
@@ -95,7 +83,7 @@ export const partnersController = new Elysia({
 			}
 		},
 		{
-			body: "insertPartnersDto",
+			body: "insertPartners",
 			detail: {
 				tags: ["Partners"],
 				summary: "创建合作伙伴",
@@ -117,7 +105,7 @@ export const partnersController = new Elysia({
 		},
 		{
 			params: paramIdZod,
-			body: "updatePartnersDto",
+			body: "updatePartners",
 			detail: {
 				tags: ["Partners"],
 				summary: "更新合作伙伴",
@@ -139,52 +127,6 @@ export const partnersController = new Elysia({
 				tags: ["Partners"],
 				summary: "删除合作伙伴",
 				description: "删除指定的合作伙伴",
-			},
-		},
-	)
-
-	// 更新合作伙伴排序
-	.patch(
-		"/:id/sort",
-		async ({ params: { id }, body, partnersService }) => {
-			try {
-				const updatedPartner = await partnersService.updatePartnerSort(
-					id,
-					body,
-				);
-				return commonRes(updatedPartner, 200, "更新合作伙伴排序成功");
-			} catch (_error) {
-				throw new NotFoundError("创建合作伙伴失败");
-			}
-		},
-		{
-			params: paramIdZod,
-			body: UpdateSortDto,
-			detail: {
-				tags: ["Partners"],
-				summary: "更新合作伙伴排序",
-				description: "更新合作伙伴的排序权重",
-			},
-		},
-	)
-
-	// 切换合作伙伴启用状态
-	.patch(
-		"/:id/toggle-active",
-		async ({ params: { id }, partnersService }) => {
-			try {
-				const updatedPartner = await partnersService.togglePartnerActive(id);
-				return commonRes(updatedPartner, 200, "切换合作伙伴状态成功");
-			} catch (_error) {
-				throw new NotFoundError("创建合作伙伴失败");
-			}
-		},
-		{
-			params: paramIdZod,
-			detail: {
-				tags: ["Partners"],
-				summary: "切换合作伙伴启用状态",
-				description: "切换合作伙伴的启用/禁用状态",
 			},
 		},
 	);

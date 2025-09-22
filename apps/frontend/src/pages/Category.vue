@@ -91,7 +91,7 @@ const fetchCategoryData = async () => {
 			frontApi.categories.getById(parseInt(categoryId)),
 			frontApi.products.list({
 				page: 1,
-				pageSize: 12,
+				limit: 12,
 				categoryId: parseInt(categoryId),
 				isActive: true,
 			}),

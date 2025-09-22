@@ -92,8 +92,8 @@ export class CategoriesService {
       // 1.默认值
       const {
         page = 1,
-        pageSize = 10,
-        sortBy = "createdAt",
+				limit = 10,
+				sort = "createdAt",
         sortOrder = "desc",
         search,
         name,
@@ -147,13 +147,13 @@ export class CategoriesService {
       };
 
       // 确定排序字段和方向
-      const orderBy = sortFieldMap[sortBy] || categoriesTable.sortOrder;
+			const orderBy = sortFieldMap[sort] || categoriesTable.sortOrder;
       const orderDirection = sortOrder as "asc" | "desc";
 
       // 使用统一的分页函数
       return await paginate(db, baseQuery, {
         page,
-        pageSize,
+				limit,
         orderBy,
         orderDirection,
       });

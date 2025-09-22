@@ -77,7 +77,7 @@ const templateData = await genPrimeCmsTemplateData<ADModel, ADQueryDto>(
 		},
 
 		// 5. 数据转换
-		transformSubmitData: (data, type) => {
+		transformSubmitData: (data, _type) => {
 			// 确保数字类型正确
 			if (typeof data.sortOrder === "string") {
 				data.sortOrder = parseInt(data.sortOrder) || 0;
@@ -98,7 +98,7 @@ const templateData = await genPrimeCmsTemplateData<ADModel, ADQueryDto>(
 		position: undefined,
 		isActive: undefined,
 		page: 1,
-		pageSize: 20,
+		limit: 20,
 	},
 );
 

@@ -47,7 +47,7 @@ const admins = ref<Admin[]>([]);
 const selectedAdmins = ref<Admin[]>([]);
 const total = ref(0);
 const page = ref(1);
-const pageSize = ref(10);
+const limit = ref(10);
 const sortField = ref("createdAt");
 const sortOrder = ref(-1);
 const searchKeyword = ref("");
@@ -162,8 +162,8 @@ const loadAdmins = async () => {
 		loading.value = true;
 		const params = {
 			page: page.value,
-			pageSize: pageSize.value,
-			sortBy: sortField.value,
+			limit: limit.value,
+			sort: sortField.value,
 			sortOrder: sortOrder.value === 1 ? "asc" : "desc",
 			search: searchKeyword.value || undefined,
 			status: filterStatus.value !== "all" ? filterStatus.value : undefined,
@@ -289,7 +289,7 @@ const loadAdmins = async () => {
 // 分页处理
 const onPage = (event: any) => {
 	page.value = event.page + 1;
-	pageSize.value = event.rows;
+	limit.value = event.rows;
 	loadAdmins();
 };
 
@@ -404,7 +404,7 @@ const confirmDelete = (admin: Admin) => {
 };
 
 // 删除管理员
-const deleteAdmin = async (id: number) => {
+const deleteAdmin = async (_id: number) => {
 	try {
 		toast.add({
 			severity: "success",
@@ -576,16 +576,14 @@ onMounted(() => {
             <!-- 工具栏 -->
             <div class="flex justify-between items-center mb-4">
                 <div class="flex gap-3">
-                    <Button label="刷新" icon="pi pi-refresh" @click="loadAdmins" class="p-button-outlined"
-                        size="small" />
+					<Button label="刷新" icon="pi pi-refresh" @click="loadAdmins" class="p-button-outlined" size="small" />
                     <Button label="批量启用" icon="pi pi-check" class="p-button-outlined" size="small"
                         :disabled="!selectedAdmins.length" />
                     <Button label="批量禁用" icon="pi pi-times" class="p-button-outlined" size="small"
                         :disabled="!selectedAdmins.length" />
                 </div>
                 <div class="flex gap-3">
-                    <InputText v-model="searchKeyword" placeholder="搜索用户名、姓名或邮箱..." class="w-64"
-                        @input="handleSearch" />
+					<InputText v-model="searchKeyword" placeholder="搜索用户名、姓名或邮箱..." class="w-64" @input="handleSearch" />
                     <Dropdown v-model="filterStatus" :options="statusOptions" optionLabel="label" optionValue="value"
                         placeholder="筛选状态" class="w-32" @change="handleFilter" />
                     <Dropdown v-model="filterRole" :options="roleOptions" optionLabel="label" optionValue="value"
@@ -598,11 +596,11 @@ onMounted(() => {
 
         <!-- 管理员数据表格 -->
         <div class="table-section">
-            <DataTable :value="admins" tableStyle="min-width: 50rem" :loading="loading"
-                v-model:selection="selectedAdmins" dataKey="id" paginator :rows="pageSize"
-                :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true" @page="onPage" @sort="onSort"
-                :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * pageSize" class="p-datatable-sm"
-                showGridlines responsiveLayout="scroll" selectionMode="multiple" :metaKeySelection="false">
+			<DataTable :value="admins" tableStyle="min-width: 50rem" :loading="loading" v-model:selection="selectedAdmins"
+				dataKey="id" paginator :rows="limit" :rowsPerPageOptions="[5, 10, 20, 50]" :totalRecords="total" :lazy="true"
+				@page="onPage" @sort="onSort" :sortField="sortField" :sortOrder="sortOrder" :first="(page - 1) * limit"
+				class="p-datatable-sm" showGridlines responsiveLayout="scroll" selectionMode="multiple"
+				:metaKeySelection="false">
 
                 <template #header>
                     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -651,8 +649,7 @@ onMounted(() => {
                 <Column field="role" header="角色权限" class="w-[15%]">
                     <template #body="{ data }">
                         <div>
-                            <Tag :value="getRoleText(data.role)" :severity="getRoleSeverity(data.role)"
-                                class="text-xs mb-2" />
+							<Tag :value="getRoleText(data.role)" :severity="getRoleSeverity(data.role)" class="text-xs mb-2" />
                             <div class="flex flex-wrap gap-1">
                                 <Badge v-for="permission in data.permissions.slice(0, 2)" :key="permission"
                                     :value="permission.split('.')[0]" severity="info" class="text-xs" />
@@ -668,10 +665,8 @@ onMounted(() => {
                     <template #body="{ data }">
                         <div class="flex items-center gap-2">
                             <ToggleSwitch v-model="data.status" :true-value="'active'" :false-value="'inactive'"
-                                @change="toggleAdminStatus(data)" class="scale-75"
-                                :disabled="data.role === 'super_admin'" />
-                            <Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)"
-                                class="text-xs" />
+								@change="toggleAdminStatus(data)" class="scale-75" :disabled="data.role === 'super_admin'" />
+							<Tag :value="getStatusText(data.status)" :severity="getStatusSeverity(data.status)" class="text-xs" />
                         </div>
                     </template>
                 </Column>
@@ -702,9 +697,8 @@ onMounted(() => {
                         <div class="flex gap-2">
                             <Button icon="pi pi-eye" @click="router.push(`/admin/admins/${data.id}`)"
                                 class="p-button-info p-button-sm" v-tooltip.top="'查看详情'" />
-                            <Button icon="pi pi-pencil" @click="showEditDialog(data)"
-                                class="p-button-warning p-button-sm" v-tooltip.top="'编辑'"
-                                :disabled="data.role === 'super_admin' && data.id !== 1" />
+							<Button icon="pi pi-pencil" @click="showEditDialog(data)" class="p-button-warning p-button-sm"
+								v-tooltip.top="'编辑'" :disabled="data.role === 'super_admin' && data.id !== 1" />
                             <Button icon="pi pi-key" @click="resetPassword(data)" class="p-button-secondary p-button-sm"
                                 v-tooltip.top="'重置密码'" />
                             <Button icon="pi pi-trash" @click="confirmDelete(data)" class="p-button-danger p-button-sm"
@@ -716,8 +710,8 @@ onMounted(() => {
         </div>
 
         <!-- 创建/编辑管理员对话框 -->
-        <Dialog v-model:visible="showCreateDialog" :header="editingAdmin ? '编辑管理员' : '新增管理员'" :modal="true"
-            :closable="true" class="w-[800px]">
+		<Dialog v-model:visible="showCreateDialog" :header="editingAdmin ? '编辑管理员' : '新增管理员'" :modal="true" :closable="true"
+			class="w-[800px]">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-4">
                     <div>
@@ -765,8 +759,8 @@ onMounted(() => {
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-2">角色</label>
-                        <Dropdown v-model="adminForm.role" :options="adminRoleOptions" optionLabel="label"
-                            optionValue="value" placeholder="选择角色" class="w-full" />
+						<Dropdown v-model="adminForm.role" :options="adminRoleOptions" optionLabel="label" optionValue="value"
+							placeholder="选择角色" class="w-full" />
                     </div>
 
                     <div>
@@ -777,8 +771,8 @@ onMounted(() => {
 
                     <div>
                         <label class="block text-sm font-medium mb-2">状态</label>
-                        <Dropdown v-model="adminForm.status" :options="adminStatusOptions" optionLabel="label"
-                            optionValue="value" placeholder="选择状态" class="w-full" />
+						<Dropdown v-model="adminForm.status" :options="adminStatusOptions" optionLabel="label" optionValue="value"
+							placeholder="选择状态" class="w-full" />
                     </div>
 
                     <div>
@@ -791,8 +785,7 @@ onMounted(() => {
             <template #footer>
                 <div class="flex justify-end gap-3">
                     <Button label="取消" @click="closeDialog" class="p-button-text" />
-                    <Button :label="editingAdmin ? '更新' : '创建'" @click="saveAdmin" :loading="saving"
-                        :disabled="!isFormValid" />
+					<Button :label="editingAdmin ? '更新' : '创建'" @click="saveAdmin" :loading="saving" :disabled="!isFormValid" />
                 </div>
             </template>
         </Dialog>

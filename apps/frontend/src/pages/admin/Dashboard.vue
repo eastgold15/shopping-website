@@ -137,7 +137,7 @@ const loadDashboardData = async () => {
 				y: {
 					beginAtZero: true,
 					ticks: {
-						callback: (value: any) => "¥" + value.toLocaleString(),
+						callback: (value: any) => `¥${value.toLocaleString()}`,
 					},
 				},
 			},
@@ -157,7 +157,7 @@ const loadDashboardData = async () => {
 
 // 格式化金额
 const formatCurrency = (amount: number) => {
-	return "¥" + amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 });
+	return `¥${amount.toLocaleString("zh-CN", { minimumFractionDigits: 2 })}`;
 };
 
 // 格式化日期

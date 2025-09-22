@@ -105,15 +105,15 @@ export function buildQueryOptions(query: any) {
 	if (query.page !== undefined) {
 		options.page = parseInt(query.page);
 	}
-	if (query.pageSize !== undefined) {
-		options.pageSize = parseInt(query.pageSize);
+	if (query.limit !== undefined) {
+		options.limit = parseInt(query.limit);
 	}
 
 	// 排序参数
-	if (query.sortBy !== undefined) {
+	if (query.sort !== undefined) {
 		options.sort = [
 			{
-				field: query.sortBy,
+				field: query.sort,
 				direction: query.sortOrder || "asc",
 			},
 		];
@@ -126,7 +126,7 @@ export function buildQueryOptions(query: any) {
 
 	// 其他过滤器
 	Object.keys(query).forEach((key) => {
-		if (!["page", "pageSize", "sortBy", "sortOrder", "search"].includes(key)) {
+		if (!["page", "limit", "sort", "sortOrder", "search"].includes(key)) {
 			options[key] = query[key];
 		}
 	});

@@ -8,12 +8,11 @@ export const stringToNumber = z.codec(
 		encode: (val) => val.toString(), // number -> string，存数据库用
 	},
 );
-
 export const numberToString = z.codec(
 	z.number(), //输入
 	z.string(), //输出
 	{
-		decode: (val) => String(val),
+		decode: (val) => val.toString(),
 		encode: (val) => Number(val),
 	},
 );
@@ -23,8 +22,8 @@ export const UnoQueryZod = z.object({
 	search: z.optional(z.string()),
 	// HTTP查询参数传输时会变成字符串，需要转换为数字
 	page: z.coerce.number().default(1),
-	pageSize: z.coerce.number().default(10),
-	sortBy: z.optional(z.string()),
+	limit: z.coerce.number().default(10),
+	sort: z.optional(z.string()),
 	sortOrder: z.optional(z.enum(["asc", "desc"])),
 	fields: z.optional(z.string()),
 });
