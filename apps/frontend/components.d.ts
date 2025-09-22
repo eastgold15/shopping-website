@@ -18,7 +18,6 @@ declare module 'vue' {
     CategoryNavigation: typeof import('./src/components/CategoryNavigation.vue')['default']
     Column: typeof import('primevue/column')['default']
     ConfirmDialog: typeof import('primevue/confirmdialog')['default']
-    copy: typeof import('./src/components/template/CrudTemplate copy.vue')['default']
     'CrudTemplate copy': typeof import('./src/components/template/CrudTemplate copy.vue')['default']
     Dialog: typeof import('primevue/dialog')['default']
     Drawer: typeof import('primevue/drawer')['default']

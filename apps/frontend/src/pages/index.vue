@@ -16,177 +16,177 @@ const scrollIndicator = ref<HTMLElement>();
 
 // 合作伙伴数据
 const partners = ref<PartnersListVo[]>([
-  {
-    id: 1,
-    name: "Partner 1",
-    images: [
-      {
-        id: 1,
-        fileName: "partner1.jpg",
-        imageUrl: "https://via.placeholder.com/150",
-        category: "partner",
-        isMain: false,
-      },
-    ],
-    description: "This is a partner description.",
-    url: "https://example.com",
-    sortOrder: 0,
-    isActive: true,
-    createdAt: "",
-    updatedAt: "",
-  },
+	{
+		id: 1,
+		name: "Partner 1",
+		images: [
+			{
+				id: 1,
+				fileName: "partner1.jpg",
+				imageUrl: "https://via.placeholder.com/150",
+				category: "partner",
+				isMain: false,
+			},
+		],
+		description: "This is a partner description.",
+		url: "https://example.com",
+		sortOrder: 0,
+		isActive: true,
+		createdAt: "",
+		updatedAt: "",
+	},
 ]);
 
 interface ViewConfig {
-  partners_intro_paragraphs: string[];
-  footer_copyright: string;
+	partners_intro_paragraphs: string[];
+	footer_copyright: string;
 }
 
 // 当前界面配置数据
 const viewConfig = ref<ViewConfig>({
-  partners_intro_paragraphs: [
-    "We are a group with five ethical manufacturing facilities across Asia. Each facility specializes in one specific product category per year, allowing us to focus deeply on quality, efficiency, and innovation.",
-    "We are committed to delivering the best-in-class OEM service to global clients — including renowned brands such as: Gap, Disney, Lucasfilm, JCPenney, and Fashion Nova.",
-    "We strictly adhere to the principles of ethical and social responsibility, with full respect for the dignity, rights, and well-being of our staff.",
-    "For our VIP clients, we also offer trend-driven design proposals — curated according to the latest global fashion trends — to support your product development and selection.",
-  ],
-  footer_copyright: "Copyright © 2023 Your Company. All rights reserved.",
+	partners_intro_paragraphs: [
+		"We are a group with five ethical manufacturing facilities across Asia. Each facility specializes in one specific product category per year, allowing us to focus deeply on quality, efficiency, and innovation.",
+		"We are committed to delivering the best-in-class OEM service to global clients — including renowned brands such as: Gap, Disney, Lucasfilm, JCPenney, and Fashion Nova.",
+		"We strictly adhere to the principles of ethical and social responsibility, with full respect for the dignity, rights, and well-being of our staff.",
+		"For our VIP clients, we also offer trend-driven design proposals — curated according to the latest global fashion trends — to support your product development and selection.",
+	],
+	footer_copyright: "Copyright © 2023 Your Company. All rights reserved.",
 });
 
 const api = useFrontApi();
 // 加载合作伙伴数据
 const loadPartners = async () => {
-  try {
-    const { code, data, message } = await api.partner.all();
-    if (code == 200 && data) {
-      partners.value = data;
-      console.log("合作伙伴数据:", message);
-    }
-  } catch (error) {
-    console.error("获取合作伙伴数据失败:", error);
-  }
+	try {
+		const { code, data, message } = await api.partner.all();
+		if (code == 200 && data) {
+			partners.value = data;
+			console.log("合作伙伴数据:", message);
+		}
+	} catch (error) {
+		console.error("获取合作伙伴数据失败:", error);
+	}
 };
 
 // 加载当前界面配置数据
 const loadViewConfig = async () => {
-  try {
-    const { code, data, message } =
-      await api.siteConfigs.getByCategory("footer");
-    if (code === 200) {
-      console.log("配置数据", data);
-      // 将配置数组转换为对象，便于模板使用
-      const configObj: Record<string, any> = {};
-      if (!data) {
-        return;
-      }
-      data.forEach((config) => {
-        configObj[config.key] = config.value || "空";
-      });
+	try {
+		const { code, data, message } =
+			await api.siteConfigs.getByCategory("footer");
+		if (code === 200) {
+			console.log("配置数据", data);
+			// 将配置数组转换为对象，便于模板使用
+			const configObj: Record<string, any> = {};
+			if (!data) {
+				return;
+			}
+			data.forEach((config) => {
+				configObj[config.key] = config.value || "空";
+			});
 
-      console.log("配置对象", configObj.partners_intro_paragraphs);
-      const grapgh = configObj.partners_intro_paragraphs;
+			console.log("配置对象", configObj.partners_intro_paragraphs);
+			const grapgh = configObj.partners_intro_paragraphs;
 
-      const graphArr: string[] = Array.from(grapgh.split("//"));
+			const graphArr: string[] = Array.from(grapgh.split("//"));
 
-      console.log("graphArr", graphArr);
-      viewConfig.value = {
-        ...configObj,
-        footer_copyright: configObj.footer_copyright.replaceAll("\n", ""),
-        partners_intro_paragraphs: graphArr,
-      };
-      console.log("当前界面配置对象:", viewConfig.value);
-    }
-  } catch (error) {
-    console.error("获取当前界面配置失败:", error);
-  }
+			console.log("graphArr", graphArr);
+			viewConfig.value = {
+				...configObj,
+				footer_copyright: configObj.footer_copyright.replaceAll("\n", ""),
+				partners_intro_paragraphs: graphArr,
+			};
+			console.log("当前界面配置对象:", viewConfig.value);
+		}
+	} catch (error) {
+		console.error("获取当前界面配置失败:", error);
+	}
 };
 
 // 使用 animejs 的滚动吸附功能
 const initAnimeScrollSnap = () => {
-  const container = document.querySelector(".h-screen") as HTMLElement;
-  const sections = document.querySelectorAll("section, footer");
-  let isScrolling = false;
-  let currentSection = 0;
+	const container = document.querySelector(".h-screen") as HTMLElement;
+	const sections = document.querySelectorAll("section, footer");
+	let isScrolling = false;
+	let currentSection = 0;
 
-  const scrollToSection = (
-    index: number,
-    _direction: "up" | "down" = "down",
-  ) => {
-    if (index < 0 || index >= sections.length || isScrolling) return;
+	const scrollToSection = (
+		index: number,
+		_direction: "up" | "down" = "down",
+	) => {
+		if (index < 0 || index >= sections.length || isScrolling) return;
 
-    isScrolling = true;
-    currentSection = index;
+		isScrolling = true;
+		currentSection = index;
 
-    const targetElement = sections[index] as HTMLElement;
-    const targetScroll = targetElement.offsetTop;
+		const targetElement = sections[index] as HTMLElement;
+		const targetScroll = targetElement.offsetTop;
 
-    animate(container, {
-      scrollTop: targetScroll,
-      duration: 800,
-      easing: "easeInOutQuad",
-      complete: () => {
-        isScrolling = false;
-      },
-    });
-  };
+		animate(container, {
+			scrollTop: targetScroll,
+			duration: 800,
+			easing: "easeInOutQuad",
+			complete: () => {
+				isScrolling = false;
+			},
+		});
+	};
 
-  let scrollTimeout: NodeJS.Timeout;
-  let accumulatedDelta = 0;
+	let scrollTimeout: NodeJS.Timeout;
+	let accumulatedDelta = 0;
 
-  const handleWheel = (e: WheelEvent) => {
-    if (isScrolling) {
-      e.preventDefault();
-      return;
-    }
+	const handleWheel = (e: WheelEvent) => {
+		if (isScrolling) {
+			e.preventDefault();
+			return;
+		}
 
-    accumulatedDelta += e.deltaY;
+		accumulatedDelta += e.deltaY;
 
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      if (Math.abs(accumulatedDelta) > 50) {
-        if (accumulatedDelta > 0 && currentSection < sections.length - 1) {
-          scrollToSection(currentSection + 1, "down");
-        } else if (accumulatedDelta < 0 && currentSection > 0) {
-          scrollToSection(currentSection - 1, "up");
-        }
-      }
-      accumulatedDelta = 0;
-    }, 50);
+		clearTimeout(scrollTimeout);
+		scrollTimeout = setTimeout(() => {
+			if (Math.abs(accumulatedDelta) > 50) {
+				if (accumulatedDelta > 0 && currentSection < sections.length - 1) {
+					scrollToSection(currentSection + 1, "down");
+				} else if (accumulatedDelta < 0 && currentSection > 0) {
+					scrollToSection(currentSection - 1, "up");
+				}
+			}
+			accumulatedDelta = 0;
+		}, 50);
 
-    e.preventDefault();
-  };
+		e.preventDefault();
+	};
 
-  const handleKeydown = (e: KeyboardEvent) => {
-    if (isScrolling) return;
+	const handleKeydown = (e: KeyboardEvent) => {
+		if (isScrolling) return;
 
-    switch (e.key) {
-      case "ArrowDown":
-      case "PageDown":
-        e.preventDefault();
-        if (currentSection < sections.length - 1) {
-          scrollToSection(currentSection + 1, "down");
-        }
-        break;
-      case "ArrowUp":
-      case "PageUp":
-        e.preventDefault();
-        if (currentSection > 0) {
-          scrollToSection(currentSection - 1, "up");
-        }
-        break;
-    }
-  };
+		switch (e.key) {
+			case "ArrowDown":
+			case "PageDown":
+				e.preventDefault();
+				if (currentSection < sections.length - 1) {
+					scrollToSection(currentSection + 1, "down");
+				}
+				break;
+			case "ArrowUp":
+			case "PageUp":
+				e.preventDefault();
+				if (currentSection > 0) {
+					scrollToSection(currentSection - 1, "up");
+				}
+				break;
+		}
+	};
 
-  // 添加事件监听器
-  container.addEventListener("wheel", handleWheel, { passive: false });
-  document.addEventListener("keydown", handleKeydown);
+	// 添加事件监听器
+	container.addEventListener("wheel", handleWheel, { passive: false });
+	document.addEventListener("keydown", handleKeydown);
 
-  // 返回清理函数
-  return () => {
-    container.removeEventListener("wheel", handleWheel);
-    document.removeEventListener("keydown", handleKeydown);
-    clearTimeout(scrollTimeout);
-  };
+	// 返回清理函数
+	return () => {
+		container.removeEventListener("wheel", handleWheel);
+		document.removeEventListener("keydown", handleKeydown);
+		clearTimeout(scrollTimeout);
+	};
 };
 
 // 全局变量用于跟踪当前section
@@ -194,367 +194,373 @@ let currentSection = 0;
 
 // 简单的滚动到下一个section
 const scrollToNext = () => {
-  // 获取正确的滚动容器 - 具有 overflow-y-scroll 的 div
-  const container = document.querySelector(".h-screen.overflow-y-scroll") as HTMLElement;
-  if (!container) {
-    console.error('滚动容器未找到');
-    return;
-  }
+	// 获取正确的滚动容器 - 具有 overflow-y-scroll 的 div
+	const container = document.querySelector(
+		".h-screen.overflow-y-scroll",
+	) as HTMLElement;
+	if (!container) {
+		console.error("滚动容器未找到");
+		return;
+	}
 
-  const sections = container.querySelectorAll("section, footer");
-  if (sections.length === 0) {
-    console.error('未找到可滚动的section');
-    return;
-  }
+	const sections = container.querySelectorAll("section, footer");
+	if (sections.length === 0) {
+		console.error("未找到可滚动的section");
+		return;
+	}
 
-  // 找到当前滚动位置对应的section
-  const currentScrollTop = container.scrollTop;
-  let currentIndex = 0;
+	// 找到当前滚动位置对应的section
+	const currentScrollTop = container.scrollTop;
+	let currentIndex = 0;
 
-  for (let i = 0;i < sections.length;i++) {
-    const section = sections[i] as HTMLElement;
-    const sectionTop = section.offsetTop;
-    if (Math.abs(currentScrollTop - sectionTop) < 100) {
-      currentIndex = i;
-      break;
-    }
-  }
+	for (let i = 0; i < sections.length; i++) {
+		const section = sections[i] as HTMLElement;
+		const sectionTop = section.offsetTop;
+		if (Math.abs(currentScrollTop - sectionTop) < 100) {
+			currentIndex = i;
+			break;
+		}
+	}
 
-  // 滚动到下一个section
-  if (currentIndex < sections.length - 1) {
-    const nextSection = sections[currentIndex + 1] as HTMLElement;
-    const targetScroll = nextSection.offsetTop;
+	// 滚动到下一个section
+	if (currentIndex < sections.length - 1) {
+		const nextSection = sections[currentIndex + 1] as HTMLElement;
+		const targetScroll = nextSection.offsetTop;
 
-    console.log(`滚动从 ${currentScrollTop} 到 ${targetScroll}`);
+		console.log(`滚动从 ${currentScrollTop} 到 ${targetScroll}`);
 
-    animate(container, {
-      scrollTop: targetScroll,
-      duration: 800,
-      easing: "easeInOutQuad",
-    });
-  } else {
-    console.log('已经是最后一个section');
-  }
+		animate(container, {
+			scrollTop: targetScroll,
+			duration: 800,
+			easing: "easeInOutQuad",
+		});
+	} else {
+		console.log("已经是最后一个section");
+	}
 };
 
 // 初始化标题动画
 const initTitleAnimation = () => {
-  if (
-    !titleElement.value ||
-    !subtitleElement.value ||
-    !dividerElement.value ||
-    !taglineElement.value
-  )
-    return;
+	if (
+		!titleElement.value ||
+		!subtitleElement.value ||
+		!dividerElement.value ||
+		!taglineElement.value
+	)
+		return;
 
-  // 设置初始状态
-  dividerElement.value.style.opacity = "0";
-  dividerElement.value.style.transform = "scaleX(0)";
+	// 设置初始状态
+	dividerElement.value.style.opacity = "0";
+	dividerElement.value.style.transform = "scaleX(0)";
 
-  // 分割主标题文字
-  text.split(titleElement.value, {
-    chars: { class: "fashion-char" },
-  });
+	// 分割主标题文字
+	text.split(titleElement.value, {
+		chars: { class: "fashion-char" },
+	});
 
-  // 分割副标题文字
-  text.split(subtitleElement.value, {
-    chars: { class: "huaxin-char" },
-  });
+	// 分割副标题文字
+	text.split(subtitleElement.value, {
+		chars: { class: "huaxin-char" },
+	});
 
-  // 分割标语文字
-  text.split(taglineElement.value, {
-    words: { class: "tagline-word" },
-  });
+	// 分割标语文字
+	text.split(taglineElement.value, {
+		words: { class: "tagline-word" },
+	});
 
-  // 主标题字符动画 - 优雅的字母依次出现 + 持续大幅度动画
-  animate(".fashion-char", {
-    opacity: [0, 1],
-    y: ["2rem", "0rem"],
-    duration: 3000,
-    delay: stagger(80),
-    easing: "easeOutExpo",
-  });
+	// 主标题字符动画 - 优雅的字母依次出现 + 持续大幅度动画
+	animate(".fashion-char", {
+		opacity: [0, 1],
+		y: ["2rem", "0rem"],
+		duration: 3000,
+		delay: stagger(80),
+		easing: "easeOutExpo",
+	});
 
-  // 副标题字符动画 - 延迟出现
-  animate(".huaxin-char", {
-    opacity: [0, 1],
-    y: ["1.5rem", "0rem"],
-    duration: 600,
-    delay: stagger(60, { start: 1000 }),
-    easing: "easeOutExpo",
-  });
+	// 副标题字符动画 - 延迟出现
+	animate(".huaxin-char", {
+		opacity: [0, 1],
+		y: ["1.5rem", "0rem"],
+		duration: 600,
+		delay: stagger(60, { start: 1000 }),
+		easing: "easeOutExpo",
+	});
 
-  // 分割线动画 - 缩放出现
-  animate(dividerElement.value, {
-    opacity: [0, 1],
-    scaleX: [0, 1],
-    duration: 600,
-    delay: 1800,
-    easing: "easeOutExpo",
-  });
+	// 分割线动画 - 缩放出现
+	animate(dividerElement.value, {
+		opacity: [0, 1],
+		scaleX: [0, 1],
+		duration: 600,
+		delay: 1800,
+		easing: "easeOutExpo",
+	});
 
-  // 标语单词动画 - 依次淡入 + 持续呼吸效果
-  animate(".tagline-word", {
-    opacity: [0, 1],
-    y: ["1rem", "0rem"],
-    duration: 500,
-    delay: stagger(150, { start: 2200 }),
-    easing: "easeOutExpo",
-    complete: () => {
-      // 初始动画完成后，添加持续的呼吸效果
-      animate(".tagline-word", {
-        y: ["0rem", "-1rem", "0rem"],
-        opacity: [1, 0.6, 1],
-        duration: 2000,
-        delay: stagger(100),
-        easing: "easeInOutSine",
-        loop: true,
-        direction: "alternate",
-      });
-    },
-  });
+	// 标语单词动画 - 依次淡入 + 持续呼吸效果
+	animate(".tagline-word", {
+		opacity: [0, 1],
+		y: ["1rem", "0rem"],
+		duration: 500,
+		delay: stagger(150, { start: 2200 }),
+		easing: "easeOutExpo",
+		complete: () => {
+			// 初始动画完成后，添加持续的呼吸效果
+			animate(".tagline-word", {
+				y: ["0rem", "-1rem", "0rem"],
+				opacity: [1, 0.6, 1],
+				duration: 2000,
+				delay: stagger(100),
+				easing: "easeInOutSine",
+				loop: true,
+				direction: "alternate",
+			});
+		},
+	});
 
-  // 装饰元素动画
-  if (decoration1.value) {
-    animate(decoration1.value, {
-      opacity: [0, 0.3],
-      scale: [0.8, 1],
-      rotate: [0, 360],
-      duration: 2000,
-      delay: 1200,
-      easing: "easeOutExpo",
-      loop: true,
-      direction: "alternate",
-    });
-  }
+	// 装饰元素动画
+	if (decoration1.value) {
+		animate(decoration1.value, {
+			opacity: [0, 0.3],
+			scale: [0.8, 1],
+			rotate: [0, 360],
+			duration: 2000,
+			delay: 1200,
+			easing: "easeOutExpo",
+			loop: true,
+			direction: "alternate",
+		});
+	}
 
-  if (decoration2.value) {
-    animate(decoration2.value, {
-      opacity: [0, 0.2],
-      scale: [1.2, 1],
-      rotate: [0, -360],
-      duration: 2500,
-      delay: 1400,
-      easing: "easeOutExpo",
-      loop: true,
-      direction: "alternate",
-    });
-  }
+	if (decoration2.value) {
+		animate(decoration2.value, {
+			opacity: [0, 0.2],
+			scale: [1.2, 1],
+			rotate: [0, -360],
+			duration: 2500,
+			delay: 1400,
+			easing: "easeOutExpo",
+			loop: true,
+			direction: "alternate",
+		});
+	}
 
-  if (decoration3.value) {
-    animate(decoration3.value, {
-      opacity: [0, 0.4],
-      rotate: [0, 180],
-      duration: 3000,
-      delay: 1600,
-      easing: "easeInOutSine",
-      loop: true,
-      direction: "alternate",
-    });
-  }
+	if (decoration3.value) {
+		animate(decoration3.value, {
+			opacity: [0, 0.4],
+			rotate: [0, 180],
+			duration: 3000,
+			delay: 1600,
+			easing: "easeInOutSine",
+			loop: true,
+			direction: "alternate",
+		});
+	}
 
-  // 波动背景动画
-  initWaveBackground();
+	// 波动背景动画
+	initWaveBackground();
 
-  // 初始化滚动指示器动画
-  initScrollIndicator();
+	// 初始化滚动指示器动画
+	initScrollIndicator();
 };
 
 // 波动背景效果
 const initWaveBackground = () => {
-  const container = document.querySelector(".h-screen") as HTMLElement;
+	const container = document.querySelector(".h-screen") as HTMLElement;
 
-  // 创建波动元素
-  const createWaveElement = (delay: number, duration: number, size: number) => {
-    const wave = document.createElement("div");
-    wave.className = "absolute rounded-full bg-white/10 pointer-events-none";
-    wave.style.width = `${size}px`;
-    wave.style.height = `${size}px`;
-    wave.style.left = `${Math.random() * 100}%`;
-    wave.style.top = `${Math.random() * 100}%`;
-    wave.style.transform = "translate(-50%, -50%)";
-    wave.style.zIndex = "1";
+	// 创建波动元素
+	const createWaveElement = (delay: number, duration: number, size: number) => {
+		const wave = document.createElement("div");
+		wave.className = "absolute rounded-full bg-white/10 pointer-events-none";
+		wave.style.width = `${size}px`;
+		wave.style.height = `${size}px`;
+		wave.style.left = `${Math.random() * 100}%`;
+		wave.style.top = `${Math.random() * 100}%`;
+		wave.style.transform = "translate(-50%, -50%)";
+		wave.style.zIndex = "1";
 
-    container.appendChild(wave);
+		container.appendChild(wave);
 
-    // 动画
-    animate(wave, {
-      scale: [0, 1.5, 0],
-      opacity: [0, 0.3, 0],
-      duration: duration,
-      delay: delay,
-      easing: "easeInOutSine",
-      loop: true,
-      direction: "normal",
-    });
+		// 动画
+		animate(wave, {
+			scale: [0, 1.5, 0],
+			opacity: [0, 0.3, 0],
+			duration: duration,
+			delay: delay,
+			easing: "easeInOutSine",
+			loop: true,
+			direction: "normal",
+		});
 
-    return wave;
-  };
+		return wave;
+	};
 
-  // 创建多个波动元素
-  const waves = [];
-  for (let i = 0;i < 8;i++) {
-    const delay = i * 2000;
-    const duration = 4000 + Math.random() * 2000;
-    const size = 100 + Math.random() * 200;
-    waves.push(createWaveElement(delay, duration, size));
-  }
+	// 创建多个波动元素
+	const waves = [];
+	for (let i = 0; i < 8; i++) {
+		const delay = i * 2000;
+		const duration = 4000 + Math.random() * 2000;
+		const size = 100 + Math.random() * 200;
+		waves.push(createWaveElement(delay, duration, size));
+	}
 
-  // 移动的波动光点
-  const createFloatingOrb = (delay: number) => {
-    const orb = document.createElement("div");
-    orb.className =
-      "absolute rounded-full bg-gradient-to-r from-yellow-300/20 to-pink-300/20 pointer-events-none blur-sm";
-    orb.style.width = `${30 + Math.random() * 40}px`;
-    orb.style.height = orb.style.width;
-    orb.style.zIndex = "2";
+	// 移动的波动光点
+	const createFloatingOrb = (delay: number) => {
+		const orb = document.createElement("div");
+		orb.className =
+			"absolute rounded-full bg-gradient-to-r from-yellow-300/20 to-pink-300/20 pointer-events-none blur-sm";
+		orb.style.width = `${30 + Math.random() * 40}px`;
+		orb.style.height = orb.style.width;
+		orb.style.zIndex = "2";
 
-    container.appendChild(orb);
+		container.appendChild(orb);
 
-    // 随机路径动画
-    const animateOrb = () => {
-      const startX = Math.random() * 100;
-      const startY = Math.random() * 100;
-      const endX = Math.random() * 100;
-      const endY = Math.random() * 100;
+		// 随机路径动画
+		const animateOrb = () => {
+			const startX = Math.random() * 100;
+			const startY = Math.random() * 100;
+			const endX = Math.random() * 100;
+			const endY = Math.random() * 100;
 
-      orb.style.left = `${startX}%`;
-      orb.style.top = `${startY}%`;
+			orb.style.left = `${startX}%`;
+			orb.style.top = `${startY}%`;
 
-      animate(orb, {
-        left: [`${startX}%`, `${endX}%`],
-        top: [`${startY}%`, `${endY}%`],
-        scale: [0.8, 1.2, 0.8],
-        opacity: [0.2, 0.4, 0.2],
-        duration: 8000 + Math.random() * 4000,
-        delay: delay,
-        easing: "easeInOutSine",
-        loop: true,
-        direction: "alternate",
-      });
-    };
+			animate(orb, {
+				left: [`${startX}%`, `${endX}%`],
+				top: [`${startY}%`, `${endY}%`],
+				scale: [0.8, 1.2, 0.8],
+				opacity: [0.2, 0.4, 0.2],
+				duration: 8000 + Math.random() * 4000,
+				delay: delay,
+				easing: "easeInOutSine",
+				loop: true,
+				direction: "alternate",
+			});
+		};
 
-    animateOrb();
-    return orb;
-  };
+		animateOrb();
+		return orb;
+	};
 
-  // 创建浮动光点
-  for (let i = 0;i < 5;i++) {
-    createFloatingOrb(i * 1600);
-  }
+	// 创建浮动光点
+	for (let i = 0; i < 5; i++) {
+		createFloatingOrb(i * 1600);
+	}
 };
 
 // 滚动指示器动画
 const initScrollIndicator = () => {
-  if (!scrollIndicator.value) return;
+	if (!scrollIndicator.value) return;
 
-  // 整体轻微浮动动画
-  animate(scrollIndicator.value, {
-    y: ["0px", "6px", "0px"],
-    duration: 3000,
-    easing: "easeInOutSine",
-    loop: true,
-    direction: "alternate",
-  });
+	// 整体轻微浮动动画
+	animate(scrollIndicator.value, {
+		y: ["0px", "6px", "0px"],
+		duration: 3000,
+		easing: "easeInOutSine",
+		loop: true,
+		direction: "alternate",
+	});
 
-  // 为每个箭头创建优雅的闪动效果
-  const arrows = scrollIndicator.value?.querySelectorAll('.arrow-wave');
-  if (!arrows) return;
+	// 为每个箭头创建优雅的闪动效果
+	const arrows = scrollIndicator.value?.querySelectorAll(".arrow-wave");
+	if (!arrows) return;
 
-  // 设置初始状态
-  arrows.forEach((arrow, index) => {
-    const arrowIcon = arrow.querySelector('i');
-    if (arrowIcon) {
-      arrowIcon.style.opacity = "0.3";
-      arrowIcon.style.transform = "translateY(0px) scale(1)";
-    }
-  });
+	// 设置初始状态
+	arrows.forEach((arrow, _index) => {
+		const arrowIcon = arrow.querySelector("i");
+		if (arrowIcon) {
+			arrowIcon.style.opacity = "0.3";
+			arrowIcon.style.transform = "translateY(0px) scale(1)";
+		}
+	});
 
-  // 创建从上往下的闪动动画序列
-  const createArrowSequence = () => {
-    // 从第一个箭头开始（从上往下）
-    arrows.forEach((arrow, index) => {
-      const arrowIcon = arrow.querySelector('i');
-      if (!arrowIcon) return;
+	// 创建从上往下的闪动动画序列
+	const createArrowSequence = () => {
+		// 从第一个箭头开始（从上往下）
+		arrows.forEach((arrow, index) => {
+			const arrowIcon = arrow.querySelector("i");
+			if (!arrowIcon) return;
 
-      // 闪动出现动画 - 从上往下依次触发
-      animate(arrowIcon, {
-        opacity: [0.3, 1, 0.6 + ((2 - index) * 0.1)], // 上面的箭头更亮
-        translateY: ["0px", "-5px", "0px"],
-        scale: [1, 1.3, 1],
-        duration: 400,
-        delay: index * 120, // 从上往下依次延迟
-        easing: "easeOutBack",
-      });
+			// 闪动出现动画 - 从上往下依次触发
+			animate(arrowIcon, {
+				opacity: [0.3, 1, 0.6 + (2 - index) * 0.1], // 上面的箭头更亮
+				translateY: ["0px", "-5px", "0px"],
+				scale: [1, 1.3, 1],
+				duration: 400,
+				delay: index * 120, // 从上往下依次延迟
+				easing: "easeOutBack",
+			});
 
-      // 持续的轻微呼吸效果
-      setTimeout(() => {
-        animate(arrowIcon, {
-          scale: [1, 1.1, 1],
-          duration: 1200,
-          delay: index * 80,
-          easing: "easeInOutSine",
-          loop: true,
-          direction: "alternate",
-        });
-      }, 600 + index * 120);
-    });
-  };
+			// 持续的轻微呼吸效果
+			setTimeout(
+				() => {
+					animate(arrowIcon, {
+						scale: [1, 1.1, 1],
+						duration: 1200,
+						delay: index * 80,
+						easing: "easeInOutSine",
+						loop: true,
+						direction: "alternate",
+					});
+				},
+				600 + index * 120,
+			);
+		});
+	};
 
-  // 立即执行第一次动画
-  createArrowSequence();
+	// 立即执行第一次动画
+	createArrowSequence();
 
-  // 每隔2.5秒重复动画序列
-  setInterval(createArrowSequence, 2500);
+	// 每隔2.5秒重复动画序列
+	setInterval(createArrowSequence, 2500);
 
-  // 创建优雅的光晕效果
-  const createGlowEffect = () => {
-    const glow = document.createElement("div");
-    glow.className = "absolute inset-0 rounded-full bg-white/10 pointer-events-none blur-sm";
-    glow.style.transform = "scale(0)";
-    glow.style.opacity = "0";
+	// 创建优雅的光晕效果
+	const createGlowEffect = () => {
+		const glow = document.createElement("div");
+		glow.className =
+			"absolute inset-0 rounded-full bg-white/10 pointer-events-none blur-sm";
+		glow.style.transform = "scale(0)";
+		glow.style.opacity = "0";
 
-    scrollIndicator.value?.appendChild(glow);
+		scrollIndicator.value?.appendChild(glow);
 
-    // 光晕扩散动画
-    animate(glow, {
-      scale: [0, 1.8, 2.2],
-      opacity: [0, 0.4, 0],
-      duration: 2000,
-      easing: "easeOutQuart",
-      complete: () => {
-        glow.remove();
-      },
-    });
-  };
+		// 光晕扩散动画
+		animate(glow, {
+			scale: [0, 1.8, 2.2],
+			opacity: [0, 0.4, 0],
+			duration: 2000,
+			easing: "easeOutQuart",
+			complete: () => {
+				glow.remove();
+			},
+		});
+	};
 
-  // 每隔3秒创建光晕效果
-  setInterval(createGlowEffect, 3000);
+	// 每隔3秒创建光晕效果
+	setInterval(createGlowEffect, 3000);
 
-  // 立即创建第一个光晕
-  setTimeout(createGlowEffect, 800);
+	// 立即创建第一个光晕
+	setTimeout(createGlowEffect, 800);
 };
 
 // 页面加载时的初始化
 onMounted(async () => {
-  console.log("首页已加载");
-  await Promise.all([loadPartners(), loadViewConfig()]);
+	console.log("首页已加载");
+	await Promise.all([loadPartners(), loadViewConfig()]);
 
-  // 等待DOM渲染完成后初始化动画和滚动吸附
-  nextTick(() => {
-    // 初始化标题动画
-    initTitleAnimation();
+	// 等待DOM渲染完成后初始化动画和滚动吸附
+	nextTick(() => {
+		// 初始化标题动画
+		initTitleAnimation();
 
-    // 延迟初始化滚动吸附，确保动态数据已加载
-    setTimeout(() => {
-      initAnimeScrollSnap();
-    }, 1000);
-  });
+		// 延迟初始化滚动吸附，确保动态数据已加载
+		setTimeout(() => {
+			initAnimeScrollSnap();
+		}, 1000);
+	});
 });
 
 // 组件卸载时清理
 onUnmounted(() => {
-  // 清理事件监听器会在initScrollSnap返回的函数中处理
+	// 清理事件监听器会在initScrollSnap返回的函数中处理
 });
 </script>
 
@@ -713,9 +719,8 @@ onUnmounted(() => {
                     class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 text-lg shadow-lg">
                     Visit the official website
                   </a>
-                  <p class="text-lg lg:text-xl opacity-90 mt-8 leading-relaxed drop-shadow-md">{{ partner.description }}
-                  <h3 class="text-2xl lg:text-3xl font-bold mt-6 drop-shadow-lg">{{ partner.name }}</h3>
-                  </p>
+                  <p class="text-lg lg:text-xl opacity-90 mt-8 leading-relaxed drop-shadow-md">{{ partner.description }}</p>
+                      <h3 class="text-2xl lg:text-3xl font-bold mt-6 drop-shadow-lg">{{ partner.name }}</h3> 
                 </div>
               </div>
             </div>
@@ -740,14 +745,15 @@ onUnmounted(() => {
                 class="w-full h-full object-cover">
               <!-- 浮空的文字内容 -->
               <div class="absolute inset-0 bg-black bg-opacity-60 flex flex-col justify-center p-12">
-                <div class="text-white max-w-lg ml-auto">
-                  <h3 class="text-4xl lg:text-5xl font-bold mb-6 drop-shadow-lg">{{ partner.name }}</h3>
-                  <p class="text-lg lg:text-xl opacity-90 mb-8 leading-relaxed drop-shadow-md">{{ partner.description }}
-                  </p>
+                <div class="text-white max-w-lg mr-auto">
+
                   <a :href="partner.url" target="_blank" rel="noopener noreferrer"
                     class="inline-block bg-white text-orange-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 text-lg shadow-lg">
                     Visit the official website
                   </a>
+                  <h3 class="text-4xl lg:text-5xl font-bold mt-6 drop-shadow-lg">{{ partner.name }}</h3>
+                  <p class="text-lg lg:text-xl opacity-90 mt-8 leading-relaxed drop-shadow-md">{{ partner.description }}
+                  </p>
                 </div>
               </div>
             </div>
