@@ -1,0 +1,17 @@
+# 浏览器兼容性配置
+# 支持的浏览器版本范围
+> 1%
+last 2 versions
+not ie <= 8
+not ie_mob <= 8
+not dead
+not op_mini all
+
+# 具体版本支持
+Android 4.4
+iOS >= 9
+Chrome >= 49
+Firefox >= 31
+Safari >= 9.1
+Edge >= 13
+Opera >= 36

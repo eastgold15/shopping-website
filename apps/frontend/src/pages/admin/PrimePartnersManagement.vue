@@ -1,11 +1,9 @@
 <script lang="ts" setup>
 import type {
-	InsertPartnersDto,
-	ListImagesQueryDto,
-	PartnersListQueryDto,
-	SelectImagesVo,
-	SelectPartnersDto,
-	SelectPartnersVo,
+  ListImagesQueryDto,
+  PartnerlFormDto,
+  PartnersListVo,
+  SelectImagesVo,
 } from "@backend/types";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import type { CrudMode } from "@frontend/types/prime-cms";
@@ -34,21 +32,21 @@ const $crud = useCmsApi().partner;
 
 // 使用zod定义表单验证schema
 const partnerSchema = z.object({
-	name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
-	description: z.string().min(1, "请输入合作伙伴描述"),
-	sortOrder: z
-		.number()
-		.min(0, "排序权重不能小于0")
-		.max(9999, "排序权重不能超过9999"),
-	url: z.string().url("请输入有效的URL").optional().or(z.literal("")),
-	isActive: z.boolean(),
-	selectedImageUrl: z.string().optional(),
+  name: z.string().min(2, "名称至少2个字符").max(100, "名称不能超过100个字符"),
+  description: z.string().min(1, "请输入合作伙伴描述"),
+  sortOrder: z
+    .number()
+    .min(0, "排序权重不能小于0")
+    .max(9999, "排序权重不能超过9999"),
+  url: z.string().url("请输入有效的URL").optional().or(z.literal("")),
+  isActive: z.boolean(),
+  selectedImageUrl: z.string().optional(),
 });
 
 // 查询表单验证schema
 const querySchema = z.object({
-	name: z.string().max(100, "搜索名称不能超过100个字符").optional(),
-	isActive: z.boolean().optional(),
+  name: z.string().max(100, "搜索名称不能超过100个字符").optional(),
+  isActive: z.boolean().optional(),
 });
 
 // 创建resolver
@@ -57,98 +55,72 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-	SelectPartnersVo,
-	PartnersListQueryDto,
-	InsertPartnersDto
+  PartnersListVo,
+  any,
+  PartnerlFormDto
 >(
-	{
-		// 1. 定义查询表单
-		// @ts-ignore
-		getList: $crud.list,
-		// @ts-ignore
-		create: (data: Omit<PartnerFormType, "id">) =>
-			$crud.create(data as unknown as Omit<SelectPartnersDto, "id">),
-		// @ts-ignore
-		update: (id: number, data: PartnerFormType) =>
-			$crud.update(id, data as unknown as SelectPartnersDto),
-		// @ts-ignore
-		delete: $crud.delete,
+  {
+    // 1. 定义查询表单
+    // @ts-ignore
+    getList: $crud.list,
+    // @ts-ignore
+    create: $crud.create,
+    // @ts-ignore
+    update: $crud.update,
+    delete: $crud.delete,
+    // 2. 定义初始表格列 初始值
+    getEmptyModel: () => ({
+      id: 0,
+      name: "",
+      description: "",
+      url: "",
+      sortOrder: 0,
+      isActive: true,
+      createdAt: "",
+      updatedAt: "",
+      images: [],
+    }),
 
-		// 2. 定义初始表格列 初始值
-		getEmptyModel: () => ({
-			id: 0,
-			name: "",
-			description: "",
-			image_id: -1,
-			url: "",
-			sortOrder: 0,
-			isActive: true,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-			imageRef: {
-				id: 22,
-				fileName: "dongqi.jpeg",
-				imageUrl: "http://img.cykycyky.top/logo/dongqi_2v1uxb.jpeg",
-				category: "logo",
-				fileSize: 1361208,
-				mimeType: "image/jpeg",
-				alt: "dongqi.jpeg",
-				createdAt: new Date("2025-09-17T06:18:07.960Z"),
-				updatedAt: new Date("2025-09-17T06:18:07.960Z"),
-			},
-		}),
+    // 3. 定义删除框标题
+    getDeleteBoxTitle(id: number) {
+      return `删除合作伙伴${id}`;
+    },
+    getDeleteBoxTitles(ids: Array<number>) {
+      return ` 合作伙伴#${ids.join(",")} `;
+    },
 
-		// 3. 定义删除框标题
-		getDeleteBoxTitle(id: number) {
-			return `删除合作伙伴${id}`;
-		},
-		getDeleteBoxTitles(ids: Array<number>) {
-			return ` 合作伙伴#${ids.join(",")} `;
-		},
-
-		// 5. 数据转换
-		transformSubmitData: (data: any, mode: CrudMode) => {
-			if (mode === "NEW") {
-				// 创建时，确保image_id为-1
-				data.image_id = (data.imageRef as any).id;
-				delete data.imageRef;
-			}
-			// 确保数字类型正确
-			if (typeof data.sortOrder === "string") {
-				const parsed = parseInt(data.sortOrder, 10);
-				data.sortOrder = isNaN(parsed) ? 0 : parsed;
-			}
-
-			// @ts-ignore
-			delete data.createdAt;
-			// @ts-ignore
-			delete data.updatedAt;
-			// @ts-ignore
-			delete data.imageUrl;
-			data.image_id = currentImage.value?.id || data.image_id;
-		},
-	},
-	// 6. 定义查询表单
-	{
-		name: "",
-		isActive: undefined,
-		page: 1,
-		pageSize: 20,
-	},
+    // 5. 数据转换
+    transformSubmitData: (data: any, _mode: CrudMode) => {
+      if (_mode === "NEW") {
+        delete data.createdAt;
+        delete data.updatedAt;
+      }
+      // @ts-ignore
+      data.images = data.images.map((img) => img.id);
+      console.log("data11122", data);
+    },
+  },
+  // 6. 定义查询表单
+  {
+    name: "",
+    isActive: undefined,
+    page: 1,
+    limit: 20,
+  },
 );
 
 const { tableData, queryForm, fetchList } = templateData;
 
 onMounted(async () => {
-	await fetchList();
-	await loadImages();
+  await fetchList();
+  await loadImages();
 });
 
 // 状态选项
 const statusOptions = [
-	{ label: "全部", value: undefined },
-	{ label: "启用", value: true },
-	{ label: "禁用", value: false },
+  { label: "全部", value: undefined },
+  { label: "启用", value: true },
+  { label: "禁用", value: false },
 ];
 
 // 获取PrimeCrudTemplate组件的引用
@@ -162,35 +134,35 @@ const loadingImages = ref(false);
 
 // 加载图片列表
 const loadImages = async () => {
-	loadingImages.value = true;
-	try {
-		const params: ListImagesQueryDto = {
-			page: 1,
-			pageSize: 100, // 加载更多图片供选择
-		};
+  loadingImages.value = true;
+  try {
+    const params: ListImagesQueryDto = {
+      page: 1,
+      limit: 100, // 加载更多图片供选择
+    };
 
-		const { code, data, message } = await useCmsApi().images.list(params);
-		if (code !== 200) {
-			toast.add({
-				severity: "error",
-				summary: "加载失败",
-				detail: message,
-				life: 3000,
-			});
-			return;
-		}
+    const { code, data, message } = await useCmsApi().images.list(params);
+    if (code !== 200) {
+      toast.add({
+        severity: "error",
+        summary: "加载失败",
+        detail: message,
+        life: 3000,
+      });
+      return;
+    }
 
-		images.value = data.items;
-	} catch (error) {
-		toast.add({
-			severity: "error",
-			summary: "加载失败",
-			detail: (error as Error).message,
-			life: 3000,
-		});
-	} finally {
-		loadingImages.value = false;
-	}
+    images.value = data.items;
+  } catch (error) {
+    toast.add({
+      severity: "error",
+      summary: "加载失败",
+      detail: (error as Error).message,
+      life: 3000,
+    });
+  } finally {
+    loadingImages.value = false;
+  }
 };
 
 // 计算当前选中的图片
@@ -265,7 +237,7 @@ const getImageDisplayName = (image: SelectImagesVo) => {
         </template>
       </Column>
 
-      <Column field="description" header="描述" style="width: 300px">
+      <Column field="description" header="描述" style="width: 100px">
         <template #body="{ data }">
           <span class="text-gray-600 text-sm line-clamp-2">
             {{ data.description || '-' }}
@@ -273,10 +245,10 @@ const getImageDisplayName = (image: SelectImagesVo) => {
         </template>
       </Column>
 
-      <Column field="url" header="网站链接" style="width: 200px">
+      <Column field="url" header="网站链接" style="width: 300px">
         <template #body="{ data }">
           <div v-if="data.url" class="flex items-center gap-2">
-            <a :href="data.url" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm truncate max-w-32"
+            <a :href="data.url" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm truncate max-w-64"
               v-tooltip.top="data.url">
               {{ data.url }}
             </a>

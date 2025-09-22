@@ -1,6 +1,6 @@
+import { resolve } from "node:path";
 import { PrimeVueResolver } from "@primevue/auto-import-resolver";
 import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
 import UnoCSS from "unocss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
@@ -43,6 +43,14 @@ export default defineConfig(({ mode }) => {
 			},
 			// 跳过类型检查以加快构建速度
 			skipTypeCheck: true,
+			// 增强构建兼容性
+			cssCodeSplit: true,
+			cssTarget: "es2015",
+			target: "es2015",
+		},
+		optimizeDeps: {
+			// 预构建依赖以提高兼容性
+			include: ["vue", "vue-router", "@vueuse/core", "animejs"],
 		},
 	};
 });
