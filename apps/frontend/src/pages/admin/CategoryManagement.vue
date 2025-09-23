@@ -111,20 +111,23 @@ const templateData = await genPrimeCmsTemplateData<
 
 const { queryForm, treeData } = templateData;
 
-// 将已经是树形结构的数据转换为TreeTable所需的TreeNode格式
-const convertTreeToTreeNodes = (treeData: SelectCategoryVo[]): any[] => {
-  return treeData.map((node) => ({
-    key: node.id.toString(),
-    data: node,
-    children: node.children ? convertTreeToTreeNodes(node.children) : undefined,
-  }));
-};
+interface TreeCategoryNode extends SelectCategoryVo {
+  key: string;
+  children?: TreeCategoryNode[];
+}
 
-// 树形选择器数据转换（适用于已经是树形结构的数据）
-const convertToTreeSelectFormat = (treeData: SelectCategoryVo[]): any[] => {
-  // 1. 先转换原始树形数据
+interface TreeSelectNode {
+  key: string | '__NULL__';
+  label: string;
+  data: TreeCategoryNode | null;
+  children?: TreeSelectNode[];
+}
+
+const convertToTreeSelectFormat = (treeData: TreeCategoryNode[]): TreeSelectNode[] => {
+  console.log('treeData:1111', treeData);
+
   const converted = treeData.map((category) => ({
-    key: category.id,
+    ...category,
     label: category.name,
     data: category,
     children: category.children
@@ -132,15 +135,16 @@ const convertToTreeSelectFormat = (treeData: SelectCategoryVo[]): any[] => {
       : undefined,
   }));
 
-  // 2. 在开头追加 null 选项（表示“无父级”）
+  console.log('converted:', converted);
   return [
     {
-      key: null,
-      label: "无父级分类", // 或 "顶级分类"、"不选择" 等
+      key: '__NULL__',
+      label: "无父级分类",
       data: null,
       children: undefined,
+
     },
-    ...converted, // 展开原始转换后的数据
+    ...converted,
   ];
 };
 
@@ -148,25 +152,15 @@ const convertToTreeSelectFormat = (treeData: SelectCategoryVo[]): any[] => {
 const treeSelectData = computed(() => {
   if (!treeData.value || treeData.value.length === 0) return [];
   // treeData.value 已经是树形结构，直接转换为 TreeSelect 格式
-  return convertToTreeSelectFormat(treeData.value as SelectCategoryVo[]);
+  return convertToTreeSelectFormat(treeData.value as unknown as TreeCategoryNode[]);
 });
 
-// TreeTable数据计算属性
-const treeTableData = computed(() => {
-  if (!treeData.value || treeData.value.length === 0) return [];
-  // treeData.value 已经是树形结构，直接转换为 TreeTable 格式
-  return convertTreeToTreeNodes(treeData.value as SelectCategoryVo[]);
-});
-
-// 展开状态管理
-const expandedKeys = ref<Record<string, boolean>>({});
 </script>
 
 <template>
   <!-- @ts-ignore -->
   <PrimeCrudTemplate name="分类" identifier="partner" :template-data="templateData" :crud-controller="15"
-    :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver" :useTreeTable="true"
-    :expandedKeys="expandedKeys" :tree-data="treeTableData">
+    :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver">
     <!-- 查询表单 -->
     <template #QueryForm>
       <div class="flex flex-column gap-2">
@@ -196,39 +190,43 @@ const expandedKeys = ref<Record<string, boolean>>({});
       <Column field="name" header="分类名称" expander style="min-width: 300px">
         <template #body="{ node }">
           <div class="flex items-center gap-2">
-            <i v-if="node.data.icon" :class="node.data.icon" class="text-lg" />
-            <span class="font-medium">{{ node.data.name }}</span>
+            <i v-if="node.data && node.data.icon" :class="node.data.icon" class="text-lg" />
+            <span class="font-medium">{{ node.data && node.data.name }}</span>
           </div>
         </template>
       </Column>
 
       <Column field="description" header="描述" style="min-width: 250px">
         <template #body="{ node }">
-          <span class="text-sm text-gray-600 line-clamp-2">{{ node.data.description || '-' }}</span>
+          <span class="text-sm text-gray-600 line-clamp-2">{{ node.data && node.data.description || '-' }}</span>
         </template>
       </Column>
 
       <Column field="sortOrder" header="排序" style="min-width: 80px">
         <template #body="{ node }">
-          <span class="font-mono text-sm">{{ node.data.sortOrder }}</span>
+          <span class="font-mono text-sm">{{ node.data && node.data.sortOrder || '-' }}</span>
         </template>
       </Column>
 
       <Column field="isVisible" header="状态" style="min-width: 100px">
         <template #body="{ node }">
-          <Tag :value="node.data.isVisible ? '启用' : '禁用'" :severity="node.data.isVisible ? 'success' : 'danger'" />
+          <Tag v-if="node.data" :value="node.data.isVisible ? '启用' : '禁用'"
+            :severity="node.data.isVisible ? 'success' : 'danger'" />
+          <span v-else>-</span>
         </template>
       </Column>
 
       <Column field="createdAt" header="创建时间" style="min-width: 180px">
         <template #body="{ node }">
-          <span class="text-sm text-gray-500">{{ formatDate(node.data.createdAt) }}</span>
+          <span class="text-sm text-gray-500">{{ node.data && node.data.createdAt ? formatDate(node.data.createdAt) :
+            '-' }}</span>
         </template>
       </Column>
 
       <Column field="updatedAt" header="更新时间" style="min-width: 180px">
         <template #body="{ node }">
-          <span class="text-sm text-gray-500">{{ formatDate(node.data.updatedAt) }}</span>
+          <span class="text-sm text-gray-500">{{ node.data && node.data.updatedAt ? formatDate(node.data.updatedAt) :
+            '-' }}</span>
         </template>
       </Column>
     </template>

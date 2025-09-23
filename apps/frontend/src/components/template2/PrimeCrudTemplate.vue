@@ -54,6 +54,8 @@
   onMounted(async () => {
     // 根据 useTreeTable 属性自动选择数据获取方式
     await fetchData(useTreeTable || false);
+
+    console.log("111",treeData)
   });
 
 </script>
@@ -113,7 +115,7 @@
 
         <!-- 树形数据表格 -->
         <TreeTable v-else-if="useTreeTable && treeData" :value="treeData" :loading="formLoading"
-          :expandedKeys="expandedKeys" dataKey="id" class="p-treetable-sm" tableStyle="min-width: 50rem">
+          :expandedKeys="expandedKeys" dataKey="key" class="p-treetable-sm" tableStyle="min-width: 50rem">
           <slot name="TreeTableColumn" />
 
           <slot name="TreeTableColumnAction">

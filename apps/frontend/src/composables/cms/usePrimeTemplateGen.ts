@@ -79,8 +79,9 @@ export async function genPrimeCmsTemplateData<
   });
   /**树形数据 */
 
-  type TreeNodeData = T & {
+  type TreeNodeData = {
     key: string;
+    data: T;
     children?: TreeNodeData[];
   };
   const treeData = ref<TreeNodeData[]>([]);
@@ -175,8 +176,8 @@ export async function genPrimeCmsTemplateData<
           return items.map((item, index) => {
             const key = parentKey ? `${parentKey}-${index}` : String(index);
             const node: TreeNodeData = {
-              ...item,
               key,
+              data: item,
               children: (item as any).children ? addKeys((item as any).children, key) : undefined,
             };
             return node;
@@ -184,6 +185,7 @@ export async function genPrimeCmsTemplateData<
         };
         console.log('addKeys(data):', addKeys(data))
         treeData.value = addKeys(data);
+        console.log('  treeData.value :',   treeData.value )
       } else {
         toast.add({
           severity: "error",
