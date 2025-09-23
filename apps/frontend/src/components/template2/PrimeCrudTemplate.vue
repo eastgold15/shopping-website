@@ -55,7 +55,7 @@
     // 根据 useTreeTable 属性自动选择数据获取方式
     await fetchData(useTreeTable || false);
 
-    console.log("111",treeData)
+    console.log("111", treeData)
   });
 
 </script>
@@ -80,6 +80,7 @@
                       @click="queryFormRef?.submit?.()" />
                     <Button class="w-42" :label="`新建${name}`" icon="pi pi-plus" severity="success"
                       @click="handleCrudDialog(null, 'NEW')" />
+                    <slot name="QueryFormActionChild"></slot>
                   </div>
                 </div>
               </slot>
