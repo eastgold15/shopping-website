@@ -21,7 +21,7 @@ import { categoriesTable, SelectCategoryType } from "./category.model";
 import { imagesTable, SelectImagesType } from "./images.model";
 import { skusTable } from "./sku.model"; // 添加SKU导入
 
-import { numberToString, UnoQueryZod } from "./utils";
+import { numberToString, UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -116,7 +116,7 @@ export const productsModel = {
 	UpdateSortDto: z.object({ sortOrder: z.number() }),
 
 	// // 商品列表查询参数
-	queryProductListDto: UnoQueryZod.extend({
+	queryProductListDto: UnoPageQueryZod.extend({
 		// HTTP查询参数传输时会变成字符串，需要转换为数字
 		categoryId: z.optional(
 			z.string().transform((val) => (val ? parseInt(val, 10) : undefined)),
@@ -148,7 +148,7 @@ export const productsModel = {
 		skuCodePattern: z.string().default("{productId}-{colorValue}-{sizeValue}"), // SKU编码模式
 	}),
 	// // 商品搜索查询参数
-	querySearchProductDto: UnoQueryZod.extend({
+	querySearchProductDto: UnoPageQueryZod.extend({
 		// HTTP查询参数传输时会变成字符串，需要转换为对应类型
 		categoryId: z.optional(
 			z.string().transform((val) => (val ? parseInt(val, 10) : undefined)),

@@ -19,10 +19,12 @@ declare module 'vue' {
     CategoryNavigation: typeof import('./src/components/CategoryNavigation.vue')['default']
     Column: typeof import('primevue/column')['default']
     ConfirmDialog: typeof import('primevue/confirmdialog')['default']
+    DataTable: typeof import('primevue/datatable')['default']
     Dialog: typeof import('primevue/dialog')['default']
     Drawer: typeof import('primevue/drawer')['default']
     Dropdown: typeof import('primevue/dropdown')['default']
     FileUpload: typeof import('primevue/fileupload')['default']
+    Form: typeof import('@primevue/forms/form')['default']
     FormField: typeof import('@primevue/forms/formfield')['default']
     GoogleLoginButton: typeof import('./src/components/GoogleLoginButton.vue')['default']
     ImageSelector: typeof import('./src/components/ImageSelector.vue')['default']
@@ -35,6 +37,7 @@ declare module 'vue' {
     Message: typeof import('primevue/message')['default']
     MultiSelect: typeof import('primevue/multiselect')['default']
     Paginator: typeof import('primevue/paginator')['default']
+    Panel: typeof import('primevue/panel')['default']
     PanelMenu: typeof import('primevue/panelmenu')['default']
     PrimeCrudTemplate: typeof import('./src/components/template2/PrimeCrudTemplate.vue')['default']
     PrimeMenu: typeof import('./src/components/template2/PrimeMenu.vue')['default']
@@ -52,6 +55,7 @@ declare module 'vue' {
     Toast: typeof import('primevue/toast')['default']
     Tooltip: typeof import('./src/components/Tooltip.vue')['default']
     TreeSelect: typeof import("primevue/treeselect")["default"]
+    TreeTable: typeof import('primevue/treetable')['default']
   }
   export interface GlobalDirectives {
     Tooltip: typeof import('primevue/tooltip')['default']

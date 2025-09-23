@@ -14,7 +14,7 @@ import {
 	createUpdateSchema,
 } from "drizzle-zod";
 import { z } from "zod/v4";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 // 用户状态枚举
 export enum UserStatus {
@@ -67,7 +67,7 @@ export const usersModel = {
 	selectUsersTable: selectUsersSchema,
 
 	// 查询列表DTO
-	queryUsersListDto: UnoQueryZod.extend({
+	queryUsersListDto: UnoPageQueryZod.extend({
 		username: z.string().optional(),
 		email: z.string().optional(),
 		isActive: z.boolean().optional(),

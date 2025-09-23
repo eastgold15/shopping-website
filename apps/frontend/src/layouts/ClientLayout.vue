@@ -25,13 +25,6 @@
               首页
             </router-link>
             <router-link 
-              to="/products" 
-              class="text-gray-700 hover:text-gray-900 transition-colors duration-200"
-              :class="{ 'text-gray-900 font-medium': $route.name === 'products' }"
-            >
-              商品
-            </router-link>
-            <router-link 
               to="/about" 
               class="text-gray-700 hover:text-gray-900 transition-colors duration-200"
               :class="{ 'text-gray-900 font-medium': $route.name === 'about' }"

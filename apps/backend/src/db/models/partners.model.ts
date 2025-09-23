@@ -15,7 +15,7 @@ import {
 } from "drizzle-zod";
 import { z } from "zod/v4";
 import { imagesTable } from "./images.model";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -66,7 +66,7 @@ export const partnersModel = {
 			images: z.array(z.coerce.number()).optional(),
 	}),
 	// 合作伙伴列表查询参数
-	queryPartnersList: UnoQueryZod.extend({
+	queryPartnersList: UnoPageQueryZod.extend({
 		isActive: z.boolean().optional(),
 	}),
 	// 更新合作伙伴状态DTO

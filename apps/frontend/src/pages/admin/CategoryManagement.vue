@@ -106,6 +106,7 @@ const templateData = await genPrimeCmsTemplateData<
     page: 1,
     limit: 20,
   },
+  true
 );
 
 const { queryForm, treeData } = templateData;

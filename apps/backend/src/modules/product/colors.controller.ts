@@ -20,7 +20,7 @@ export const colorsController = new Elysia({
 		"/",
 		async ({ body, colorsService }) => {
 			const result = await colorsService.create(body);
-			return commonRes(result, 200, "颜色创建成功");
+			return commonRes(result, 201, "颜色创建成功");
 		},
 		{
 			body: "insertColorDto",
@@ -36,20 +36,11 @@ export const colorsController = new Elysia({
 	.get(
 		"/",
 		async ({ query, colorsService }) => {
-			try {
-				const result = await colorsService.getList(query);
-				return commonRes(result, 200, "获取颜色列表成功");
-			} catch (error) {
-				console.error("获取颜色列表失败:", error);
-				return commonRes(
-					null,
-					500,
-					error instanceof Error ? error.message : "获取颜色列表失败",
-				);
-			}
+				const result = await colorsService.getAll(query);
+				return commonRes(result, 200, "获取颜色列表成功")
 		},
 		{
-			query: "queryColorListDto",
+			query: "queryColorAllDto",
 			detail: {
 				tags: ["Colors"],
 				summary: "获取颜色列表",

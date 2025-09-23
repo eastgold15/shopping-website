@@ -18,7 +18,7 @@ import {
 import { z } from "zod/v4";
 import { imagesTable } from "./images.model";
 import { productsTable } from "./product.model";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -89,7 +89,7 @@ export const skusModel = {
 	}),
 
 	// SKU列表查询参数
-	querySkuListDto: UnoQueryZod.extend({
+	querySkuListDto: UnoPageQueryZod.extend({
 		productId: z.string().optional(),
 		colorId: z.string().optional(),
 		sizeId: z.string().optional(),

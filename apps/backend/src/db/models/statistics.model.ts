@@ -12,7 +12,7 @@ import {
 	createUpdateSchema,
 } from "drizzle-zod";
 import { z } from "zod/v4";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -53,7 +53,7 @@ export const statisticsModel = {
 	selectStatisticsTable: selectStatisticsSchema,
 
 	// 查询列表DTO
-	queryStatisticsListDto: UnoQueryZod.extend({
+	queryStatisticsListDto: UnoPageQueryZod.extend({
 		date: z.string().optional(),
 		type: z.string().optional(),
 		category: z.string().optional(),

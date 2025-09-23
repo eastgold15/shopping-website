@@ -1,218 +1,61 @@
+<!--哲学： 做什么 -->
 <script lang="ts"
   generic="T extends { id: number }, PageQuery extends BaseQueryParams, TForm extends Record<string, any> = T" setup>
-import type { PageData } from "@backend/types";
-import type {
-	BaseQueryParams,
-	FormResolver,
-	GenCmsTemplateData,
-} from "@frontend/types/prime-cms";
-import type { FormInstance, FormSubmitEvent } from "@primevue/forms";
-import { Form } from "@primevue/forms";
-import Button from "primevue/button";
-import Column from "primevue/column";
-import DataTable from "primevue/datatable";
-import Drawer from "primevue/drawer";
-import Paginator from "primevue/paginator";
-import Panel from "primevue/panel";
-import Tag from "primevue/tag";
-import TreeTable from "primevue/treetable";
-import { useToast } from "primevue/usetoast";
-import { computed, onMounted, ref, toRaw } from "vue";
+  import type { GenCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
+  import type {
+    BaseQueryParams,
+    FormResolver,
+  } from "@frontend/types/prime-cms";
+  import type { FormInstance } from "@primevue/forms";
+  import { computed, onMounted, ref } from "vue";
 
-const props = defineProps<{
-	name: string;
-	identifier?: string;
-	/**
-	 * 表单数据
-	 */
-	queryForm: Partial<PageQuery>;
-	tableData: PageData<T[]>;
-	templateData: GenCmsTemplateData<T, PageQuery, TForm>;
-	resolver: FormResolver | any;
-	queryResolver: FormResolver | any;
-	crudController?: number;
-	/**
-	 * 是否使用树形表格
-	 */
-	useTreeTable?: boolean;
-	/**
-	 * 树形表格的展开状态控制
-	 */
-	expandedKeys?: Record<string, boolean>;
-	/**
-	 * 树形表格数据
-	 */
-	treeData?: any[];
-}>();
+  const props = defineProps<{
+    name: string;
+    identifier?: string;
+    /**
+     * 查询表单初始/绑定数据 (通常由父组件的 templateData.queryForm 提供)
+     */
+    queryForm: Partial<PageQuery>;
+    /**
+     * 核心的模板数据对象，包含所有方法和状态
+     */
+    templateData: GenCmsTemplateData<T, PageQuery, TForm>;
+    resolver: FormResolver | any;
+    queryResolver: FormResolver | any;
+    crudController?: number;
+  }>();
 
-const templateDataRef = computed(() => props.templateData);
-const {
-	FormSearch,
-	formLoading,
-	handleCrudDialog,
-	tableData: templateTableData,
-	fetchList,
-	fetchData, // 新增统一数据获取方法
-	crudDialogOptions,
-	resetForm,
-	submitForm,
-	handleDeletes,
-} = templateDataRef.value;
+  // 解构 templateData，这是所有逻辑和状态的来源
+  const {
+    formLoading,
+    handleCrudDialog,
+    tableData: reactiveTableData, // 重命名以避免与 props.tableData 冲突
+    treeData,
+    isPage,
+    expandedKeys,
+    useTreeTable,
+    fetchData, // 统一数据获取方法
+    crudDialogOptions,
+    resetForm,
+    handleDeletes,
+    onFormSubmit,
+    onQueryFormSubmit,
+    onPageChange,
+  } = props.templateData;
 
-// 确保使用正确的表单数据
-const tableData = computed(() => templateTableData.value);
+  // 为 crudDialogOptions 添加类型注解
+  const crudDialogOptionsRef = crudDialogOptions;
 
-// 为 crudDialogOptions 添加类型注解
-const crudDialogOptionsRef = crudDialogOptions;
+  const _crudController = computed(() => props.crudController || 15);
+  // 表单引用
+  const queryFormRef = ref<FormInstance | null>(null);
+  const drawerFormRef = ref<FormInstance | null>(null);
+  // 组件挂载时自动加载数据
+  onMounted(async () => {
+    // 根据 useTreeTable 属性自动选择数据获取方式
+    await fetchData(useTreeTable || false);
+  });
 
-const _crudController = computed(() => props.crudController || 15);
-const toast = useToast();
-
-// 表单引用
-const queryFormRef = ref<FormInstance | null>(null);
-const drawerFormRef = ref<FormInstance | null>(null);
-
-// 分页配置
-const paginationOptions = computed(() => ({
-	first: (tableData.value.meta.page - 1) * tableData.value.meta.limit,
-	rows: tableData.value.meta.limit,
-	totalRecords: tableData.value.meta.total,
-	rowsPerPageOptions: [20, 30, 50, 100],
-}));
-
-// 分页事件处理
-const onPageChange = (event: { first: number; rows: number }) => {
-	tableData.value.meta.page = Math.floor(event.first / event.rows) + 1;
-	tableData.value.meta.limit = event.rows;
-	// 根据表格类型调用对应的数据获取方法
-	fetchData(props.useTreeTable || false);
-};
-
-// 组件挂载时自动加载数据
-onMounted(async () => {
-	// 根据useTreeTable属性自动选择数据获取方式
-	await fetchData(props.useTreeTable || false);
-});
-
-// 查询表单提交处理
-const onQueryFormSubmit = async (event: FormSubmitEvent) => {
-	if (event.valid) {
-		await FormSearch(queryFormRef.value);
-	} else {
-		toast.add({
-			severity: "error",
-			summary: "查询表单验证失败",
-			detail: "请检查输入内容",
-			life: 3000,
-		});
-	}
-};
-
-// 表单提交处理
-const onFormSubmit = async (event: FormSubmitEvent) => {
-	if (event.valid) {
-		try {
-			crudDialogOptionsRef.value.loading = true;
-
-			const formData = event.values as TForm;
-
-			// 获取当前表单数据
-			const currentData = crudDialogOptionsRef.value.data || {};
-			const submitData = { ...currentData, ...formData } as TForm;
-
-			// 转换提交数据
-			if (templateDataRef.value.transformSubmitData) {
-				templateDataRef.value.transformSubmitData(
-					submitData,
-					crudDialogOptionsRef.value.mode,
-				);
-			}
-
-			// 提交数据
-			const rawSubmitData = toRaw(submitData) as TForm;
-			let res;
-
-			if (crudDialogOptionsRef.value.mode === "EDIT") {
-				// 对于编辑操作，需要从表格数据中获取ID
-				const tableItem = templateTableData.value.items
-					.flat()
-					.find((item) => item.id === (currentData as T).id);
-				res = await templateDataRef.value.update(
-					(tableItem as unknown as T).id!,
-					rawSubmitData,
-				);
-				console.log("res", res);
-				if (res.code === 200) {
-					toast.add({
-						severity: "success",
-						summary: "修改成功",
-						detail: "数据已成功修改",
-						life: 3000,
-					});
-				} else {
-					toast.add({
-						severity: "error",
-						summary: "修改失败",
-						detail: res.message ?? "修改失败！",
-						life: 3000,
-					});
-				}
-			} else {
-				// 对于新建操作，需要移除id字段（如果存在）
-				const { id, ...createData } = rawSubmitData;
-				res = await templateDataRef.value.create(
-					createData as Omit<TForm, "id">,
-				);
-				console.log("res", res);
-				if (res.code === 201) {
-					toast.add({
-						severity: "success",
-						summary: "添加成功",
-						detail: "数据已成功添加",
-						life: 3000,
-					});
-				} else {
-					toast.add({
-						severity: "error",
-						summary: "添加失败",
-						detail: res.message ?? "添加失败！",
-						life: 3000,
-					});
-				}
-			}
-
-			// 统一处理成功后的逻辑
-			if (res?.code === 200) {
-				crudDialogOptionsRef.value.visible = false;
-				await fetchList();
-			}
-		} catch (error) {
-			console.error("表单提交失败:", error);
-			toast.add({
-				severity: "error",
-				summary: "提交失败",
-				detail: "表单提交失败，请稍后重试",
-				life: 3000,
-			});
-		} finally {
-			crudDialogOptionsRef.value.loading = false;
-		}
-	} else {
-		toast.add({
-			severity: "error",
-			summary: "表单验证失败",
-			detail: "请检查输入内容",
-			life: 3000,
-		});
-	}
-};
-
-// 暴露表单引用给父组件使用
-defineExpose({
-	drawerFormRef,
-	queryFormRef,
-	crudDialogOptions, // 暴露 crudDialogOptions 给父组件
-});
 </script>
 
 <template>
@@ -248,8 +91,8 @@ defineExpose({
     <Panel header="数据列表" class="mb-4">
       <slot name="ITable">
         <!-- 普通数据表格 -->
-        <DataTable v-if="tableData && !props.useTreeTable" :value="tableData.items" :loading="formLoading" dataKey="id"
-          stripedRows showGridlines responsiveLayout="scroll" class="p-datatable-sm">
+        <DataTable v-if="reactiveTableData && !useTreeTable" :value="reactiveTableData.items" :loading="formLoading"
+          dataKey="id" stripedRows showGridlines responsiveLayout="scroll" class="p-datatable-sm">
           <slot name="TableColumn" />
 
           <slot name="TableColumnAction">
@@ -269,8 +112,8 @@ defineExpose({
         </DataTable>
 
         <!-- 树形数据表格 -->
-        <TreeTable v-else-if="props.useTreeTable && props.treeData" :value="props.treeData" :loading="formLoading"
-          :expandedKeys="props.expandedKeys" dataKey="key" class="p-treetable-sm" tableStyle="min-width: 50rem">
+        <TreeTable v-else-if="useTreeTable && treeData" :value="treeData" :loading="formLoading"
+          :expandedKeys="expandedKeys" dataKey="id" class="p-treetable-sm" tableStyle="min-width: 50rem">
           <slot name="TreeTableColumn" />
 
           <slot name="TreeTableColumnAction">
@@ -290,10 +133,11 @@ defineExpose({
         </TreeTable>
       </slot>
 
-      <!-- 分页器 (仅在非树形表格时显示) -->
-      <Paginator v-if="tableData && tableData.meta.total > 0 && !props.useTreeTable" :first="paginationOptions.first"
-        :rows="paginationOptions.rows" :totalRecords="paginationOptions.totalRecords"
-        :rowsPerPageOptions="paginationOptions.rowsPerPageOptions"
+
+      <!-- 分页器 (仅在非树形表格且数据总量大于0时显示) -->
+      <Paginator v-if="!useTreeTable && reactiveTableData.meta.total > 0 || isPage" :first="reactiveTableData.meta.page"
+        :rows="reactiveTableData.meta.limit" :totalRecords="reactiveTableData.meta.total"
+        :rowsPerPageOptions="[20, 30, 50, 100]"
         template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
         currentPageReportTemplate="显示 {first} 到 {last} 条，共 {totalRecords} 条记录" @page="onPageChange" class="mt-4" />
     </Panel>

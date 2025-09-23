@@ -14,7 +14,7 @@ import {
 } from "drizzle-zod";
 import { z } from "zod/v4";
 import { imagesTable } from ".";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -88,7 +88,7 @@ export const advertisementsModel = {
 	}),
 
 	// 广告列表查询参数
-	queryAdvertisementsListDto: UnoQueryZod.extend({
+	queryAdvertisementsListDto: UnoPageQueryZod.extend({
 		position: z.string().optional(),
 		isActive: z.boolean().optional(),
 		title: z.string().optional(),

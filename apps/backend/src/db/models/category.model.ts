@@ -19,7 +19,7 @@ import {
 } from "drizzle-zod";
 import { z } from "zod/v4";
 import { productsTable } from "./product.model";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 
 /**
@@ -75,7 +75,7 @@ export const categoriesModel = {
   }),
 
   // 分类列表查询参数
-  queryCategoryListDto: UnoQueryZod.extend({
+  queryCategoryListDto: UnoPageQueryZod.extend({
     name: z.string().optional(), // 按名称搜索
     parentId: z.string().optional(),
     isVisible: z.boolean().optional(),

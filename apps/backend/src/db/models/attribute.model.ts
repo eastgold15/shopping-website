@@ -15,7 +15,7 @@ import {
 } from "drizzle-zod";
 import { z } from "zod/v4";
 import { skusTable } from "./sku.model";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod, UnoQueryZod } from "./utils";
 
 /**
  * 颜色表 - 存储标准颜色信息
@@ -72,7 +72,7 @@ export const attributesModel = {
 		createdAt: true,
 		updatedAt: true,
 	}),
-	queryColorListDto: UnoQueryZod.extend({
+	queryColorAllDto: UnoQueryZod.extend({
 		name: z.string().optional(),
 		isActive: z.string().optional(),
 	}),
@@ -89,9 +89,10 @@ export const attributesModel = {
 		createdAt: true,
 		updatedAt: true,
 	}),
-	querySizeListDto: UnoQueryZod.extend({
+	querySizeListDto: UnoPageQueryZod.extend({
 		name: z.string().optional(),
 		category: z.string().optional(),
+    value:z.string().optional(),
 		isActive: z.string().optional(),
 	}),
 };
@@ -101,7 +102,7 @@ export type InsertColorDto = z.infer<typeof attributesModel.insertColorDto>;
 export type UpdateColorDto = z.infer<typeof attributesModel.updateColorDto>;
 export type SelectColorType = z.infer<typeof attributesModel.selectColorTable>;
 export type ColorListQueryDto = z.infer<
-	typeof attributesModel.queryColorListDto
+	typeof attributesModel.queryColorAllDto
 >;
 
 export type InsertSizeDto = z.infer<typeof attributesModel.insertSizeDto>;

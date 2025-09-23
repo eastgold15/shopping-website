@@ -15,7 +15,7 @@ import {
 } from "drizzle-zod";
 import { z } from "zod/v4";
 import { productsTable } from "./product.model";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -71,7 +71,7 @@ export const reviewsModel = {
 	}),
 
 	// 评价列表查询参数
-	queryReviewListDto: UnoQueryZod.extend({
+	queryReviewListDto: UnoPageQueryZod.extend({
 		productId: z.string().optional(),
 		rating: z.number().min(1).max(5).optional(),
 		isVerified: z.boolean().optional(),

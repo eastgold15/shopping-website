@@ -103,7 +103,7 @@ import { boolean, decimal, integer, json, pgTable, serial, text, timestamp, varc
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import { z } from "zod/v4";
 import { categoriesTable, orderItemsTable, productImagesTable, reviewsTable } from "./schema";
-import { stringToNumber, UnoQueryZod } from "./utils";
+import { stringToNumber, UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -174,13 +174,13 @@ export const productsModel = {
   UpdateSortDto: z.object({ sortOrder: z.number() }),
 
   // // 商品列表查询参数
-  queryProductListDto: UnoQueryZod.extend({
+  queryProductListDto: UnoPageQueryZod.extend({
     categoryId: z.string().optional(),
     isActive: z.boolean().optional(),
     isFeatured: z.boolean().optional(),
   }),
   // // 商品搜索查询参数
-  querySearchProductDto: UnoQueryZod.extend({
+  querySearchProductDto: UnoPageQueryZod.extend({
     categoryId: z.string().optional(),
     minPrice: z.number().optional(),
     maxPrice: z.number().optional(),

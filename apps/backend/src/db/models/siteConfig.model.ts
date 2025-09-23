@@ -5,7 +5,7 @@ import {
 	createUpdateSchema,
 } from "drizzle-zod";
 import { z } from "zod/v4";
-import { UnoQueryZod } from "./utils";
+import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -65,7 +65,7 @@ export const siteConfigModel = {
 	),
 
 	// 配置列表查询参数
-	querySiteConfigListDto: UnoQueryZod.extend({
+	querySiteConfigListDto: UnoPageQueryZod.extend({
 		category: z.string().optional(),
 		key: z.string().optional(),
 	}),

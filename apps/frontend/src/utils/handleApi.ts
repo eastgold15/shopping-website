@@ -1,4 +1,5 @@
 import type {
+  ColorListQueryDto,
   InsertPartnersDto,
   ListImagesQueryDto,
   ListProductQueryDto,
@@ -288,11 +289,10 @@ export const useCmsApi = () => {
 
     // 颜色相关
     colors: {
-      list: async (params?: any) => {
+      all: async (params: ColorListQueryDto) => {
         const { data, error } = await client.api.colors.get({ query: params });
         if (error) {
-          console.error("Colors list error:", error);
-          return pageDefaultValue;
+          return comDefaultValue;
         }
         return data;
       },
