@@ -133,27 +133,4 @@ export const productsController = new Elysia({
 				description: "根据商品ID删除商品",
 			},
 		},
-	)
-
-	// 批量创建SKU
-	.post(
-		"/:id/batch-skus",
-		async ({ params: { id }, body, productsService }) => {
-			const result = await productsService.batchCreateSkus({
-				...body,
-				productId: id,
-			});
-			return commonRes(result, 200, `成功创建 ${result.createdCount} 个SKU`);
-		},
-		{
-			params: t.Object({
-				id: t.Number(),
-			}),
-			body: "batchCreateSkusDto",
-			detail: {
-				tags: ["Products"],
-				summary: "批量创建SKU",
-				description: "根据颜色和尺寸组合批量创建SKU",
-			},
-		},
 	);

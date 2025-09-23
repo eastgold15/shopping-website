@@ -20,7 +20,7 @@ import { z } from "zod/v4";
 import { categoriesTable } from "./category.model";
 import { imagesTable } from "./images.model";
 import { skusTable } from "./sku.model"; // 添加SKU导入
-import { numberToString, UnoPageQueryZod } from "./utils";
+import { numberToString, stringToNumber, UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
@@ -102,7 +102,7 @@ export const productsModel = {
 	insertProductDto: insertProductSchema
 		.omit({ id: true, createdAt: true, updatedAt: true })
 		.extend({
-			weight: numberToString,
+			weight: stringToNumber,
 			image_ids: z.array(z.number()),
 			// 新增尺码范围字段
 			sizeMin: z.string().optional(),
@@ -116,7 +116,7 @@ export const productsModel = {
 		.omit({ id: true, createdAt: true, updatedAt: true })
 		.extend({
 
-			weight: numberToString,
+			weight: stringToNumber,
 			image_ids: z.array(z.number()),
 			// 新增尺码范围字段
 			sizeMin: z.string().optional(),
@@ -135,31 +135,6 @@ export const productsModel = {
 		),
 		isActive: z.optional(z.coerce.boolean()),
 		isFeatured: z.optional(z.coerce.boolean()),
-	}),
-
-	// SKU批量创建请求参数
-	batchCreateSkusDto: z.object({
-		productId: z.number(),
-		colors: z.array(
-			z.object({
-				id: z.number(),
-				name: z.string(),
-				value: z.string().optional(),
-			}),
-		),
-		sizes: z.array(
-			z.object({
-				id: z.number(),
-				name: z.string(),
-				value: z.string().optional(),
-			}),
-		),
-		defaultPrice: z.string(),
-		defaultComparePrice: z.string().optional(),
-		defaultCost: z.string().optional(),
-		defaultStock: z.number().min(0),
-		defaultWeight: z.string().optional(),
-		skuCodePattern: z.string().default("{productId}-{colorValue}-{sizeValue}"), // SKU编码模式
 	}),
 	// // 商品搜索查询参数
 	querySearchProductDto: UnoPageQueryZod.extend({
@@ -214,8 +189,8 @@ export const productsModel = {
 };
 // 3. 类型定义（可选，但推荐） 导出 TypeScript 类型（方便路由、service 等使用）
 // 类型来源于 Zod 推断，但用更语义化的名字导出
-export type InsertProductDto = z.input<typeof productsModel.insertProductDto>; // 请求用
-export type UpdateProductDto = z.input<typeof productsModel.updateProductDto>; // 请求用
+export type InsertProductDto = z.output<typeof productsModel.insertProductDto>; // 请求用
+export type UpdateProductDto = z.output<typeof productsModel.updateProductDto>; // 请求用
 export type SelectProductType = z.infer<
 	typeof productsModel.selectProductcTable
 >; // 查询返回原始类型

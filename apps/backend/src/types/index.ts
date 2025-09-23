@@ -4,13 +4,12 @@
 export * from "@backend/utils/Res";
 export * from "../db/common.model";
 export * from "../db/models";
-export * from "../db/models/attribute.model"; // 添加属性模型导出
 export * from "../db/models/category.model";
 export * from "../db/models/images.model";
 export * from "../db/models/product.model";
 export * from "../db/models/sku.model"; // 添加SKU模型导出
-export * from "../db/models/statistics.model";
-export * from "../db/models/users.model";
+// export * from "../db/models/statistics.model";
+// export * from "../db/models/users.model";
 
 // 常用工具类型
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

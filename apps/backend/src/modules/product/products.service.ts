@@ -40,7 +40,7 @@ export class ProductsService extends BaseService<
 		try {
 			// 从数据中提取image_ids，其余数据用于创建商品
 			// 精髓，将前端类型转为后端需要的类型
-			const encode_date = productsModel.insertProductDto.decode(data);
+			const encode_date = productsModel.insertProductDto.encode(data);
 			const { image_ids, ...productData } = encode_date;
 
 			// 使用事务确保商品创建和图片关联的原子性
@@ -117,7 +117,7 @@ export class ProductsService extends BaseService<
 
 					if (isActive !== undefined) {
 						conditions.push(
-							eq(products.isActive, isActive === true || isActive === true),
+							eq(products.isActive, isActive === true),
 						);
 					}
 
@@ -125,7 +125,7 @@ export class ProductsService extends BaseService<
 						conditions.push(
 							eq(
 								products.isFeatured,
-								isFeatured === true || isFeatured === true,
+								isFeatured === true,
 							),
 						);
 					}
@@ -137,7 +137,7 @@ export class ProductsService extends BaseService<
 					const sortFieldMap: Record<string, any> = {
 						id: products.id,
 						name: products.name,
-						price: products.price,
+
 						createdAt: products.createdAt,
 						updatedAt: products.updatedAt,
 					};
@@ -181,7 +181,7 @@ export class ProductsService extends BaseService<
 				countQuery.where(and(...whereConditions));
 			}
 
-			// @ts-expect-error
+
 			const totalResult = await countQuery;
 			const total = Number(totalResult[0].count);
 
@@ -306,7 +306,7 @@ export class ProductsService extends BaseService<
 			// 从数据中提取image_ids，其余数据用于更新商品
 
 			// 精髓，将前端类型转为后端需要的类型
-			const encode_data = productsModel.updateProductDto.decode(data);
+			const encode_data = productsModel.updateProductDto.encode(data);
 			const { image_ids, ...productData } = encode_data;
 
 			// 使用事务确保商品更新和图片关联的原子性
@@ -486,137 +486,4 @@ export class ProductsService extends BaseService<
 		}
 	}
 
-	/**
-	 * 解析尺寸字段，提取多尺寸信息
-	 */
-	private static parseSizeFields(size: any) {
-		const result: any = {};
-
-		if (typeof size === "object") {
-			// 如果size是对象，直接提取字段
-			result.ukSize = size.ukSize || null;
-			result.euSize = size.euSize || null;
-			result.usSize = size.usSize || null;
-		} else {
-			// 如果size是字符串，尝试解析格式如 "UK:6,EU:39,US:7" 或单独的尺寸值
-			const sizeStr = size.value || size.toString();
-
-			// 尝试解析包含冒号的格式
-			if (sizeStr.includes(":")) {
-				const parts = sizeStr.split(",");
-				parts.forEach((part: string) => {
-					const [key, value] = part.split(":").map((s: string) => s.trim());
-					switch (key.toUpperCase()) {
-						case "UK":
-							result.ukSize = value;
-							break;
-						case "EU":
-							result.euSize = value;
-							break;
-						case "US":
-							result.usSize = value;
-							break;
-					}
-				});
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * 批量创建SKU
-	 * 根据颜色和尺寸组合自动生成所有SKU
-	 */
-	static async batchCreateSkus(data: any) {
-		try {
-			const {
-				productId,
-				colors,
-				sizes,
-				defaultPrice,
-				defaultComparePrice,
-				defaultCost,
-				defaultStock,
-				defaultWeight,
-				skuCodePattern = "{productId}-{colorValue}-{sizeValue}",
-			} = data;
-
-			// 验证商品是否存在
-			const product = await db.query.productsTable.findFirst({
-				where: eq(productsTable.id, productId),
-			});
-
-			if (!product) {
-				throw new NotFoundError("商品不存在");
-			}
-
-			// 生成所有SKU组合
-			const skuCombinations: any[] = [];
-
-			for (const color of colors) {
-				for (const size of sizes) {
-					// 生成SKU编码
-					const skuCode = skuCodePattern
-						.replace("{productId}", productId.toString())
-						.replace("{colorName}", color.name)
-						.replace("{colorValue}", color.value || color.name)
-						.replace("{sizeName}", size.name)
-						.replace("{sizeValue}", size.value || size.name);
-
-					// 解析多尺寸字段
-					const sizeFields = ProductsService.parseSizeFields(size);
-
-					skuCombinations.push({
-						productId,
-						name: `${product.name} ${color.name} ${size.name}`,
-						skuCode,
-						colorName: color.name,
-						colorValue: color.value || color.name,
-						sizeName: size.name,
-						sizeValue: size.value || size.name,
-						ukSize: sizeFields.ukSize || null,
-						euSize: sizeFields.euSize || null,
-						usSize: sizeFields.usSize || null,
-						price: defaultPrice,
-						comparePrice: defaultComparePrice || null,
-						cost: defaultCost || null,
-						stock: defaultStock,
-						weight: defaultWeight || null,
-						isActive: true,
-						sortOrder: 0,
-					});
-				}
-			}
-
-			// 使用事务批量创建SKU
-			const createdSkus = await db.transaction(async (tx) => {
-				const results = [];
-
-				for (const skuData of skuCombinations) {
-					try {
-						const [newSku] = await tx
-							.insert(skusTable)
-							.values(skuData)
-							.returning();
-						results.push(newSku);
-					} catch (error) {
-						// 如果SKU编码重复，跳过并记录警告
-						console.warn(`SKU编码重复，跳过创建: ${skuData.skuCode}`);
-					}
-				}
-
-				return results;
-			});
-
-			return {
-				createdCount: createdSkus.length,
-				totalCombinations: skuCombinations.length,
-				skus: createdSkus,
-			};
-		} catch (error) {
-			console.error("批量创建SKU失败:", error);
-			throw handleDatabaseError(error);
-		}
-	}
 }
