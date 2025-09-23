@@ -16,37 +16,37 @@ import {
 	createUpdateSchema,
 } from "drizzle-zod";
 import { z } from "zod/v4";
+import { colorSpecsTable } from "./color-spec.model";
 import { imagesTable } from "./images.model";
 import { productsTable } from "./product.model";
 import { UnoPageQueryZod } from "./utils";
 
 /**
  * 1. Drizzle 表定义
- * SKU表 - 存储商品的具体规格信息（颜色、尺寸等）
- * 每个SKU代表一个可销售的商品单元
+ * SKU表 - 基于颜色规格的库存管理单位
+ * 每个SKU代表一个颜色规格的可销售单元，不再包含尺寸信息
  */
 export const skusTable = pgTable("skus", {
 	id: serial("id").primaryKey(), // SKU唯一标识
 	productId: integer("product_id")
 		.references(() => productsTable.id, { onDelete: "cascade" })
 		.notNull(), // 关联的商品ID
-	name: varchar("name", { length: 255 }).notNull(), // SKU名称（如：红色-L）
+	colorSpecId: integer("color_spec_id")
+		.references(() => colorSpecsTable.id, { onDelete: "cascade" })
+		.notNull(), // 关联的颜色规格ID
+	name: varchar("name", { length: 255 }).notNull(), // SKU名称（如：午夜蓝）
 	skuCode: varchar("sku_code", { length: 100 }).notNull().unique(), // SKU编码
-	colorId: integer("color_id"), // 关联的颜色ID
-	sizeId: integer("size_id"), // 关联的尺寸ID
-	colorValue: varchar("color_value", { length: 50 }), // 颜色值（如：#FF0000）
-	colorName: varchar("color_name", { length: 50 }), // 颜色名称（如：红色）
-	sizeValue: varchar("size_value", { length: 50 }), // 尺寸值（如：L）
-	sizeName: varchar("size_name", { length: 50 }), // 尺寸名称（如：大号）
-	ukSize: varchar("uk_size", { length: 20 }), // UK尺寸
-	euSize: varchar("eu_size", { length: 20 }), // EU尺寸
-	usSize: varchar("us_size", { length: 20 }), // US尺寸
 	price: decimal("price", { precision: 10, scale: 2 }).notNull(), // SKU价格
 	comparePrice: decimal("compare_price", { precision: 10, scale: 2 }), // SKU原价
+	cost: decimal("cost", { precision: 10, scale: 2 }), // SKU成本价
 	stock: integer("stock").default(0), // SKU库存数量
 	minStock: integer("min_stock").default(0), // 最低库存预警值
 	weight: decimal("weight", { precision: 8, scale: 2 }), // SKU重量(kg)
 	dimensions: json("dimensions").default({}), // SKU尺寸(长宽高)
+	
+	// 可选：该SKU的专属图片（覆盖颜色规格的图片）
+	imageOverride: text("image_override"), // SKU专属图片URL
+	
 	isActive: boolean("is_active").default(true), // 是否上架销售
 	sortOrder: integer("sort_order").default(0), // 排序权重
 	createdAt: timestamp("created_at").defaultNow(), // 创建时间
@@ -86,13 +86,14 @@ export const skusModel = {
 		id: true,
 		createdAt: true,
 		updatedAt: true,
+	}).extend({
+		images: z.array(z.number()).optional(), // 修改为images，与列表展示字段一致
 	}),
 
 	// SKU列表查询参数
 	querySkuListDto: UnoPageQueryZod.extend({
 		productId: z.string().optional(),
-		colorId: z.string().optional(),
-		sizeId: z.string().optional(),
+		colorSpecId: z.string().optional(), // 改为colorSpecId
 		isActive: z.string().optional(),
 	}),
 };
@@ -118,6 +119,10 @@ export const skusRelations = relations(skusTable, ({ one, many }) => ({
 	product: one(productsTable, {
 		fields: [skusTable.productId],
 		references: [productsTable.id],
+	}),
+	colorSpec: one(colorSpecsTable, {
+		fields: [skusTable.colorSpecId],
+		references: [colorSpecsTable.id],
 	}),
 	skuImages: many(skuImagesTable),
 	images: many(imagesTable),

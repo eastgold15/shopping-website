@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type { SelectColorType, SelectSizeType } from "@backend/db/models/attribute.model";
+import type { SelectImagesVo } from "@backend/types";
+import ImageSelector from "@frontend/components/ImageSelector.vue";
+import { useCmsApi } from "@frontend/utils/handleApi";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
 import Button from "primevue/button";
 import Card from "primevue/card";
@@ -6,18 +10,23 @@ import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
+import Select from "primevue/select";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import { useToast } from "primevue/usetoast";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { z } from "zod";
 
 interface Color {
+	id: number;
 	name: string;
 	value?: string;
+	imageUrl?: string; // 添加颜色对应的图片URL
+	imageId?: number;  // 添加颜色对应的图片ID
 }
 
 interface Size {
+	id: number;
 	name: string;
 	value?: string;
 }
@@ -32,8 +41,13 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const cmsApi = useCmsApi();
 
 const visible = defineModel<boolean>("visible", { default: false });
+
+// 可选的颜色和尺寸列表
+const availableColors = ref<SelectColorType[]>([]);
+const availableSizes = ref<SelectSizeType[]>([]);
 
 // 表单数据
 const form = ref({
@@ -47,26 +61,35 @@ const form = ref({
 	skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
 });
 
-// 临时输入
-const newColor = ref({ name: "", value: "" });
-const newSize = ref({ name: "", value: "" });
+// 选择的颜色和尺寸
+const selectedColor = ref<SelectColorType | null>(null);
+const selectedSize = ref<SelectSizeType | null>(null);
 
 // 预览生成的SKU
 const previewSkus = ref<any[]>([]);
+
+// 图片选择相关
+const showImageSelector = ref(false);
+const selectedImages = ref<SelectImagesVo[]>([]);
+const currentColorIndex = ref<number>(-1); // 当前正在选择图片的颜色索引
 
 // 表单验证schema
 const formSchema = z.object({
 	colors: z
 		.array(
 			z.object({
+				id: z.number(),
 				name: z.string().min(1, "颜色名称不能为空"),
 				value: z.string().optional(),
+				imageUrl: z.string().optional(),
+				imageId: z.number().optional(),
 			}),
 		)
 		.min(1, "至少需要一个颜色"),
 	sizes: z
 		.array(
 			z.object({
+				id: z.number(),
 				name: z.string().min(1, "尺寸名称不能为空"),
 				value: z.string().optional(),
 			}),
@@ -87,14 +110,42 @@ const totalCombinations = computed(() => {
 	return form.value.colors.length * form.value.sizes.length;
 });
 
+// 加载颜色和尺寸数据
+const loadColorsAndSizes = async () => {
+	try {
+		// 加载颜色
+		const colorsResponse = await cmsApi.colors.all({ isActive: "true" });
+		if (colorsResponse.code === 200) {
+			availableColors.value = colorsResponse.data.items;
+		}
+
+		// 加载尺寸
+		const sizesResponse = await cmsApi.sizes.all({ isActive: "true" });
+		if (sizesResponse.code === 200) {
+			availableSizes.value = sizesResponse.data;
+		}
+	} catch (error) {
+		console.error("加载颜色和尺寸数据失败:", error);
+		toast.add({
+			severity: "error",
+			summary: "加载失败",
+			detail: "无法加载颜色和尺寸数据",
+			life: 3000,
+		});
+	}
+};
+
 // 添加颜色
 const addColor = () => {
-	if (newColor.value.name.trim()) {
+	if (selectedColor.value && !form.value.colors.find(c => c.id === selectedColor.value!.id)) {
 		form.value.colors.push({
-			name: newColor.value.name.trim(),
-			value: newColor.value.value.trim() || newColor.value.name.trim(),
+			id: selectedColor.value.id,
+			name: selectedColor.value.name,
+			value: selectedColor.value.value || selectedColor.value.name,
+			imageUrl: undefined,
+			imageId: undefined,
 		});
-		newColor.value = { name: "", value: "" };
+		selectedColor.value = null;
 	}
 };
 
@@ -103,14 +154,41 @@ const removeColor = (index: number) => {
 	form.value.colors.splice(index, 1);
 };
 
+// 为颜色选择图片
+const selectColorImage = (colorIndex: number) => {
+	currentColorIndex.value = colorIndex;
+	// 如果已有图片，预设选中状态
+	const currentColor = form.value.colors[colorIndex];
+	if (currentColor && currentColor.imageId) {
+		// 查找对应的图片对象（这里需要从图片列表中查找）
+		// 暂时置空，后续可以优化
+		selectedImages.value = [];
+	} else {
+		selectedImages.value = [];
+	}
+	showImageSelector.value = true;
+};
+
+// 图片选择完成
+const onImageSelectionComplete = () => {
+	if (currentColorIndex.value >= 0 && selectedImages.value.length > 0) {
+		const selectedImage = selectedImages.value[0]; // 只取第一张图片
+		form.value.colors[currentColorIndex.value].imageUrl = selectedImage.imageUrl;
+		form.value.colors[currentColorIndex.value].imageId = selectedImage.id;
+	}
+	showImageSelector.value = false;
+	currentColorIndex.value = -1;
+};
+
 // 添加尺寸
 const addSize = () => {
-	if (newSize.value.name.trim()) {
+	if (selectedSize.value && !form.value.sizes.find(s => s.id === selectedSize.value!.id)) {
 		form.value.sizes.push({
-			name: newSize.value.name.trim(),
-			value: newSize.value.value.trim() || newSize.value.name.trim(),
+			id: selectedSize.value.id,
+			name: selectedSize.value.name,
+			value: selectedSize.value.value || selectedSize.value.name,
 		});
-		newSize.value = { name: "", value: "" };
+		selectedSize.value = null;
 	}
 };
 
@@ -136,6 +214,8 @@ const generatePreview = () => {
 				skuCode,
 				name: `${props.productName} ${color.name} ${size.name}`,
 				colorName: color.name,
+				colorValue: color.value,
+				colorImageUrl: color.imageUrl, // 添加颜色图片
 				sizeName: size.name,
 				price: form.value.defaultPrice,
 				stock: form.value.defaultStock,
@@ -221,9 +301,14 @@ watch(visible, (newval) => {
 			skuCodePattern: "{productId}-{colorValue}-{sizeValue}",
 		};
 		previewSkus.value = [];
-		newColor.value = { name: "", value: "" };
-		newSize.value = { name: "", value: "" };
+		selectedColor.value = null;
+		selectedSize.value = null;
 	}
+});
+
+// 组件挂载时加载数据
+onMounted(() => {
+	loadColorsAndSizes();
 });
 </script>
 
@@ -271,17 +356,57 @@ watch(visible, (newval) => {
           <template #content>
             <div class="space-y-4">
               <div class="flex gap-2">
-                <InputText v-model="newColor.name" placeholder="颜色名称" class="flex-1" @keyup.enter="addColor" />
-                <InputText v-model="newColor.value" placeholder="颜色值(可选)" class="flex-1" @keyup.enter="addColor" />
-                <Button icon="pi pi-plus" @click="addColor" />
+                <Select 
+                  v-model="selectedColor" 
+                  :options="availableColors" 
+                  option-label="name" 
+                  placeholder="选择颜色" 
+                  class="flex-1"
+                  :filter="true"
+                  filter-placeholder="搜索颜色"
+                />
+                <Button icon="pi pi-plus" @click="addColor" :disabled="!selectedColor" />
               </div>
 
               <div class="flex flex-wrap gap-2">
-                <Tag v-for="(color, index) in form.colors" :key="index" :value="color.name"
-                  :style="{ backgroundColor: color.value?.startsWith('#') ? color.value : undefined }"
-                  class="cursor-pointer" @click="removeColor(index)">
-                  <span class="ml-2">×</span>
-                </Tag>
+                <div v-for="(color, index) in form.colors" :key="index" 
+                     class="flex items-center gap-2 p-2 border rounded-lg bg-gray-50">
+                  <!-- 颜色显示 -->
+                  <div class="flex items-center gap-2">
+                    <div v-if="color.value?.startsWith('#')" 
+                         class="w-6 h-6 rounded-full border border-gray-300"
+                         :style="{ backgroundColor: color.value }"></div>
+                    <span class="font-medium">{{ color.name }}</span>
+                  </div>
+                  
+                  <!-- 图片预览 -->
+                  <div v-if="color.imageUrl" class="flex items-center gap-1">
+                    <img :src="color.imageUrl" 
+                         :alt="color.name" 
+                         class="w-8 h-8 object-cover rounded border" />
+                    <i class="pi pi-check text-green-600 text-sm"></i>
+                  </div>
+                  
+                  <!-- 图片操作按钮 -->
+                  <div class="flex items-center gap-1">
+                    <Button 
+                      icon="pi pi-image" 
+                      size="small" 
+                      severity="secondary" 
+                      outlined 
+                      :title="color.imageUrl ? '更换图片' : '选择图片'"
+                      @click="selectColorImage(index)" 
+                    />
+                    <Button 
+                      icon="pi pi-times" 
+                      size="small" 
+                      severity="danger" 
+                      outlined 
+                      title="删除颜色"
+                      @click="removeColor(index)" 
+                    />
+                  </div>
+                </div>
               </div>
 
               <Message v-if="form.colors.length === 0" severity="warn" :closable="false">
@@ -302,9 +427,16 @@ watch(visible, (newval) => {
           <template #content>
             <div class="space-y-4">
               <div class="flex gap-2">
-                <InputText v-model="newSize.name" placeholder="尺寸名称" class="flex-1" @keyup.enter="addSize" />
-                <InputText v-model="newSize.value" placeholder="尺寸值(可选)" class="flex-1" @keyup.enter="addSize" />
-                <Button icon="pi pi-plus" @click="addSize" />
+                <Select 
+                  v-model="selectedSize" 
+                  :options="availableSizes" 
+                  option-label="name" 
+                  placeholder="选择尺寸" 
+                  class="flex-1"
+                  :filter="true"
+                  filter-placeholder="搜索尺寸"
+                />
+                <Button icon="pi pi-plus" @click="addSize" :disabled="!selectedSize" />
               </div>
 
               <div class="flex flex-wrap gap-2">
@@ -424,4 +556,14 @@ watch(visible, (newval) => {
       </div>
     </template>
   </Dialog>
+
+  <!-- 图片选择器 -->
+  <ImageSelector
+    v-model:visible="showImageSelector"
+    v-model="selectedImages"
+    category="product"
+    :multiple="false"
+    :max-select="1"
+    @select="onImageSelectionComplete"
+  />
 </template>

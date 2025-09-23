@@ -27,6 +27,7 @@ declare module 'vue' {
     Form: typeof import('@primevue/forms/form')['default']
     FormField: typeof import('@primevue/forms/formfield')['default']
     GoogleLoginButton: typeof import('./src/components/GoogleLoginButton.vue')['default']
+    ImagePreview: typeof import('./src/components/ImagePreview.vue')['default']
     ImageSelector: typeof import('./src/components/ImageSelector.vue')['default']
     ImageUpload: typeof import('./src/components/ImageUpload.vue')['default']
     InputGroup: typeof import("primevue/inputgroup")["default"]

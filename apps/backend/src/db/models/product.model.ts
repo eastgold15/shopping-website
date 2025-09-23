@@ -16,11 +16,10 @@ import {
 	createSelectSchema,
 	createUpdateSchema,
 } from "drizzle-zod";
-import { date, z } from "zod/v4";
-import { categoriesTable, SelectCategoryType } from "./category.model";
-import { imagesTable, SelectImagesType } from "./images.model";
+import { z } from "zod/v4";
+import { categoriesTable } from "./category.model";
+import { imagesTable } from "./images.model";
 import { skusTable } from "./sku.model"; // 添加SKU导入
-
 import { numberToString, UnoPageQueryZod } from "./utils";
 
 /**
@@ -33,25 +32,31 @@ export const productsTable = pgTable("products", {
 	name: varchar("name", { length: 255 }).notNull(), // 商品名称
 	description: text("description").default(""), // 商品详细描述
 	shortDescription: text("short_description").default(""), // 商品简短描述
-	price: decimal("price", { precision: 10, scale: 2 }).notNull(), // 商品售价
-	comparePrice: decimal("compare_price", { precision: 10, scale: 2 }).notNull(), // 商品原价/对比价格
-	cost: decimal("cost", { precision: 10, scale: 2 }).notNull(), // 商品成本价
 	sku: varchar("sku", { length: 100 }).unique().default(""), // 商品库存单位
 	barcode: varchar("barcode", { length: 100 }).default(""), // 商品条形码
-	weight: decimal("weight", { precision: 8, scale: 2 }).notNull(), // 商品重量(kg)
+	weight: decimal("weight", { precision: 8, scale: 2 }).default("0"), // 商品重量(kg)
 	dimensions: json("dimensions").default({}), // 商品尺寸(长宽高)
+
+	// 🆕 尺码范围管理（脱离SKU）
+	sizeMin: varchar("size_min", { length: 20 }), // 最小尺码，如"39"
+	sizeMax: varchar("size_max", { length: 20 }), // 最大尺码，如"48"
+	sizeTable: text("size_table"), // 尺码表，如"39,40,41,42,43,44,45,46,47,48"或JSON格式
+	sizeDescription: text("size_description"), // 尺码说明，如"适合脚长24.5-28cm"
+
 	// 商品图片通过 productImagesTable 中间表关联
-	colors: json("colors").default([]), // 商品可选颜色
-	sizes: json("sizes").default([]), // 商品可选尺寸
+	defaultImage: text("default_image"), // 默认主图URL
+
+	// 原有的规格字段保留（可选）
+	colors: json("colors").default([]), // 商品可选颜色（备用，主要用ColorSpec表）
+	sizes: json("sizes").default([]), // 商品可选尺寸（备用）
 	materials: json("materials").default([]), // 商品材料信息
 	careInstructions: text("care_instructions").default(""), // 商品保养说明
 	features: json("features").default([]), // 商品特性列表
 	specifications: json("specifications").default({}), // 商品规格参数
+
 	categoryId: integer("category_id")
 		.references(() => categoriesTable.id)
 		.default(-1), // 所属分类ID
-	stock: integer("stock").default(0), // 商品库存数量
-	minStock: integer("min_stock").default(0), // 最低库存预警值
 	isActive: boolean("is_active").default(true), // 是否上架销售
 	isFeatured: boolean("is_featured").default(false), // 是否为推荐商品
 	createdAt: timestamp("created_at").defaultNow(), // 创建时间
@@ -65,7 +70,6 @@ const { createInsertSchema } = createSchemaFactory({
 		date: true,
 	},
 });
-
 // 2. Zod 校验规则（运行时校验）
 // 创建
 export const insertProductSchema = createInsertSchema(productsTable);
@@ -77,41 +81,49 @@ export const selectProductSchema = createSelectSchema(productsTable, {});
 // 商品模型定义
 export const productsModel = {
 	selectProductcTable: selectProductSchema.extend({
-		// 将价格相关字段从字符串转换为数字
-		price: z.string().transform((val) => parseFloat(val)),
-		comparePrice: z.string().transform((val) => parseFloat(val)),
-		cost: z.string().transform((val) => parseFloat(val)),
+
 		weight: z.string().transform((val) => parseFloat(val)),
 	}),
-	// 创建商品请求参数 - 前端传入 number，后端转换为 string 存储
+	// 创建商品请求参数
 	createProductDto: insertProductSchema
 		.omit({ id: true, createdAt: true, updatedAt: true })
 		.extend({
-			price: z.string().transform((val) => parseFloat(val)),
-			comparePrice: z.string().transform((val) => parseFloat(val)),
-			cost: z.string().transform((val) => parseFloat(val)),
+
 			weight: z.string().transform((val) => parseFloat(val)),
 			image_ids: z.array(z.number()),
+			// 新增尺码范围字段
+			sizeMin: z.string().optional(),
+			sizeMax: z.string().optional(),
+			sizeTable: z.string().optional(),
+			sizeDescription: z.string().optional(),
+			defaultImage: z.string().optional(),
 		}),
 
 	insertProductDto: insertProductSchema
 		.omit({ id: true, createdAt: true, updatedAt: true })
 		.extend({
-			cost: numberToString,
-			price: numberToString,
-			comparePrice: numberToString,
 			weight: numberToString,
 			image_ids: z.array(z.number()),
+			// 新增尺码范围字段
+			sizeMin: z.string().optional(),
+			sizeMax: z.string().optional(),
+			sizeTable: z.string().optional(),
+			sizeDescription: z.string().optional(),
+			defaultImage: z.string().optional(),
 		}),
 
 	updateProductDto: updateProductSchema
 		.omit({ id: true, createdAt: true, updatedAt: true })
 		.extend({
-			cost: numberToString,
-			price: numberToString,
-			comparePrice: numberToString,
+
 			weight: numberToString,
 			image_ids: z.array(z.number()),
+			// 新增尺码范围字段
+			sizeMin: z.string().optional(),
+			sizeMax: z.string().optional(),
+			sizeTable: z.string().optional(),
+			sizeDescription: z.string().optional(),
+			defaultImage: z.string().optional(),
 		}),
 	UpdateSortDto: z.object({ sortOrder: z.number() }),
 
@@ -130,12 +142,14 @@ export const productsModel = {
 		productId: z.number(),
 		colors: z.array(
 			z.object({
+				id: z.number(),
 				name: z.string(),
 				value: z.string().optional(),
 			}),
 		),
 		sizes: z.array(
 			z.object({
+				id: z.number(),
 				name: z.string(),
 				value: z.string().optional(),
 			}),

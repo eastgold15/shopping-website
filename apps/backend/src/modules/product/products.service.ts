@@ -79,7 +79,7 @@ export class ProductsService extends BaseService<
 			const {
 				page = 1,
 				limit = 10,
-				sortBy = "createdAt",
+				sort = "createdAt",
 				sortOrder = "desc",
 				search,
 				categoryId,
@@ -117,7 +117,7 @@ export class ProductsService extends BaseService<
 
 					if (isActive !== undefined) {
 						conditions.push(
-							eq(products.isActive, isActive === true || isActive === "true"),
+							eq(products.isActive, isActive === true || isActive === true),
 						);
 					}
 
@@ -125,7 +125,7 @@ export class ProductsService extends BaseService<
 						conditions.push(
 							eq(
 								products.isFeatured,
-								isFeatured === true || isFeatured === "true",
+								isFeatured === true || isFeatured === true,
 							),
 						);
 					}
@@ -142,7 +142,7 @@ export class ProductsService extends BaseService<
 						updatedAt: products.updatedAt,
 					};
 
-					const sortField = sortFieldMap[sortBy] || products.id;
+					const sortField = sortFieldMap[sort] || products.id;
 					return sortOrder === "desc" ? desc(sortField) : asc(sortField);
 				},
 				limit: limit,

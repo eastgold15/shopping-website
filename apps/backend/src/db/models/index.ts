@@ -1,6 +1,6 @@
 export * from "./advertisements.model";
-export * from "./attribute.model"; // 添加属性模型导出
 export * from "./category.model";
+export * from "./color-spec.model"; // 新的颜色规格模型
 export * from "./images.model";
 
 export * from "./partners.model";

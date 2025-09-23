@@ -13,16 +13,25 @@ const toast = useToast();
 // Props
 interface Props {
 	category?: string; // 可选的分类过滤
+	multiple?: boolean; // 是否支持多选
+	maxSelect?: number; // 最大选择数量
 }
-const visible = defineModel("visible", { default: false });
-
-// Emits
-type Emits = (e: "select", imageUrl: string, imageData: SelectImagesVo) => void;
-
 const props = withDefaults(defineProps<Props>(), {
 	category: "all",
+	multiple: true,
+	maxSelect: 10,
 });
 
+const visible = defineModel("visible", { default: false });
+const model = defineModel<SelectImagesVo[]>();
+
+console.log("xxxx", model);
+
+// Emits
+type Emits = {
+	select: (selectedImages: SelectImagesVo[]) => void;
+	change: (event: { value: number | number[]; originalEvent: Event }) => void;
+};
 const emit = defineEmits<Emits>();
 
 // 响应式数据
@@ -31,7 +40,6 @@ const images = ref<SelectImagesVo[]>([]);
 const searchQuery = ref("");
 const selectedCategory = ref(props.category);
 const hoveredImage = ref<number | undefined>(undefined);
-
 const meta = reactive({
 	page: 1,
 	limit: 12,
@@ -49,10 +57,6 @@ const categoryOptions = [
 	{ label: "其他图片", value: "other" },
 ];
 
-// 计算属性
-
-// 方法
-
 /**
  * 加载图片列表
  */
@@ -63,17 +67,14 @@ const loadImages = async () => {
 			page: meta.page,
 			limit: meta.limit,
 		};
-
 		// 添加分类过滤
 		if (selectedCategory.value !== "all") {
 			params.category = selectedCategory.value;
 		}
-
 		// 添加搜索过滤
 		if (searchQuery.value.trim()) {
 			params.search = searchQuery.value.trim();
 		}
-
 		const { code, data, message } = await useCmsApi().images.list(params);
 		if (code !== 200) {
 			toast.add({
@@ -84,7 +85,6 @@ const loadImages = async () => {
 			});
 			return;
 		}
-
 		images.value = data.items;
 		// 更新分页信息
 		if (data.meta) {
@@ -130,12 +130,93 @@ const searchImages = () => {
  * 选择图片
  */
 const selectImage = (image: SelectImagesVo) => {
-	// 设置 v-model 值
-	// modelValue.value = image.id
-	const imageUrl = getImageUrl(image.imageUrl);
-	emit("select", imageUrl, image);
-	// 关闭对话框
+	const index = model.value.findIndex((img) => img.id === image.id);
+	if (props.multiple) {
+		// 多选模式
+		if (index === -1) {
+			// 未选中，添加到选中列表
+			if (model.value.length >= props.maxSelect) {
+				toast.add({
+					severity: "warn",
+					summary: "选择限制",
+					detail: `最多只能选择 ${props.maxSelect} 张图片`,
+					life: 3000,
+				});
+				return;
+			}
+			model.value?.push(image);
+			console.log("select", model.value);
+		} else {
+			// 已选中，从选中列表中移除
+			model.value?.splice(index, 1);
+		}
+	} else {
+		// 单选模式
+		if (index === -1) {
+			model.value = [image];
+			console.log("select", model.value);
+		} else {
+			model.value = [];
+		}
+	}
+};
+
+/**
+ * 更新选中的图片ID数组
+ */
+// const updateSelectedIds = () => {
+//   const newIds = selectedImages.value.map(img => img.id);
+
+//   // 更新v-model绑定的值
+//   const formValue = props.multiple ? newIds : (newIds[0] || null);
+//   emit('update:modelValue', formValue);
+
+//   // 触发change事件
+//   emit('change', {
+//     value: formValue,
+//     originalEvent: new Event('change')
+//   });
+// };
+
+/**
+ * 确认选择
+ */
+const confirmSelection = () => {
+	if (model.value?.length === 0) {
+		toast.add({
+			severity: "warn",
+			summary: "未选择图片",
+			detail: "请至少选择一张图片",
+			life: 3000,
+		});
+		return;
+	}
 	visible.value = false;
+};
+
+/**
+ * 清空选择
+ */
+const clearSelection = () => {
+	model.value = [];
+};
+
+/**
+ * 检查图片是否已选中
+ */
+const isImageSelected = (image: SelectImagesVo) => {
+	return model.value?.some((img) => img.id === image.id);
+};
+
+/**
+ * 获取已选择数量文本
+ */
+const getSelectedCountText = () => {
+	if (props.multiple) {
+		return `已选择 ${model.value.length}/${props.maxSelect} 张`;
+	} else {
+		return model.value.length > 0 ? "已选择 1 张" : "未选择";
+	}
 };
 
 /**
@@ -236,7 +317,6 @@ onMounted(() => {
           </template>
         </Select>
       </div>
-
       <!-- 搜索框 -->
       <InputText v-model="searchQuery" placeholder="搜索图片..." @input="searchImages" class="flex-1" />
     </div>
@@ -255,15 +335,27 @@ onMounted(() => {
       </div>
 
       <div v-else class="image-grid ">
-        <div v-for="image in images" :key="image.id" class="image-card"
-          :class="{ 'hovered': hoveredImage === image.id }" @mouseenter="hoveredImage = image.id"
-          @mouseleave="hoveredImage = undefined" @click="selectImage(image)">
+        <div v-for="image in images" :key="image.id" class="image-card" :class="{
+          'hovered': hoveredImage === image.id,
+          'selected': isImageSelected(image)
+        }" @mouseenter="hoveredImage = image.id" @mouseleave="hoveredImage = undefined" @click="selectImage(image)">
           <!-- 图片预览 -->
           <div class="image-preview">
             <img :src="getImageUrl(image.imageUrl)" :alt="image.fileName" class="preview-img" loading="lazy" />
 
+            <!-- 选择状态覆盖层 -->
             <div class="image-overlay">
-              <Button icon="pi pi-check" class="p-button-rounded p-button-sm p-button-success" label="选择" />
+              <div v-if="isImageSelected(image)" class="selected-indicator">
+                <i class="pi pi-check"></i>
+              </div>
+              <div v-else class="select-indicator">
+                <i class="pi pi-plus"></i>
+              </div>
+            </div>
+
+            <!-- 选择计数徽章 -->
+            <div v-if="isImageSelected(image)" class="selection-order">
+              {{model.findIndex(img => img.id === image.id) + 1}}
             </div>
           </div>
 
@@ -282,18 +374,37 @@ onMounted(() => {
 
     </div>
     <template #footer>
+      <div class="dialog-footer">
+        <!-- 左侧操作区 -->
+        <div class="footer-left">
+          <!-- 选择状态显示 -->
+          <div class="selection-status">
+            <i class="pi pi-images"></i>
+            <span>{{ getSelectedCountText() }}</span>
+          </div>
 
-      <div class="w-full flex justify-around items-center">
-        <!-- 分页器 -->
-        <Paginator v-if="meta.total > 0" :first="paginationOptions.first" :rows="paginationOptions.rows"
-          :totalRecords="paginationOptions.totalRecords" :rowsPerPageOptions="paginationOptions.rowsPerPageOptions"
-          template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
-          currentPageReportTemplate="显示 {first} 到 {last} 条，共 {totalRecords} 张图片" @page="onPageChange" class="mt-4" />
-        <!-- <Button class="w-25 " label="取消" icon="pi pi-times" @click="visible = false" /> -->
+          <!-- 清空按钮 -->
+          <Button v-if="model?.length > 0" label="清空选择" icon="pi pi-times" severity="danger" outlined size="small"
+            @click="clearSelection" />
+        </div>
+
+        <!-- 中间分页器 -->
+        <div class="footer-center">
+          <Paginator v-if="meta.total > 0" :first="paginationOptions.first" :rows="paginationOptions.rows"
+            :totalRecords="paginationOptions.totalRecords" :rowsPerPageOptions="paginationOptions.rowsPerPageOptions"
+            template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
+            currentPageReportTemplate="显示 {first} 到 {last} 条，共 {totalRecords} 张图片" @page="onPageChange"
+            class="compact-paginator" />
+        </div>
+
+        <!-- 右侧按钮区 -->
+        <div class="footer-right">
+          <Button label="取消" icon="pi pi-times" severity="secondary" @click="visible = false" />
+          <Button label="确认选择" icon="pi pi-check" severity="success" :disabled="model.length === 0"
+            @click="confirmSelection" />
+        </div>
       </div>
-
     </template>
-
   </Dialog>
 </template>
 
@@ -317,6 +428,11 @@ onMounted(() => {
 .image-card.hovered {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.image-card.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .image-preview {
@@ -346,8 +462,53 @@ onMounted(() => {
   transition: opacity 0.3s ease;
 }
 
-.image-card.hovered .image-overlay {
+.image-card:hover .image-overlay,
+.image-card.selected .image-overlay {
   opacity: 1;
+}
+
+.selected-indicator {
+  width: 40px;
+  height: 40px;
+  background: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  animation: selectPulse 0.3s ease;
+}
+
+.select-indicator {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  font-size: 1.2rem;
+  border: 2px solid #3b82f6;
+}
+
+.selection-order {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #3b82f6;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .image-info {
@@ -384,9 +545,72 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
-.pagination-container {
-  margin-top: 1rem;
+.dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.selection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-weight: 500;
+}
+
+.footer-center {
+  flex: 1;
   display: flex;
   justify-content: center;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.compact-paginator {
+  .p-paginator {
+    background: transparent;
+    border: none;
+
+    .p-paginator-pages {
+      .p-paginator-page {
+        min-width: 2rem;
+        height: 2rem;
+      }
+    }
+  }
+}
+
+@keyframes selectPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

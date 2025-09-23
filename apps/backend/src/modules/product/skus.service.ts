@@ -3,6 +3,7 @@ import {
 	productImagesTable,
 	skuImagesTable,
 } from "@backend/db/models";
+import { colorSpecsTable } from "@backend/db/models/color-spec.model";
 import {
 	type InsertSkuDto,
 	type SelectSkuType,
@@ -63,11 +64,10 @@ export class SkusService extends BaseService<
 			const {
 				page = 1,
 				limit = 10,
-				sortBy = "createdAt",
+				sort = "createdAt",
 				sortOrder = "desc",
 				productId,
-				colorId,
-				sizeId,
+				colorSpecId, // 更新参数名
 				isActive,
 			} = query;
 
@@ -76,11 +76,8 @@ export class SkusService extends BaseService<
 			if (productId) {
 				conditions.push(eq(skusTable.productId, parseInt(productId)));
 			}
-			if (colorId) {
-				conditions.push(eq(skusTable.colorId, parseInt(colorId)));
-			}
-			if (sizeId) {
-				conditions.push(eq(skusTable.sizeId, parseInt(sizeId)));
+			if (colorSpecId) {
+				conditions.push(eq(skusTable.colorSpecId, parseInt(colorSpecId)));
 			}
 			if (isActive !== undefined) {
 				conditions.push(eq(skusTable.isActive, isActive === "true"));
@@ -97,13 +94,20 @@ export class SkusService extends BaseService<
 			};
 
 			// 确定排序字段和方向
-			const sortField = sortFieldMap[sortBy] || skusTable.id;
+			const sortField = sortFieldMap[sort] || skusTable.id;
 			const _orderBy = sortOrder === "desc" ? desc(sortField) : asc(sortField);
 
 			// 构建查询
 			const queryBuilder = db
 				.select({
 					...getTableColumns(skusTable),
+					// 关联颜色规格信息
+					colorSpec: {
+						id: colorSpecsTable.id,
+						name: colorSpecsTable.name,
+						colorValue: colorSpecsTable.colorValue,
+						imageUrl: colorSpecsTable.imageUrl,
+					},
 					images: {
 						id: imagesTable.id,
 						url: imagesTable.imageUrl,
@@ -112,6 +116,7 @@ export class SkusService extends BaseService<
 					},
 				})
 				.from(skusTable)
+				.leftJoin(colorSpecsTable, eq(skusTable.colorSpecId, colorSpecsTable.id))
 				.leftJoin(skuImagesTable, eq(skusTable.id, skuImagesTable.skuId))
 				.leftJoin(imagesTable, eq(skuImagesTable.imageId, imagesTable.id));
 
@@ -143,9 +148,10 @@ export class SkusService extends BaseService<
 				const skuId = row.id;
 
 				if (!skusMap.has(skuId)) {
-					const { images, ...skuData } = row;
+					const { images, colorSpec, ...skuData } = row;
 					skusMap.set(skuId, {
 						...skuData,
+						colorSpec: colorSpec || null, // 添加颜色规格信息
 						images: [],
 					});
 				}
@@ -199,6 +205,13 @@ export class SkusService extends BaseService<
 			const rawSku = await db
 				.select({
 					...getTableColumns(skusTable),
+					// 关联颜色规格信息
+					colorSpec: {
+						id: colorSpecsTable.id,
+						name: colorSpecsTable.name,
+						colorValue: colorSpecsTable.colorValue,
+						imageUrl: colorSpecsTable.imageUrl,
+					},
 					images: {
 						id: imagesTable.id,
 						url: imagesTable.imageUrl,
@@ -207,6 +220,7 @@ export class SkusService extends BaseService<
 					},
 				})
 				.from(skusTable)
+				.leftJoin(colorSpecsTable, eq(skusTable.colorSpecId, colorSpecsTable.id))
 				.leftJoin(skuImagesTable, eq(skusTable.id, skuImagesTable.skuId))
 				.leftJoin(imagesTable, eq(skuImagesTable.imageId, imagesTable.id))
 				.where(eq(skusTable.id, id));
@@ -217,7 +231,7 @@ export class SkusService extends BaseService<
 
 			// 聚合图片数据
 			const skuData = rawSku[0];
-			const { images: _, ...baseSku } = skuData;
+			const { images: _, colorSpec, ...baseSku } = skuData;
 
 			const images = rawSku
 				.filter((row) => row.images.id)
@@ -235,6 +249,7 @@ export class SkusService extends BaseService<
 
 			return {
 				...baseSku,
+				colorSpec: colorSpec || null,
 				images,
 			};
 		} catch (error) {
@@ -250,6 +265,13 @@ export class SkusService extends BaseService<
 			const rawSkus = await db
 				.select({
 					...getTableColumns(skusTable),
+					// 关联颜色规格信息
+					colorSpec: {
+						id: colorSpecsTable.id,
+						name: colorSpecsTable.name,
+						colorValue: colorSpecsTable.colorValue,
+						imageUrl: colorSpecsTable.imageUrl,
+					},
 					images: {
 						id: imagesTable.id,
 						url: imagesTable.imageUrl,
@@ -258,6 +280,7 @@ export class SkusService extends BaseService<
 					},
 				})
 				.from(skusTable)
+				.leftJoin(colorSpecsTable, eq(skusTable.colorSpecId, colorSpecsTable.id))
 				.leftJoin(skuImagesTable, eq(skusTable.id, skuImagesTable.skuId))
 				.leftJoin(imagesTable, eq(skuImagesTable.imageId, imagesTable.id))
 				.where(
@@ -272,9 +295,10 @@ export class SkusService extends BaseService<
 				const skuId = row.id;
 
 				if (!skusMap.has(skuId)) {
-					const { images, ...skuData } = row;
+					const { images, colorSpec, ...skuData } = row;
 					skusMap.set(skuId, {
 						...skuData,
+						colorSpec: colorSpec || null,
 						images: [],
 					});
 				}
@@ -312,16 +336,25 @@ export class SkusService extends BaseService<
 	/**
 	 * 更新SKU
 	 */
-	static async update(id: number, data: UpdateSkuDto) {
+	static async update(id: number, data: UpdateSkuDto & { images?: number[] }) {
 		try {
+			// 提取图片ID数组
+			const { images, ...skuData } = data;
+
+			// 更新SKU基本信息
 			const [updatedSku] = await db
 				.update(skusTable)
-				.set({ ...data, updatedAt: new Date() })
+				.set({ ...skuData, updatedAt: new Date() })
 				.where(eq(skusTable.id, id))
 				.returning();
 
 			if (!updatedSku) {
 				throw new NotFoundError("SKU不存在");
+			}
+
+			// 如果提供了图片ID数组，更新图片关联
+			if (images !== undefined) {
+				await this.updateSkuImages(id, images);
 			}
 
 			return updatedSku;
@@ -406,6 +439,94 @@ export class SkusService extends BaseService<
 				);
 		} catch (error) {
 			console.error("设置SKU主图失败:", error);
+			throw handleDatabaseError(error);
+		}
+	}
+
+	/**
+	 * 批量更新SKU图片关联
+	 */
+	static async updateSkuImages(skuId: number, imageIds: number[]) {
+		try {
+			// 先删除原有的图片关联
+			await db.delete(skuImagesTable).where(eq(skuImagesTable.skuId, skuId));
+
+			// 添加新的图片关联
+			if (imageIds.length > 0) {
+				const skuImageData = imageIds.map((imageId, index) => ({
+					skuId,
+					imageId,
+					isMain: index === 0, // 第一张图片设为主图
+					displayOrder: index,
+				}));
+
+				await db.insert(skuImagesTable).values(skuImageData);
+			}
+
+			return true;
+		} catch (error) {
+			console.error("更新SKU图片关联失败:", error);
+			throw handleDatabaseError(error);
+		}
+	}
+
+	/**
+	 * 基于颜色规格批量创建SKU
+	 * 新的重构方案：一个颜色规格对应一个SKU，不再是颜色×尺寸的笛卡尔积
+	 */
+	static async batchCreateByColorSpecs(data: {
+		productId: number;
+		colorSpecs: {
+			id: number;
+			name: string;
+			price: string;
+			comparePrice?: string;
+			cost?: string;
+			stock: number;
+			minStock?: number;
+			weight?: string;
+			skuCode?: string;
+		}[];
+	}) {
+		try {
+			const { productId, colorSpecs } = data;
+
+				const createdSkus = await db.transaction(async (tx) => {
+					const results = [];
+
+					for (const colorSpec of colorSpecs) {
+						const skuData = {
+							productId,
+							colorSpecId: colorSpec.id,
+							name: colorSpec.name, // SKU名称使用颜色名称
+							skuCode: colorSpec.skuCode || `${productId}-${colorSpec.id}-${Date.now()}`,
+							price: colorSpec.price,
+							comparePrice: colorSpec.comparePrice || null,
+							cost: colorSpec.cost || null,
+							stock: colorSpec.stock,
+							minStock: colorSpec.minStock || 0,
+							weight: colorSpec.weight || null,
+							isActive: true,
+							sortOrder: 0,
+						};
+
+						const [newSku] = await tx
+							.insert(skusTable)
+							.values(skuData)
+							.returning();
+
+						results.push(newSku);
+					}
+
+					return results;
+				});
+
+			return {
+				createdCount: createdSkus.length,
+				skus: createdSkus,
+			};
+		} catch (error) {
+			console.error("批量创建SKU失败:", error);
 			throw handleDatabaseError(error);
 		}
 	}

@@ -62,10 +62,7 @@ export const skusController = new Elysia({
 	.get(
 		"/:id",
 		async ({ params: { id }, skusService }) => {
-			if (!id) {
-				return commonRes(null, 400, "ID参数不能为空");
-			}
-			const result = await skusService.getById(parseInt(id));
+			const result = await skusService.getById(id);
 			return commonRes(result);
 		},
 		{
@@ -132,6 +129,110 @@ export const skusController = new Elysia({
 				tags: ["SKUs"],
 				summary: "删除SKU",
 				description: "根据SKU ID删除SKU",
+			},
+		},
+	)
+
+	// 为SKU添加图片
+	.post(
+		"/:id/images",
+		async ({ params: { id }, body }) => {
+			const { imageId, isMain } = body;
+			const result = await SkusService.addSkuImage(id, imageId, isMain);
+			return commonRes(result, 200, "SKU图片添加成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+			body: t.Object({
+				imageId: t.Number(),
+				isMain: t.Optional(t.Boolean()),
+			}),
+			detail: {
+				tags: ["SKUs"],
+				summary: "为SKU添加图片",
+				description: "为指定SKU添加图片关联",
+			},
+		},
+	)
+
+	// 设置SKU主图
+	.put(
+		"/:id/images/:imageId/main",
+		async ({ params: { id, imageId } }) => {
+			await SkusService.setSkuMainImage(id, imageId);
+			return commonRes(null, 200, "SKU主图设置成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+				imageId: t.Number(),
+			}),
+			detail: {
+				tags: ["SKUs"],
+				summary: "设置SKU主图",
+				description: "设置指定图片为SKU的主图",
+			},
+		},
+	)
+
+	// 批量更新SKU图片
+	.put(
+		"/:id/images",
+		async ({ params: { id }, body }) => {
+			const { images } = body;
+			await SkusService.updateSkuImages(id, images);
+			return commonRes(null, 200, "SKU图片更新成功");
+		},
+		{
+			params: t.Object({
+				id: t.Number(),
+			}),
+			body: t.Object({
+				images: t.Array(t.Number()),
+			}),
+			detail: {
+				tags: ["SKUs"],
+				summary: "批量更新SKU图片",
+				description: "批量更新SKU关联的图片",
+			},
+		},
+	)
+
+	// 基于颜色规格批量创建SKU
+	.post(
+		"/batch/:productId",
+		async ({ params: { productId }, body }) => {
+			const result = await SkusService.batchCreateByColorSpecs({
+				productId,
+				colorSpecs: body.colorSpecs,
+			});
+			return commonRes(result, 201, `成功创建 ${result.createdCount} 个SKU`);
+		},
+		{
+			params: t.Object({
+				productId: t.Number(),
+			}),
+			body: t.Object({
+				colorSpecs: t.Array(
+					t.Object({
+						id: t.Number(), // 颜色规格ID
+						name: t.String(), // SKU名称（使用颜色名称）
+						price: t.String(), // 价格
+						comparePrice: t.Optional(t.String()), // 原价
+						cost: t.Optional(t.String()), // 成本价
+						stock: t.Number(), // 库存
+						minStock: t.Optional(t.Number()), // 最低库存
+						weight: t.Optional(t.String()), // 重量
+						skuCode: t.Optional(t.String()), // SKU编码
+					})
+				),
+			}),
+			detail: {
+				tags: ["SKUs"],
+				summary: "基于颜色规格批量创建SKU",
+				description: "为指定商品基于颜色规格批量创建SKU，一个颜色规格对应一个SKU",
 			},
 		},
 	);

@@ -6,6 +6,7 @@ import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTempl
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
 import TreeSelect from "primevue/treeselect";
+import { useRouter } from "vue-router";
 import z from "zod";
 
 // 表单验证schema
@@ -308,20 +309,33 @@ const onImageSelected = (imageUrl: string, imageData: any) => {
 	showImageSelector.value = false;
 };
 
-// SKU批量创建相关
+// SKU管理相关
 const showBatchCreateSKUs = ref(false);
 const selectedProductId = ref(0);
 const selectedProductName = ref("");
 
-const openBatchCreateSKUs = (product: ProductModel) => {
-	selectedProductId.value = product.id;
-	selectedProductName.value = product.name;
-	showBatchCreateSKUs.value = true;
+// 查看商品SKU列表
+const viewProductSKUs = (product: ProductModel) => {
+  // 跳转到SKU管理页面，带上商品ID筛选
+  const router = useRouter();
+  router.push({
+    name: 'SkusManagement',
+    query: { productId: product.id }
+  });
 };
 
+// 打开批量创建SKU对话框
+const openBatchCreateSKUs = (product: ProductModel) => {
+  selectedProductId.value = product.id;
+  selectedProductName.value = product.name;
+  showBatchCreateSKUs.value = true;
+};
+
+// 批量创建SKU成功回调
 const onBatchCreateSuccess = (result: any) => {
-	console.log("批量创建SKU成功:", result);
-	// 可以在这里刷新SKU列表或执行其他操作
+  console.log("批量创建成功:", result);
+  // 可以在这里刷新商品列表或跳转到SKU管理页面
+  fetchList();
 };
 
 // 图片操作方法
@@ -500,7 +514,10 @@ const addFeature = () => {
 
       <Column field="stock" header="库存" style="width: 80px">
         <template #body="{ data }">
-          <Tag :value="data.stock" :severity="data.stock > 10 ? 'success' : data.stock > 0 ? 'warn' : 'danger'" />
+          <div class="flex flex-col items-center">
+            <Tag :value="data.stock || 0" :severity="(data.stock || 0) > 10 ? 'success' : (data.stock || 0) > 0 ? 'warn' : 'danger'" />
+            <small class="text-gray-500 text-xs mt-1">商品总库存</small>
+          </div>
         </template>
       </Column>
 
@@ -524,11 +541,23 @@ const addFeature = () => {
         </template>
       </Column>
 
-      <Column field="actions" header="操作" style="width: 120px">
+      <Column field="actions" header="SKU管理" style="width: 150px">
         <template #body="{ data }">
           <div class="flex items-center gap-2">
-            <Button icon="pi pi-plus" size="small" severity="success" @click="openBatchCreateSKUs(data)"
-              v-tooltip="'批量创建SKU'" />
+            <Button 
+              icon="pi pi-list" 
+              size="small" 
+              severity="info" 
+              @click="viewProductSKUs(data)"
+              v-tooltip="'查看SKU列表'" 
+            />
+            <Button 
+              icon="pi pi-plus" 
+              size="small" 
+              severity="success" 
+              @click="openBatchCreateSKUs(data)"
+              v-tooltip="'批量创建SKU'" 
+            />
           </div>
         </template>
       </Column>

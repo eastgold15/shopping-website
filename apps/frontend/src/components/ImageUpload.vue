@@ -69,7 +69,7 @@ const getUploadUrl = () => {
 /**
  * 自定义上传处理
  */
-const customUpload = async (event: any) => {
+const customUpload = async (_event: any) => {
 	if (!uploadCategory.value) {
 		toast.add({
 			severity: "warn",

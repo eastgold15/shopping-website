@@ -1,14 +1,13 @@
 import type {
   ColorListQueryDto,
-  InsertPartnersDto,
+
   ListImagesQueryDto,
   ListProductQueryDto,
   PartnersListQueryDto,
   SiteConfigByCategoryQueryDto,
   SiteConfigListQueryDto,
   UpdateImagesDto,
-  UpdatePartnersDto,
-  UpdateSortDtoType,
+  UpdatePartnersDto
 } from "@backend/types";
 import { client } from "./useTreaty";
 
@@ -345,6 +344,15 @@ export const useCmsApi = () => {
         if (error) {
           console.error("Sizes list error:", error);
           return pageDefaultValue;
+        }
+        return data;
+      },
+
+      all: async (params?: any) => {
+        const { data, error } = await client.api.sizes.all.get({ query: params });
+        if (error) {
+          console.error("Sizes all error:", error);
+          return comDefaultValue;
         }
         return data;
       },

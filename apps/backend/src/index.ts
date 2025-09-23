@@ -9,8 +9,7 @@ import { categoriesController } from "./modules/category";
 import { imagesController } from "./modules/image";
 import { partnersController } from "./modules/partner";
 import { productsController } from "./modules/product";
-import { colorsController } from "./modules/product/colors.controller"; // 添加颜色控制器导入
-import { sizesController } from "./modules/product/sizes.controller"; // 添加尺寸控制器导入
+import { colorSpecsController } from "./modules/product/color-specs.controller"; // 新的颜色规格控制器
 import { skusController } from "./modules/product/skus.controller";
 import { siteConfigsController } from "./modules/siteConfig";
 import { uploadsController } from "./modules/upload";
@@ -29,8 +28,7 @@ const api = new Elysia({ prefix: "/api" })
 	.use(advertisementsController)
 	.use(productsController)
 	.use(skusController) // 添加SKU控制器
-	.use(colorsController) // 添加颜色控制器
-	.use(sizesController) // 添加尺寸控制器
+	.use(colorSpecsController) // 添加颜色规格控制器
 	.use(siteConfigsController);
 
 // .use(ordersController)

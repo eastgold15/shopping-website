@@ -3,11 +3,16 @@ import type {
   SelectSkuType,
   SkuListQueryDto,
 } from "@backend/db/models/sku.model";
+import type { SelectImagesVo } from "@backend/types";
+import BatchCreateSKUs from "@frontend/components/BatchCreateSKUs.vue";
+import ImagePreview from "@frontend/components/ImagePreview.vue";
+import ImageSelector from "@frontend/components/ImageSelector.vue";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { formatDate } from "@frontend/utils/formatUtils";
 import { useCmsApi } from "@frontend/utils/handleApi";
 import { FormField } from "@primevue/forms";
 import { zodResolver } from "@primevue/forms/resolvers/zod";
+import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
@@ -46,6 +51,14 @@ const skuSchema = z.object({
     .number()
     .min(0, "排序权重不能小于0")
     .max(9999, "排序权重不能超过9999"),
+  images: z.array(z.object({
+    id: z.number(),
+    imageUrl: z.string(),
+    fileName: z.string().optional(),
+    category: z.string().optional(),
+    fileSize: z.number().optional(),
+    createdAt: z.date().optional()
+  })).optional(),
 });
 
 // 查询表单验证schema
@@ -127,12 +140,19 @@ const templateData = await genPrimeCmsTemplateData<
       if (typeof data.minStock === "string") {
         data.minStock = parseInt(data.minStock) || 0;
       }
+      
+      // 处理图片关联
+      if (data.images && data.images.length > 0) {
+        // 与合作伙伴管理保持一致，直接传递图片ID数组
+        data.images = data.images.map((img: any) => img.id);
+      } else {
+        data.images = [];
+      }
+      
       // @ts-expect-error
       delete data.createdAt;
       // @ts-expect-error
       delete data.updatedAt;
-      // @ts-expect-error
-      delete data.images;
     },
   },
   // 6. 定义查询表单
@@ -160,20 +180,29 @@ const statusOptions = [
 ];
 
 // 图片选择相关
-const showImageSelector = ref(false);
+const imageSelectorVisible = ref(false);
 const currentFormData = ref<SelectSkuType>();
 
-const onImageSelected = (imageUrl: string, imageData: any) => {
-  console.log("imageData:", imageData);
-  console.log("imageUrl:", imageUrl);
+// 批量创建SKU相关
+const showBatchCreateDialog = ref(false);
+const selectedProductId = ref<number>(1); // 默认商品ID，实际使用时可以从查询表单或其他地方获取
+const selectedProductName = ref<string>("示例商品"); // 默认商品名称，实际使用时可以从API获取
 
-  if (currentFormData.value) {
-    // 设置图片ID（数字类型）
-    currentFormData.value.image_id = imageData.id;
-    // 设置显示用的图片URL
-    currentFormData.value.image = imageUrl;
-  }
-  showImageSelector.value = false;
+// 打开图片选择器
+const openImageSelector = () => {
+  imageSelectorVisible.value = true;
+};
+
+// 打开批量创建对话框
+const openBatchCreateDialog = () => {
+  showBatchCreateDialog.value = true;
+};
+
+// 批量创建成功回调
+const onBatchCreateSuccess = (result: any) => {
+  console.log("批量创建成功:", result);
+  // 刷新列表
+  fetchList();
 };
 </script>
 
@@ -205,12 +234,27 @@ const onImageSelected = (imageUrl: string, imageData: any) => {
     </template>
 
     <template #QueryFormActionChild>
-      <Button class="w-42" :label="`批量新建Sku`" icon="pi pi-plus" severity="success" />
+      <Button class="w-42" :label="`批量新建Sku`" icon="pi pi-plus" severity="success" @click="openBatchCreateDialog" />
     </template>
 
     <!-- 表格列 -->
     <template #TableColumn>
       <Column field="id" header="ID" style="width: 80px" />
+
+      <!-- 图片预览列 -->
+      <Column field="images" header="图片" style="width: 100px">
+        <template #body="{ data }">
+          <ImagePreview 
+            v-if="data.images && data.images.length > 0" 
+            :images="data.images" 
+            :size="'small'"
+            :show-indicator="true"
+          />
+          <div v-else class="w-12 h-12 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
+            <i class="pi pi-image text-lg"></i>
+          </div>
+        </template>
+      </Column>
 
       <Column field="name" header="SKU名称" style="width: 200px">
         <template #body="{ data }">
@@ -407,9 +451,60 @@ const onImageSelected = (imageUrl: string, imageData: any) => {
           <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">{{ $field.error?.message }}
           </Message>
         </FormField>
+
+          
+        <!-- 图片选择 -->
+        <FormField v-slot="$field" name="images" class="flex flex-col gap-2 mb-4">
+          <label class="text-sm font-medium">SKU图片</label>
+          <!-- 已选择的图片预览 -->
+          <div v-if="$field.value && $field.value.length > 0" class="mb-2">
+            <ImagePreview 
+              :images="$field.value" 
+              :size="'medium'"
+              :show-indicator="true"
+            />
+            <small class="text-gray-600 mt-1 block">
+              已选择 {{ $field.value.length }} 张图片
+            </small>
+          </div>
+          
+          <!-- 图片选择器组件 -->
+          <ImageSelector 
+            v-model="$field.value" 
+            v-model:visible="imageSelectorVisible" 
+            category="product"
+            :multiple="true" 
+            :max-select="10" 
+          />
+          
+          <!-- 选择图片按钮 -->
+          <Button 
+            :label="$field.value && $field.value.length > 0 ? '更换图片' : '选择图片'" 
+            icon="pi pi-images" 
+            severity="secondary" 
+            outlined
+            :disabled="disabled"
+            @click="openImageSelector"
+          />
+          
+          <Message v-if="$field?.invalid" severity="error" size="small" variant="simple">
+            {{ $field.error?.message }}
+          </Message>
+        </FormField>
       </div>
     </template>
   </PrimeCrudTemplate>
+
+  <!-- 批量创建SKU对话框 -->
+  <BatchCreateSKUs 
+    v-model:visible="showBatchCreateDialog"
+    :product-id="selectedProductId"
+    :product-name="selectedProductName"
+    @success="onBatchCreateSuccess"
+  />
+
+  <!-- 图片选择器 -->
+  <!-- 注意：这里不需要直接绑定，ImageSelector组件在FormField中已经绑定了 -->
 </template>
 
 <style scoped>
