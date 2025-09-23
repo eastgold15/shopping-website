@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import type {
-	CategoryListQueryDto,
-	PartnersListQueryDto,
-	SelectCategoryVo,
+  CategoryListQueryDto,
+  PartnersListQueryDto,
+  SelectCategoryVo,
 } from "@backend/types";
 import { genPrimeCmsTemplateData } from "@frontend/composables/cms/usePrimeTemplateGen";
 import { formatDate } from "@frontend/utils/formatUtils";
@@ -17,26 +17,26 @@ const $crud = useCmsApi().categories;
 
 // 使用zod定义表单验证schema
 const categoriesSchema = z.object({
-	name: z.string().min(1, { message: "分类名称不能为空" }),
-	description: z.string().optional(),
-	parentId: z.any().optional(),
-	sortOrder: z.number().min(0, { message: "排序必须大于等于0" }),
-	icon: z.string().optional(),
-	isVisible: z.boolean(),
-	slug: z.string().min(1, { message: "URL标识符不能为空，不可重复" }),
+  name: z.string().min(1, { message: "分类名称不能为空" }),
+  description: z.string().optional(),
+  parentId: z.any().optional(),
+  sortOrder: z.number().min(0, { message: "排序必须大于等于0" }),
+  icon: z.string().optional(),
+  isVisible: z.boolean(),
+  slug: z.string().min(1, { message: "URL标识符不能为空，不可重复" }),
 });
 
 // 状态选项
 const statusOptions = [
-	{ label: "全部", value: "all" },
-	{ label: "显示", value: "visible" },
-	{ label: "隐藏", value: "hidden" },
+  { label: "全部", value: "all" },
+  { label: "显示", value: "visible" },
+  { label: "隐藏", value: "hidden" },
 ];
 
 // 查询表单验证schema
 const querySchema = z.object({
-	name: z.string().max(100, "搜索名称不能超过100个字符").optional(),
-	isActive: z.boolean().optional(),
+  name: z.string().max(100, "搜索名称不能超过100个字符").optional(),
+  isActive: z.boolean().optional(),
 });
 
 // 创建resolver
@@ -45,107 +45,116 @@ const queryResolver = zodResolver(querySchema);
 
 // 响应式数据
 const templateData = await genPrimeCmsTemplateData<
-	SelectCategoryVo,
-	PartnersListQueryDto,
-	CategoryListQueryDto
+  SelectCategoryVo,
+  PartnersListQueryDto,
+  CategoryListQueryDto
 >(
-	{
-		// 1. 定义查询表单 (二选一：普通列表或树形数据)
-		getTree: $crud.tree, // 树形表格模式
-		create: $crud.create,
-		update: $crud.update,
-		delete: $crud.delete,
+  {
+    // 1. 定义查询表单 (二选一：普通列表或树形数据)
+    // @ts-ignore
+    getTree: $crud.tree, // 树形表格模式
+    // @ts-ignore
+    create: $crud.create,
+    // @ts-ignore
+    update: $crud.update,
+    // @ts-ignore
+    delete: $crud.delete,
 
-		// 2. 定义初始表格列 初始值
-		getEmptyModel: () => ({
-			id: -1,
-			name: "分类名字",
-			slug: "网站链接",
-			description: "描述",
-			parentId: -1,
-			sortOrder: 1,
-			isVisible: true,
-			icon: "图标",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		}),
+    // 2. 定义初始表格列 初始值
+    getEmptyModel: () => ({
+      id: 0,
+      name: "分类名字",
+      slug: "网站链接",
+      description: "描述",
+      parentId: null,
+      sortOrder: 1,
+      isVisible: true,
+      icon: "图标",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }),
 
-		// 3. 定义删除框标题
-		getDeleteBoxTitle(id: number) {
-			return `删除分类${id}`;
-		},
-		getDeleteBoxTitles(ids: Array<number>) {
-			return ` 分类#${ids.join(",")} `;
-		},
+    // 3. 定义删除框标题
+    getDeleteBoxTitle(id: number) {
+      return `删除分类${id}`;
+    },
+    getDeleteBoxTitles(ids: Array<number>) {
+      return ` 分类#${ids.join(",")} `;
+    },
 
-		// 5. 数据转换
-		transformSubmitData: (data: any, type) => {
-			// 转换TreeSelect的parentId格式
-			if (data.parentId && typeof data.parentId === "object") {
-				Object.keys(data.parentId).forEach((key) => {
-					data.parentId = Number(key);
-				});
+    // 5. 数据转换
+    transformSubmitData: (data: any, type) => {
 
-				console.log("data", data);
-			}
+      if (type == "NEW") {
+        delete data.createdAt
+      }
 
-			delete data.updatedAt;
-		},
-	},
-	// 6. 定义查询表单
-	{
-		name: "",
-		isVisible: undefined,
-		page: 1,
-		limit: 20,
-	},
+      // 转换TreeSelect的parentId格式
+      if (data.parentId && typeof data.parentId === "object") {
+        Object.keys(data.parentId).forEach((key) => {
+          data.parentId = Number(key);
+        });
+      }
+
+      delete data.updatedAt;
+    },
+  },
+  // 6. 定义查询表单
+  {
+    name: "",
+    isVisible: undefined,
+    page: 1,
+    limit: 20,
+  },
 );
 
-const { tableData, queryForm, treeData } = templateData;
-
-// 注意：数据加载现在由PrimeCrudTemplate组件自动处理
-// 根据useTreeTable属性自动选择getList或getTree方法
-
-// 状态选项
-const VisibleOptions = [
-	{ label: "全部", value: undefined },
-	{ label: "启用", value: true },
-	{ label: "禁用", value: false },
-];
+const { queryForm, treeData } = templateData;
 
 // 将已经是树形结构的数据转换为TreeTable所需的TreeNode格式
-const convertTreeToTreeNodes = (treeData: Category[]): any[] => {
-	return treeData.map((node) => ({
-		key: node.id.toString(),
-		data: node,
-		children: node.children ? convertTreeToTreeNodes(node.children) : undefined,
-	}));
+const convertTreeToTreeNodes = (treeData: SelectCategoryVo[]): any[] => {
+  return treeData.map((node) => ({
+    key: node.id.toString(),
+    data: node,
+    children: node.children ? convertTreeToTreeNodes(node.children) : undefined,
+  }));
 };
 
 // 树形选择器数据转换（适用于已经是树形结构的数据）
-const convertToTreeSelectFormat = (treeData: Category[]): any[] => {
-	return treeData.map((category) => ({
-		key: category.id,
-		label: category.name,
-		data: category,
-		children: category.children
-			? convertToTreeSelectFormat(category.children)
-			: undefined,
-	}));
+const convertToTreeSelectFormat = (treeData: SelectCategoryVo[]): any[] => {
+  // 1. 先转换原始树形数据
+  const converted = treeData.map((category) => ({
+    key: category.id,
+    label: category.name,
+    data: category,
+    children: category.children
+      ? convertToTreeSelectFormat(category.children)
+      : undefined,
+  }));
+
+  // 2. 在开头追加 null 选项（表示“无父级”）
+  return [
+    {
+      key: null,
+      label: "无父级分类", // 或 "顶级分类"、"不选择" 等
+      data: null,
+      children: undefined,
+    },
+    ...converted, // 展开原始转换后的数据
+  ];
 };
 
 // TreeSelect数据计算属性
 const treeSelectData = computed(() => {
-	if (!treeData.value || treeData.value.length === 0) return [];
-	// treeData.value 已经是树形结构，直接转换为 TreeSelect 格式
-	return convertToTreeSelectFormat(treeData.value as Category[]);
+  if (!treeData.value || treeData.value.length === 0) return [];
+  // treeData.value 已经是树形结构，直接转换为 TreeSelect 格式
+  return convertToTreeSelectFormat(treeData.value as SelectCategoryVo[]);
 });
 
 // TreeTable数据计算属性
 const treeTableData = computed(() => {
-	if (!treeData.value || treeData.value.length === 0) return [];
-	// treeData.value 已经是树形结构，直接转换为 TreeTable 格式
-	return convertTreeToTreeNodes(treeData.value as Category[]);
+  if (!treeData.value || treeData.value.length === 0) return [];
+  // treeData.value 已经是树形结构，直接转换为 TreeTable 格式
+  return convertTreeToTreeNodes(treeData.value as SelectCategoryVo[]);
 });
 
 // 展开状态管理
@@ -153,9 +162,10 @@ const expandedKeys = ref<Record<string, boolean>>({});
 </script>
 
 <template>
-  <PrimeCrudTemplate name="分类" identifier="partner" :table-data="tableData" :template-data="templateData"
-    :crud-controller="15" :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver"
-    :useTreeTable="true" :expandedKeys="expandedKeys" :tree-data="treeTableData">
+  <!-- @ts-ignore -->
+  <PrimeCrudTemplate name="分类" identifier="partner" :template-data="templateData" :crud-controller="15"
+    :query-form="queryForm" :resolver="resolver" :query-resolver="queryResolver" :useTreeTable="true"
+    :expandedKeys="expandedKeys" :tree-data="treeTableData">
     <!-- 查询表单 -->
     <template #QueryForm>
       <div class="flex flex-column gap-2">
@@ -276,8 +286,6 @@ const expandedKeys = ref<Record<string, boolean>>({});
             <template #container="slotProps"></template>
           </Message>
         </FormField>
-
-
         <!-- 启用状态 -->
         <FormField v-slot="$field" name="isVisible" class="flex flex-col gap-2 mb-4">
           <label class="text-sm font-medium">启用状态</label>
@@ -305,8 +313,7 @@ const expandedKeys = ref<Record<string, boolean>>({});
 /* 文本截断样式 */
 .line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
 }
 

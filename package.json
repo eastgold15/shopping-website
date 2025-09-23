@@ -1,5 +1,5 @@
 {
-  "name": "@shopping/monorepo",
+  "name": "@gina/monorepo",
   "private": true,
   "packageManager": "bun@1.2.21",
   "workspaces": [
