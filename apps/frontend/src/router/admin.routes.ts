@@ -2,13 +2,11 @@
 import AdminLayout from "@frontend/layouts/AdminLayout.vue";
 import AdvertisementManagement from "@frontend/pages/admin/AdvertisementManagement.vue";
 import CategoryManagement from "@frontend/pages/admin/CategoryManagement.vue";
-import ColorsManagement from "@frontend/pages/admin/ColorsManagement.vue";
 // import PaymentSettings from "@frontend/pages/admin/PaymentSettings.vue";
 import ImageManager from "@frontend/pages/admin/ImageManager.vue";
 import PrimePartnersManagement from "@frontend/pages/admin/PrimePartnersManagement.vue";
 import ProductsManagement from "@frontend/pages/admin/ProductsManagement.vue";
 import SiteConfigForm from "@frontend/pages/admin/SiteConfigForm.vue";
-import SizesManagement from "@frontend/pages/admin/SizesManagement.vue";
 import SkusManagement from "@frontend/pages/admin/SkusManagement.vue";
 
 const adminRoutes = [
@@ -16,11 +14,11 @@ const adminRoutes = [
 		path: "/admin",
 		component: AdminLayout,
 		children: [
-			// 	{
-			// 		path: "dashboard",
-			// 		name: "admin-dashboard",
-			// 		component: Dashboard,
-			// 	},
+			// {
+			// 	path: "dashboard",
+			// 	name: "admin-dashboard",
+			// 	component: Dashboard,
+			// },
 			{
 				path: "categories",
 				name: "category-management",
@@ -50,16 +48,6 @@ const adminRoutes = [
 				path: "partners",
 				name: "partners-management",
 				component: PrimePartnersManagement,
-			},
-			{
-				path: "colors",
-				name: "colors-management",
-				component: ColorsManagement,
-			},
-			{
-				path: "sizes",
-				name: "sizes-management",
-				component: SizesManagement,
 			},
 			{
 				path: "skus",

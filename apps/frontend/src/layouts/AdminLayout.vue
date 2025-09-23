@@ -58,35 +58,9 @@ const menuItems = ref([
 				command: () => router.push("/admin/categories"),
 			},
 			{
-				label: "颜色管理",
-				icon: "pi pi-palette",
-				command: () => router.push("/admin/colors"),
-			},
-			{
-				label: "尺寸管理",
-				icon: "pi pi-arrows-h",
-				command: () => router.push("/admin/sizes"),
-			},
-			{
 				label: "SKU管理",
 				icon: "pi pi-server",
 				command: () => router.push("/admin/skus"),
-			},
-		],
-	},
-	{
-		label: "订单管理",
-		icon: "pi pi-shopping-cart",
-		items: [
-			{
-				label: "订单列表",
-				icon: "pi pi-list",
-				command: () => router.push("/admin/orders"),
-			},
-			{
-				label: "退款管理",
-				icon: "pi pi-money-bill",
-				command: () => router.push("/admin/refunds"),
 			},
 		],
 	},
@@ -125,12 +99,7 @@ const menuItems = ref([
 				label: "图片管理",
 				icon: "pi pi-images",
 				command: () => router.push("/admin/images"),
-			},
-			{
-				label: "资源管理",
-				icon: "pi pi-images",
-				command: () => router.push("/admin/media"),
-			},
+			}
 		],
 	},
 	{

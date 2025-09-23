@@ -1,6 +1,4 @@
 import type {
-  ColorListQueryDto,
-
   ListImagesQueryDto,
   ListProductQueryDto,
   PartnersListQueryDto,
@@ -53,7 +51,7 @@ export const useCmsApi = () => {
         }
         return data;
       },
-      create: async (data: InsertPartnersDto) => {
+      create: async (data: any) => {
         const { data: result, error } = await client.api.partners.post(data);
         if (error) {
           console.error("Partner create error:", error);
@@ -139,8 +137,9 @@ export const useCmsApi = () => {
     // 广告相关
     advertisements: {
       list: async (params?: Record<string, any>) => {
+        const defaultParams = { page: 1, limit: 10 };
         const { data, error } = await client.api.advertisements.get({
-          query: params,
+          query: { ...defaultParams, ...params },
         });
         if (error) {
           console.error("Advertisements list error:", error);
@@ -192,7 +191,7 @@ export const useCmsApi = () => {
 
       carousel: async () => {
         const { data, error } = await client.api.advertisements.get({
-          query: { type: "carousel" },
+          query: { type: "carousel", page: 1, limit: 10 },
         });
         if (error) {
           console.error("Advertisements carousel error:", error);
@@ -203,7 +202,7 @@ export const useCmsApi = () => {
 
       banner: async (params?: any) => {
         const { data, error } = await client.api.advertisements.get({
-          query: { ...params, type: "banner" },
+          query: { ...params, type: "banner", page: 1, limit: 10 },
         });
         if (error) {
           console.error("Advertisements banner error:", error);
@@ -216,7 +215,7 @@ export const useCmsApi = () => {
     products: {
       list: async (params?: ListProductQueryDto) => {
         const { data, error } = await client.api.products.get({
-          query: params,
+          query: params || { page: 1, limit: 10 },
         });
         if (error) {
           console.error("Products list error:", error);
@@ -246,7 +245,10 @@ export const useCmsApi = () => {
       },
 
       getBySlug: async (slug: string) => {
-        const { data, error } = await client.api.products.slug({ slug }).get();
+        // 注意：如果后端没有slug接口，可能需要改为使用ID或其他方式
+        const { data, error } = await client.api.products.get({
+          query: { slug } as any
+        });
         if (error) {
           console.error("Products getBySlug error:", error);
           return comDefaultValue;
@@ -286,115 +288,98 @@ export const useCmsApi = () => {
       },
     },
 
-    // 颜色相关
-    colors: {
-      all: async (params: ColorListQueryDto) => {
-        const { data, error } = await client.api.colors.get({ query: params });
-        if (error) {
-          return comDefaultValue;
-        }
-        return data;
-      },
-
-      getById: async (id: number) => {
-        const { data, error } = await client.api.colors({ id }).get();
-        if (error) {
-          console.error("Colors getById error:", error);
-          return comDefaultValue;
-        }
-        return data;
-      },
-
-      create: async (data: any) => {
-        const { data: result, error } = await client.api.colors.post(data);
-        if (error) {
-          console.error("Colors create error:", error);
-          return comDefaultValue;
-        }
-        return result;
-      },
-
-      update: async (id: number, data: any) => {
-        const { data: result, error } = await client.api
-          .colors({ id })
-          .put(data);
-        if (error) {
-          console.error("Colors update error:", error);
-          return comDefaultValue;
-        }
-        return result;
-      },
-
-      delete: async (id: number) => {
-        const { data: result, error } = await client.api
-          .colors({ id })
-          .delete();
-        if (error) {
-          console.error("Colors delete error:", error);
-          return comDefaultValue;
-        }
-        return result;
-      },
-    },
-
-    // 尺寸相关
-    sizes: {
+    // 颜色规格相关 (重构后新增)
+    colorSpecs: {
+      // 获取颜色规格列表
       list: async (params?: any) => {
-        const { data, error } = await client.api.sizes.get({ query: params });
+        const { data, error } = await client.api["color-specs"].get({ query: params });
         if (error) {
-          console.error("Sizes list error:", error);
+          console.error("ColorSpecs list error:", error);
           return pageDefaultValue;
         }
         return data;
       },
 
+      // 获取所有颜色规格（不分页）
       all: async (params?: any) => {
-        const { data, error } = await client.api.sizes.all.get({ query: params });
+        const { data, error } = await client.api["color-specs"].all.get({ query: params });
         if (error) {
-          console.error("Sizes all error:", error);
+          console.error("ColorSpecs all error:", error);
           return comDefaultValue;
         }
         return data;
       },
 
+      // 根据商品ID获取颜色规格
+      getByProductId: async (productId: number) => {
+        const { data, error } = await client.api["color-specs"]
+          .product({ productId })
+          .get();
+        if (error) {
+          console.error("ColorSpecs getByProductId error:", error);
+          return comDefaultValue;
+        }
+        return data;
+      },
+
+      // 根据ID获取颜色规格详情
       getById: async (id: number) => {
-        const { data, error } = await client.api.sizes({ id }).get();
+        const { data, error } = await client.api["color-specs"]({ id }).get();
         if (error) {
-          console.error("Sizes getById error:", error);
+          console.error("ColorSpecs getById error:", error);
           return comDefaultValue;
         }
         return data;
       },
 
+      // 创建颜色规格
       create: async (data: any) => {
-        const { data: result, error } = await client.api.sizes.post(data);
+        const { data: result, error } = await client.api["color-specs"].post(data);
         if (error) {
-          console.error("Sizes create error:", error);
+          console.error("ColorSpecs create error:", error);
           return comDefaultValue;
         }
         return result;
       },
 
+      // 更新颜色规格
       update: async (id: number, data: any) => {
         const { data: result, error } = await client.api
-          .sizes({ id })
+        ["color-specs"]({ id })
           .put(data);
         if (error) {
-          console.error("Sizes update error:", error);
+          console.error("ColorSpecs update error:", error);
           return comDefaultValue;
         }
         return result;
       },
 
+      // 删除颜色规格
       delete: async (id: number) => {
-        const { data: result, error } = await client.api.sizes({ id }).delete();
+        const { data: result, error } = await client.api
+        ["color-specs"]({ id })
+          .delete();
         if (error) {
-          console.error("Sizes delete error:", error);
+          console.error("ColorSpecs delete error:", error);
+          return comDefaultValue;
+        }
+        return result;
+      },
+
+      // 批量创建颜色规格
+      batchCreate: async (productId: number, colorSpecs: any[]) => {
+        const { data: result, error } = await client.api["color-specs"]
+          .batch({ productId })
+          .post({ colorSpecs });
+        if (error) {
+          console.error("ColorSpecs batchCreate error:", error);
           return comDefaultValue;
         }
         return result;
       },
     },
+
+
 
     // SKU相关
     skus: {
@@ -453,12 +438,24 @@ export const useCmsApi = () => {
         }
         return result;
       },
+
+      // 基于颜色规格批量创建SKU (重构后新增)
+      batchCreateByColorSpecs: async (productId: number, colorSpecs: any[]) => {
+        const { data: result, error } = await client.api.skus
+          .batch({ productId })
+          .post({ colorSpecs });
+        if (error) {
+          console.error("SKUs batchCreateByColorSpecs error:", error);
+          return comDefaultValue;
+        }
+        return result;
+      },
     },
 
     // 站点配置相关
     siteConfigs: {
       list: async (params: SiteConfigListQueryDto) => {
-        const { data, error } = await client.api["site-configs"].get({
+        const { data, error } = await client.api["site-configs"]["all"].get({
           query: params,
         });
         if (error) {
@@ -468,7 +465,7 @@ export const useCmsApi = () => {
         return data;
       },
       all: async (params?: SiteConfigByCategoryQueryDto) => {
-        const { data, error } = await client.api["site-configs"].all.get({
+        const { data, error } = await client.api["site-configs"]["all"].get({
           query: params,
         });
         if (error) {
@@ -479,9 +476,9 @@ export const useCmsApi = () => {
       },
 
       getByCategory: async (category: string) => {
-        const { data, error } = await client.api["site-configs"]
-          .key({ key: category })
-          .get();
+        const { data, error } = await client.api["site-configs"]["all"].get({
+          query: { category }
+        });
         if (error) {
           console.error("SiteConfigs getByCategory error:", error);
           return comDefaultValue;
@@ -570,9 +567,9 @@ export const useFrontApi = () => {
     },
     siteConfigs: {
       getByCategory: async (category: string) => {
-        const { data, error } = await client.api["site-configs"]
-          .Category({ Category: category })
-          .get();
+        const { data, error } = await client.api["site-configs"]["all"].get({
+          query: { category }
+        });
         if (error) {
           console.error("SiteConfigs getByCategory error:", error);
           return comDefaultValue;
@@ -614,7 +611,7 @@ export const useFrontApi = () => {
       },
       list: async (params?: ListProductQueryDto) => {
         const { data, error } = await client.api.products.get({
-          query: params,
+          query: params || { page: 1, limit: 10 },
         });
         if (error) {
           console.error("Products list error:", error);
@@ -625,7 +622,10 @@ export const useFrontApi = () => {
 
       // 根据slug获取商品详情（前端展示用）
       getBySlug: async (slug: string) => {
-        const { data, error } = await client.api.products.slug({ slug }).get();
+        // 注意：如果后端没有slug接口，可能需要改为使用ID或其他方式
+        const { data, error } = await client.api.products.get({
+          query: { slug } as any
+        });
         if (error) {
           console.error("Products getBySlug error:", error);
           return comDefaultValue;
@@ -653,6 +653,41 @@ export const useFrontApi = () => {
         const { data, error } = await client.api.skus({ id }).get();
         if (error) {
           console.error("SKUs getById error:", error);
+          return comDefaultValue;
+        }
+        return data;
+      },
+    },
+
+    // 颜色规格相关（前端展示用）
+    colorSpecs: {
+      // 根据商品ID获取颜色规格
+      getByProductId: async (productId: number) => {
+        const { data, error } = await client.api["color-specs"]
+          .product({ productId })
+          .get();
+        if (error) {
+          console.error("ColorSpecs getByProductId error:", error);
+          return comDefaultValue;
+        }
+        return data;
+      },
+
+      // 根据ID获取颜色规格详情
+      getById: async (id: number) => {
+        const { data, error } = await client.api["color-specs"]({ id }).get();
+        if (error) {
+          console.error("ColorSpecs getById error:", error);
+          return comDefaultValue;
+        }
+        return data;
+      },
+
+      // 获取所有颜色规格（不分页）
+      all: async (params?: any) => {
+        const { data, error } = await client.api["color-specs"].all.get({ query: params });
+        if (error) {
+          console.error("ColorSpecs all error:", error);
           return comDefaultValue;
         }
         return data;
